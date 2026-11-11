@@ -8,5 +8,3 @@ Weather App adalah sistem pemantauan dan peringatan risiko cuaca ekstrem untuk s
 | `modeling/` | Notebook eksplorasi data dan pemodelan risiko cuaca |
 | `backend/` | API yang akan menyajikan data dan hasil model (belum dibuat) |
 | `frontend/` | Antarmuka web berbasis React dan Vite |
-
-Penjelasan lengkap pipeline, jadwal di `.github/workflows/`, dan cara menjalankannya ada di [etl/README.md](etl/README.md).
