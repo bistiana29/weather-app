@@ -1,0 +1,35 @@
+name: Hourly Weather Ingestion
+
+on:
+  schedule:
+    # Tiap jam menit ke-7 UTC (menit ke-7 WIB). Open-Meteo hanya pada jam UTC kelipatan 3.
+    - cron: "7 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: weather-hourly
+  cancel-in-progress: false
+
+jobs:
+  ingest-hourly:
+    # Jadwal hanya berjalan jika repository variable SCHEDULE_ENABLED bernilai 'true'; jalan manual selalu boleh.
+    if: github.event_name == 'workflow_dispatch' || vars.SCHEDULE_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: etl
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: etl/requirements.txt
+
+      - run: pip install -r requirements.txt
+
+      - run: python -m pipeline.ingest hourly

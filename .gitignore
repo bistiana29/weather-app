@@ -1,0 +1,16 @@
+.env
+.env.*
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.cache*
+.ipynb_checkpoints/
+node_modules/
+_work/
+*.parquet
+modeling/models/
+
+.DS_Store
+.idea/
+.vscode/

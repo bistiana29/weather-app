@@ -1,0 +1,6 @@
+requests>=2.32
+psycopg[binary]>=3.2
+pandas>=2.2
+numpy>=1.26
+pyarrow>=17
+python-dotenv>=1.0
