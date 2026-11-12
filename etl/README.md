@@ -46,6 +46,22 @@ Tabel pendukung:
 
 Ada juga dua view pemantauan, `status_pengambilan_data` dan `status_data_parameter`.
 
+## Titik kelurahan
+
+`koordinat_kelurahan_surabaya.csv` berisi satu titik per kelurahan dengan header `kode_kel,kecamatan,desa,latitude,longitude,metode_titik`. CSV ini sumber kebenaran: setiap job menyamakan tabel `kelurahan` dengan isinya. `kelurahan_id` adalah nomor baris CSV (mulai 1), jadi urutan barisnya tidak boleh diubah.
+
+Aturan titik representatif: dipakai **centroid**, lalu diganti **polylabel** (titik terdalam di dalam poligon) bila centroid tidak representatif terhadap wilayahnya. Saat ini 148 kelurahan memakai centroid dan 5 memakai polylabel:
+
+| `kelurahan_id` | `kode_kel` | Kecamatan | Kelurahan |
+|---|---|---|---|
+| 12 | 35.78.13.1005 | Bubutan | Tembok Dukuh |
+| 41 | 35.78.23.1002 | Jambangan | Karah |
+| 63 | 35.78.26.1005 | Mulyorejo | Dukuh Sutorejo |
+| 67 | 35.78.26.1002 | Mulyorejo | Manyar Sabrangan |
+| 150 | 35.78.04.1003 | Wonokromo | Ngagel |
+
+Jika titik sebuah kelurahan diganti, data hourly lamanya berasal dari koordinat lain dan harus dibuang seluruhnya, bukan ditimpa dengan COALESCE. Hapus barisnya dari `nasa_hourly`, `openmeteo_hourly`, semua file Parquet bulanan beserta salinannya di `_work/parquet_staging/`, perbarui `ringkasan_arsip`, lalu ubah potongan backfill kelurahan itu di `ingestion_log` menjadi `superseded`. Backfill hanya menganggap status `success` sebagai selesai, jadi potongan tersebut akan diambil ulang. Penggantian 5 titik di atas dilakukan pada 2026-11-13.
+
 ## Penjadwalan
 
 Data hourly diambil otomatis oleh GitHub Actions, yaitu layanan GitHub yang menjalankan perintah di server sesuai jadwal. Jadwal ditulis dalam format cron (menit, jam, tanggal, bulan, hari) dan selalu dalam UTC. WIB = UTC + 7 jam. Data daily stasiun tidak dijadwalkan.
@@ -252,7 +268,7 @@ Agar baris di sekitar batas 130 hari tidak terhitung dua kali, baris Postgres ya
 | `pipeline/read.py` | `load_dataset()` (hourly) dan `load_stasiun()` (daily stasiun) |
 | `pipeline/ringkasan.py` | menghitung dan menyimpan `ringkasan_arsip`, serta perintah pengisian ulang dari Storage |
 | `schema.sql` | tabel, indeks, RLS, dan kedua view pemantauan; dijalankan otomatis di awal setiap job |
-| `koordinat_kelurahan_surabaya.csv` | 153 kelurahan; nomor baris = `kelurahan_id`, jadi urutannya tidak boleh diubah |
+| `koordinat_kelurahan_surabaya.csv` | 153 kelurahan: `kode_kel`, `kecamatan`, `desa`, `latitude`, `longitude`, `metode_titik`; nomor baris = `kelurahan_id`, jadi urutannya tidak boleh diubah |
 | `koordinat_BMKG_surabaya.csv` | 3 stasiun BMKG: `ID_WMO`, `Stasiun`, `Latitude`, `Longitude`, `elevasi` |
 | `requirements.txt` | library Python yang dibutuhkan |
 | `_work/` | staging Parquet, penghitung kuota lokal, dan log backfill (tidak masuk Git) |

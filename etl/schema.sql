@@ -6,12 +6,17 @@
 
 CREATE TABLE IF NOT EXISTS "kelurahan" (
     kelurahan_id integer PRIMARY KEY,
+    kode_kel text UNIQUE,
     kecamatan text NOT NULL,
     desa text NOT NULL,
     latitude double precision NOT NULL,
     longitude double precision NOT NULL,
+    metode_titik text,
     UNIQUE (kecamatan, desa)
 );
+-- Untuk tabel yang dibuat sebelum kolom ini ada; diisi oleh sync_kelurahan dari CSV.
+ALTER TABLE "kelurahan" ADD COLUMN IF NOT EXISTS kode_kel text UNIQUE;
+ALTER TABLE "kelurahan" ADD COLUMN IF NOT EXISTS metode_titik text;
 
 CREATE TABLE IF NOT EXISTS "nasa_hourly" (
     kelurahan_id integer NOT NULL REFERENCES kelurahan (kelurahan_id),
@@ -90,12 +95,17 @@ CREATE TABLE IF NOT EXISTS "ingestion_log" (
     rentang_mulai timestamptz,
     rentang_akhir timestamptz,
     tujuan text,
-    status text NOT NULL CHECK (status IN ('running', 'success', 'failed', 'skipped')),
+    status text NOT NULL,
     jumlah_baris integer,
     pesan_error text,
     mulai_at timestamptz NOT NULL DEFAULT now(),
     selesai_at timestamptz
 );
+-- superseded: potongan yang datanya dibuang (misalnya koordinat kelurahan berubah), backfill mengambilnya ulang.
+-- aborted: run yang terhenti tanpa sempat mencatat hasil.
+ALTER TABLE "ingestion_log" DROP CONSTRAINT IF EXISTS ingestion_log_status_check;
+ALTER TABLE "ingestion_log" ADD CONSTRAINT ingestion_log_status_check
+    CHECK (status IN ('running', 'success', 'failed', 'skipped', 'superseded', 'aborted'));
 
 CREATE INDEX IF NOT EXISTS "ingestion_log_checkpoint_idx" ON "ingestion_log" (sumber, granularitas, kelurahan_id, rentang_mulai, rentang_akhir) WHERE status = 'success';
 

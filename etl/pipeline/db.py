@@ -25,16 +25,15 @@ def connect() -> psycopg.Connection:
 
 def load_kelurahan(ids: list[int] | None = None) -> pd.DataFrame:
     """kelurahan_id = nomor baris CSV (mulai 1), jadi urutan baris CSV tidak boleh diubah."""
-    raw = pd.read_csv(config.KELURAHAN_CSV)
-    expected = ["KECAMATAN", "DESA", "latitude", "longitude"]
-    if list(raw.columns) != expected:
-        raise ValueError(f"Kolom CSV harus {expected}, dapat {list(raw.columns)}")
-    df = raw.rename(columns={"KECAMATAN": "kecamatan", "DESA": "desa"})
+    df = pd.read_csv(config.KELURAHAN_CSV, dtype={"kode_kel": str})
+    expected = ["kode_kel", "kecamatan", "desa", "latitude", "longitude", "metode_titik"]
+    if list(df.columns) != expected:
+        raise ValueError(f"Kolom CSV harus {expected}, dapat {list(df.columns)}")
     df.insert(0, "kelurahan_id", range(1, len(df) + 1))
-    if df.duplicated(["kecamatan", "desa"]).any():
-        raise ValueError("Pasangan (kecamatan, desa) harus unik")
-    if df[["latitude", "longitude"]].isna().any().any():
-        raise ValueError("Koordinat tidak boleh kosong")
+    if df.duplicated(["kecamatan", "desa"]).any() or df["kode_kel"].duplicated().any():
+        raise ValueError("Pasangan (kecamatan, desa) dan kode_kel harus unik")
+    if df[["kode_kel", "latitude", "longitude", "metode_titik"]].isna().any().any():
+        raise ValueError("kode_kel, koordinat, dan metode_titik tidak boleh kosong")
     if ids:
         df = df[df["kelurahan_id"].isin(ids)].reset_index(drop=True)
         if df.empty:
@@ -52,13 +51,14 @@ def prepare(conn: psycopg.Connection) -> None:
 
 def sync_kelurahan(conn: psycopg.Connection) -> int:
     df = load_kelurahan()
-    q = S("""INSERT INTO {t} (kelurahan_id, kecamatan, desa, latitude, longitude)
-VALUES (%s, %s, %s, %s, %s)
-ON CONFLICT (kelurahan_id) DO UPDATE SET kecamatan = EXCLUDED.kecamatan, desa = EXCLUDED.desa,
-    latitude = EXCLUDED.latitude, longitude = EXCLUDED.longitude""").format(t=I("kelurahan"))
+    q = S("""INSERT INTO {t} (kelurahan_id, kode_kel, kecamatan, desa, latitude, longitude, metode_titik)
+VALUES (%s, %s, %s, %s, %s, %s, %s)
+ON CONFLICT (kelurahan_id) DO UPDATE SET kode_kel = EXCLUDED.kode_kel, kecamatan = EXCLUDED.kecamatan,
+    desa = EXCLUDED.desa, latitude = EXCLUDED.latitude, longitude = EXCLUDED.longitude,
+    metode_titik = EXCLUDED.metode_titik""").format(t=I("kelurahan"))
     with conn.cursor() as cur:
-        cur.executemany(q, [(int(r.kelurahan_id), r.kecamatan, r.desa, float(r.latitude), float(r.longitude))
-                            for r in df.itertuples()])
+        cur.executemany(q, [(int(r.kelurahan_id), r.kode_kel, r.kecamatan, r.desa, float(r.latitude),
+                             float(r.longitude), r.metode_titik) for r in df.itertuples()])
     conn.commit()
     return len(df)
 
