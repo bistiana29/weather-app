@@ -1,16 +1,30 @@
+# environment variables
 .env
 .env.*
+
+# Python
 .venv/
 __pycache__/
 *.py[cod]
 .pytest_cache/
 .cache*
+
+# notebooks
 .ipynb_checkpoints/
+
+# node
 node_modules/
+
+# loaded data
 _work/
 *.parquet
-modeling/models/
 
+# experiments
+modeling/data
+modeling/notebooks
+modeling/outputs
+
+# settings
 .DS_Store
 .idea/
 .vscode/
