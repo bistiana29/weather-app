@@ -182,10 +182,22 @@ def fetch_openmeteo_hourly(kelurahan_id: int, lat: float, lon: float, start: dat
     return transform.drop_all_null(transform.drop_future(df, spec), spec)
 
 
-def fetch_hourly(source: str, kelurahan_id: int, lat: float, lon: float, start: date, end: date) -> pd.DataFrame:
+def utc_dates(start: datetime, end: datetime) -> tuple[date, date]:
+    """Tanggal UTC yang harus diminta agar rentang start..end (WIB) tercakup, karena hourly diminta dalam UTC."""
+    return start.astimezone(timezone.utc).date(), end.astimezone(timezone.utc).date()
+
+
+def fetch_hourly(source: str, kelurahan_id: int, lat: float, lon: float, start: datetime, end: datetime) -> pd.DataFrame:
+    """Data hourly satu kelurahan untuk start..end (inklusif, waktu berzona). Kolom waktu dalam WIB."""
+    d_start, d_end = utc_dates(start, end)
     if source == "nasa":
-        return fetch_nasa_hourly(kelurahan_id, lat, lon, start, end)
-    return fetch_openmeteo_hourly(kelurahan_id, lat, lon, start, end)
+        df = fetch_nasa_hourly(kelurahan_id, lat, lon, d_start, d_end)
+    else:
+        df = fetch_openmeteo_hourly(kelurahan_id, lat, lon, d_start, d_end)
+    if df.empty:
+        return df
+    t = pd.to_datetime(df["waktu"], utc=True)
+    return df[(t >= pd.Timestamp(start)) & (t <= pd.Timestamp(end))].reset_index(drop=True)
 
 
 def fetch_daily_stasiun(spec: params.TableSpec, id_wmo: int, lat: float, lon: float,

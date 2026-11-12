@@ -1,4 +1,4 @@
-"""Job pemadatan: pindahkan baris yang lebih tua dari 130 hari dari Postgres ke Parquet bulanan di Supabase Storage.
+"""Job pemadatan: pindahkan baris hourly yang lebih tua dari 130 hari (dihitung dalam WIB) dari Postgres ke Parquet bulanan di Supabase Storage.
 
 Urutannya demi keamanan data: per bulan, gabungkan dengan Parquet yang sudah ada (COALESCE), unggah,
 unduh ulang untuk memastikan jumlah baris, dan BARU SETELAH itu hapus baris bulan tersebut dari Postgres.
@@ -7,7 +7,7 @@ unduh ulang untuk memastikan jumlah baris, dan BARU SETELAH itu hapus baris bula
 """
 import logging
 import sys
-from datetime import date, datetime, time as dtime, timedelta, timezone
+from datetime import date, datetime, time as dtime, timedelta
 
 import pandas as pd
 from psycopg import sql
@@ -19,20 +19,21 @@ logger = logging.getLogger(__name__)
 I, L, S = sql.Identifier, sql.Literal, sql.SQL
 
 
-def _month_bounds_utc(ym: str) -> tuple[datetime, datetime]:
-    start = datetime.strptime(ym, "%Y-%m").replace(tzinfo=timezone.utc)
+def _month_bounds(ym: str) -> tuple[datetime, datetime]:
+    """Awal bulan ym dan awal bulan berikutnya, 00:00 WIB (file Parquet dikelompokkan per bulan WIB)."""
+    start = datetime.strptime(ym, "%Y-%m").replace(tzinfo=config.WIB)
     return start, (start + timedelta(days=32)).replace(day=1)
 
 
 def _fetch_cold_rows_from_pg(conn, spec: TableSpec, cutoff_date: date) -> pd.DataFrame:
-    cutoff = datetime.combine(cutoff_date, dtime.min, tzinfo=timezone.utc)
+    cutoff = datetime.combine(cutoff_date, dtime.min, tzinfo=config.WIB)
     where = S("{tc} < {cutoff}").format(tc=I(spec.time_col), cutoff=L(cutoff))
     return db.read_frame(conn, spec, where)
 
 
 def _delete_compacted_month_from_pg(conn, spec: TableSpec, ym: str, cutoff_date: date) -> int:
-    lo, hi = _month_bounds_utc(ym)
-    hi = min(hi, datetime.combine(cutoff_date, dtime.min, tzinfo=timezone.utc))
+    lo, hi = _month_bounds(ym)
+    hi = min(hi, datetime.combine(cutoff_date, dtime.min, tzinfo=config.WIB))
     q = S("DELETE FROM {t} WHERE {tc} >= {lo} AND {tc} < {hi}").format(
         t=I(spec.name), tc=I(spec.time_col), lo=L(lo), hi=L(hi))
     with conn.cursor() as cur:
@@ -52,7 +53,7 @@ def compact_table(conn, storage_client: storage.SupabaseStorageClient, spec: Tab
     months = compacted = deleted_total = 0
     for ym, grp in cold_df.groupby(storage.month_key(cold_df, spec)):
         ym = str(ym)
-        m_start, m_end = _month_bounds_utc(ym)
+        m_start, m_end = _month_bounds(ym)
         log_id = db.log_start(conn, "compact", spec.source, spec.granularity, None, m_start, m_end, f"storage:{ym}")
         try:
             grp = grp.reset_index(drop=True)
@@ -77,7 +78,7 @@ def compact_table(conn, storage_client: storage.SupabaseStorageClient, spec: Tab
 
 def main() -> int:
     config.setup_logging()
-    cutoff_date = datetime.now(timezone.utc).date() - timedelta(days=config.HOT_DAYS)
+    cutoff_date = datetime.now(config.WIB).date() - timedelta(days=config.HOT_DAYS)
     storage_client = storage.SupabaseStorageClient()
     storage_client.ensure_bucket()
 

@@ -36,7 +36,7 @@ def nasa_to_frame(payload: dict, spec: TableSpec, location_id: int) -> pd.DataFr
     df = df.mask(np.isclose(df.to_numpy(dtype="float64"), fill) | (df <= NASA_FILL))
     keys = df.index.astype(str)
     if spec.granularity == "hourly":
-        t = pd.to_datetime(keys, format="%Y%m%d%H", utc=True)
+        t = pd.to_datetime(keys, format="%Y%m%d%H", utc=True).tz_convert(config.LOCAL_TZ)
     else:
         t = pd.to_datetime(keys, format="%Y%m%d").date
     df.insert(0, spec.time_col, t)
@@ -59,7 +59,7 @@ def openmeteo_to_frame(payload: dict, spec: TableSpec, location_id: int, endpoin
             raise SourceFormatError("utc_offset_seconds wajib ada pada respons Open-Meteo hourly")
         naive = pd.to_datetime(times)
         offset = pd.Timedelta(seconds=int(payload["utc_offset_seconds"]))
-        t = (naive - offset).tz_localize("UTC") if naive.tz is None else naive.tz_convert("UTC")
+        t = ((naive - offset).tz_localize("UTC") if naive.tz is None else naive).tz_convert(config.LOCAL_TZ)
     else:
         if payload.get("timezone") != config.LOCAL_TZ:
             raise SourceFormatError(f"Open-Meteo daily harus memakai timezone {config.LOCAL_TZ}")
@@ -79,20 +79,20 @@ def merge_openmeteo_hourly(archive_df: pd.DataFrame, visibility_df: pd.DataFrame
     if visibility_df is None or visibility_df.empty:
         df[vis_col] = np.nan
     else:
-        df = df.merge(visibility_df[["kelurahan_id", "waktu_utc", vis_col]], on=["kelurahan_id", "waktu_utc"], how="left")
+        df = df.merge(visibility_df[["kelurahan_id", "waktu", vis_col]], on=["kelurahan_id", "waktu"], how="left")
     return df[[*OPENMETEO_HOURLY.key_cols, *OPENMETEO_HOURLY.value_cols]]
 
 
 def drop_future(df: pd.DataFrame, spec: TableSpec, now: datetime | None = None) -> pd.DataFrame:
-    """Hourly: buang jam setelah jam UTC yang sedang berjalan. Daily: buang hari ini (WIB) dan sesudahnya karena belum selesai."""
+    """Hourly: buang jam setelah jam WIB yang sedang berjalan. Daily: buang hari ini (WIB) dan sesudahnya karena belum selesai."""
     if df.empty:
         return df
     now_ts = pd.Timestamp(now or datetime.now(timezone.utc))
-    now_ts = now_ts.tz_convert("UTC") if now_ts.tzinfo else now_ts.tz_localize("UTC")
+    now_ts = now_ts.tz_convert(config.LOCAL_TZ) if now_ts.tzinfo else now_ts.tz_localize(config.LOCAL_TZ)
     if spec.granularity == "hourly":
         keep = pd.to_datetime(df[spec.time_col], utc=True) <= now_ts.floor("h")
     else:
-        today_local = now_ts.tz_convert(config.LOCAL_TZ).date()
+        today_local = now_ts.date()
         keep = pd.Series(df[spec.time_col]).map(lambda d: d < today_local).to_numpy()
     return df[keep].reset_index(drop=True)
 

@@ -1,7 +1,7 @@
 """Akses Postgres: koneksi, skema, daftar kelurahan, upsert COALESCE, dan ingestion_log.
 Nama tabel dan kolom selalu lewat psycopg.sql.Identifier karena nama kolom berisi spasi dan simbol."""
 import math
-from datetime import date, datetime, time as dtime, timezone
+from datetime import date, datetime, time as dtime
 
 import pandas as pd
 import psycopg
@@ -17,7 +17,10 @@ def connect() -> psycopg.Connection:
     if not config.DATABASE_URL:
         raise RuntimeError("DATABASE_URL belum di-set (etl/.env atau GitHub Secret)")
     # prepare_threshold=None karena connection pooler Supabase tidak mendukung prepared statement.
-    return psycopg.connect(config.DATABASE_URL, prepare_threshold=None, application_name="weather_etl")
+    conn = psycopg.connect(config.DATABASE_URL, prepare_threshold=None, application_name="weather_etl")
+    conn.execute(f"SET TIME ZONE '{config.LOCAL_TZ}'")
+    conn.commit()
+    return conn
 
 
 def load_kelurahan(ids: list[int] | None = None) -> pd.DataFrame:
@@ -123,13 +126,14 @@ def read_frame(conn: psycopg.Connection, spec: TableSpec, where: sql.Composable)
         return pd.DataFrame(columns=cols)
     df = pd.DataFrame(rows, columns=cols)
     if spec.granularity == "hourly":
-        df["waktu_utc"] = pd.to_datetime(df["waktu_utc"], utc=True)
+        df["waktu"] = pd.to_datetime(df["waktu"], utc=True).dt.tz_convert(config.LOCAL_TZ)
     return df
 
 
 def day_bounds(start: date, end: date) -> tuple[datetime, datetime]:
-    return (datetime.combine(start, dtime.min, tzinfo=timezone.utc),
-            datetime.combine(end, dtime.max, tzinfo=timezone.utc))
+    """Awal hari start dan akhir hari end, dalam WIB."""
+    return (datetime.combine(start, dtime.min, tzinfo=config.WIB),
+            datetime.combine(end, dtime.max, tzinfo=config.WIB))
 
 
 def log_start(conn: psycopg.Connection, job: str, sumber: str, granularitas: str, kelurahan_id: int | None,

@@ -6,7 +6,7 @@ import argparse
 import logging
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, time as dtime, timedelta, timezone
 
 import pandas as pd
 
@@ -25,7 +25,7 @@ def rotation_ids(all_ids: list[int], day: date) -> list[int]:
     return [k for k in all_ids if k % 7 == day.toordinal() % 7]
 
 
-def _fetch_all(source: str, kel_df: pd.DataFrame, start: date, end: date) -> list[pd.DataFrame]:
+def _fetch_all(source: str, kel_df: pd.DataFrame, start: datetime, end: datetime) -> list[pd.DataFrame]:
     def one(r):
         return api.fetch_hourly(source, int(r.kelurahan_id), float(r.latitude), float(r.longitude), start, end)
 
@@ -42,11 +42,10 @@ def _fetch_all(source: str, kel_df: pd.DataFrame, start: date, end: date) -> lis
             raise
 
 
-def run(conn, job: str, source: str, kel_df: pd.DataFrame, start: date, end: date) -> bool:
+def run(conn, job: str, source: str, kel_df: pd.DataFrame, start: datetime, end: datetime) -> bool:
     """Ambil semua kelurahan dulu, baru tulis sekali. Jika satu panggilan gagal, tidak ada data yang ditulis."""
     spec = params.get_spec(source)
-    t_start, t_end = db.day_bounds(start, end)
-    log_id = db.log_start(conn, job, source, spec.granularity, None, t_start, t_end, "postgres")
+    log_id = db.log_start(conn, job, source, spec.granularity, None, start, end, "postgres")
     try:
         frames = [df for df in _fetch_all(source, kel_df, start, end) if not df.empty]
         combined = pd.concat(frames, ignore_index=True) if frames else None
@@ -75,15 +74,16 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--kelurahan-ids", type=str, default=None, help="Daftar kelurahan_id dipisah koma, mis. 1,2")
     args = p.parse_args(argv)
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(config.WIB)
     lookback = args.lookback_days or DEFAULT_LOOKBACK_DAYS[args.job]
-    end = now.date()
-    start = end - timedelta(days=lookback - 1)
+    today = now.date()
+    start = datetime.combine(today - timedelta(days=lookback - 1), dtime.min, tzinfo=config.WIB)
+    end = now.replace(minute=0, second=0, microsecond=0)
     kel_ids = [int(x) for x in args.kelurahan_ids.split(",") if x.strip()] if args.kelurahan_ids else None
 
     if args.job == "deep_refresh" and not kel_ids:
         all_df = db.load_kelurahan()
-        kel_df = all_df[all_df["kelurahan_id"].isin(rotation_ids(all_df["kelurahan_id"].tolist(), end))]
+        kel_df = all_df[all_df["kelurahan_id"].isin(rotation_ids(all_df["kelurahan_id"].tolist(), today))]
         kel_df = kel_df.reset_index(drop=True)
         logger.info("Deep refresh: %d kelurahan terpilih (%s..%s): %s",
                     len(kel_df), start, end, kel_df["kelurahan_id"].tolist())
@@ -97,9 +97,10 @@ def main(argv: list[str] | None = None) -> int:
             for source in params.SOURCES:
                 # Open-Meteo hourly cukup tiap N jam untuk menghemat kuota; lookback 7 hari menutup jam yang terlewat.
                 if (args.job == "hourly" and source == "openmeteo" and not kel_ids
-                        and now.hour % config.OPENMETEO_HOURLY_EVERY_N_HOURS != 0):
-                    logger.info("Melewati openmeteo/hourly pada jam UTC %02d (jadwal tiap %d jam)",
-                                now.hour, config.OPENMETEO_HOURLY_EVERY_N_HOURS)
+                        and now.astimezone(timezone.utc).hour % config.OPENMETEO_HOURLY_EVERY_N_HOURS != 0):
+                    logger.info("Melewati openmeteo/hourly pada %s WIB (jadwal tiap %d jam: jam UTC kelipatan %d)",
+                                now.strftime("%H:%M"), config.OPENMETEO_HOURLY_EVERY_N_HOURS,
+                                config.OPENMETEO_HOURLY_EVERY_N_HOURS)
                     continue
                 ok = run(conn, args.job, source, kel_df, start, end) and ok
         except QUOTA_ERRORS:

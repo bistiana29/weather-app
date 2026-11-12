@@ -1,4 +1,6 @@
 -- Skema database pipeline. Dijalankan oleh db.prepare() di awal setiap job, jadi semua perintah harus idempoten.
+-- Semua waktu disimpan sebagai timestamptz; zona waktu database, role, dan koneksi pipeline diatur ke Asia/Jakarta,
+-- sehingga hasil query dan view tampil dalam WIB (+07).
 -- Nama kolom nilai harus sama dengan pipeline/params.py.
 -- RLS diaktifkan tanpa policy: tabel tidak terbuka lewat API publik Supabase (anon/authenticated).
 
@@ -13,7 +15,7 @@ CREATE TABLE IF NOT EXISTS "kelurahan" (
 
 CREATE TABLE IF NOT EXISTS "nasa_hourly" (
     kelurahan_id integer NOT NULL REFERENCES kelurahan (kelurahan_id),
-    "waktu_utc" timestamptz NOT NULL,
+    "waktu" timestamptz NOT NULL,
     "T2M (°C)" real,
     "WS2M (m/s)" real,
     "WD2M (°)" real,
@@ -21,10 +23,10 @@ CREATE TABLE IF NOT EXISTS "nasa_hourly" (
     "RH2M (%)" real,
     "PS (kPa)" real,
     fetched_at timestamptz NOT NULL DEFAULT now(),
-    PRIMARY KEY (kelurahan_id, "waktu_utc")
+    PRIMARY KEY (kelurahan_id, "waktu")
 );
 
-CREATE INDEX IF NOT EXISTS "nasa_hourly_waktu_utc_idx" ON "nasa_hourly" ("waktu_utc");
+CREATE INDEX IF NOT EXISTS "nasa_hourly_waktu_idx" ON "nasa_hourly" ("waktu");
 
 COMMENT ON COLUMN "nasa_hourly"."T2M (°C)" IS 'Temperature at 2 Meters';
 
@@ -38,13 +40,13 @@ COMMENT ON COLUMN "nasa_hourly"."RH2M (%)" IS 'Relative Humidity at 2 Meters';
 
 COMMENT ON COLUMN "nasa_hourly"."PS (kPa)" IS 'Surface Pressure';
 
-COMMENT ON COLUMN "nasa_hourly"."waktu_utc" IS 'Jam awal periode, UTC';
+COMMENT ON COLUMN "nasa_hourly"."waktu" IS 'Jam awal periode (timestamptz, ditampilkan dalam WIB)';
 
 COMMENT ON COLUMN "nasa_hourly"."fetched_at" IS 'Terakhir kali baris menerima setidaknya satu nilai non-NULL baru dari sumber';
 
 CREATE TABLE IF NOT EXISTS "openmeteo_hourly" (
     kelurahan_id integer NOT NULL REFERENCES kelurahan (kelurahan_id),
-    "waktu_utc" timestamptz NOT NULL,
+    "waktu" timestamptz NOT NULL,
     "temperature_2m (°C)" real,
     "wind_speed_10m (kn)" real,
     "wind_direction_10m (°)" real,
@@ -54,10 +56,10 @@ CREATE TABLE IF NOT EXISTS "openmeteo_hourly" (
     "surface_pressure (hPa)" real,
     "visibility (m)" real,
     fetched_at timestamptz NOT NULL DEFAULT now(),
-    PRIMARY KEY (kelurahan_id, "waktu_utc")
+    PRIMARY KEY (kelurahan_id, "waktu")
 );
 
-CREATE INDEX IF NOT EXISTS "openmeteo_hourly_waktu_utc_idx" ON "openmeteo_hourly" ("waktu_utc");
+CREATE INDEX IF NOT EXISTS "openmeteo_hourly_waktu_idx" ON "openmeteo_hourly" ("waktu");
 
 COMMENT ON COLUMN "openmeteo_hourly"."temperature_2m (°C)" IS 'Air temperature at 2 meters above ground';
 
@@ -75,7 +77,7 @@ COMMENT ON COLUMN "openmeteo_hourly"."surface_pressure (hPa)" IS 'Atmospheric ai
 
 COMMENT ON COLUMN "openmeteo_hourly"."visibility (m)" IS 'Viewing distance (Historical Forecast API)';
 
-COMMENT ON COLUMN "openmeteo_hourly"."waktu_utc" IS 'Jam awal periode, UTC';
+COMMENT ON COLUMN "openmeteo_hourly"."waktu" IS 'Jam awal periode (timestamptz, ditampilkan dalam WIB)';
 
 COMMENT ON COLUMN "openmeteo_hourly"."fetched_at" IS 'Terakhir kali baris menerima setidaknya satu nilai non-NULL baru dari sumber';
 
@@ -204,11 +206,11 @@ WITH kombinasi (sumber, granularitas) AS (
     VALUES ('nasa', 'hourly'), ('openmeteo', 'hourly')
 ),
 sel AS (
-    SELECT 'nasa' AS sumber, 'hourly' AS granularitas, waktu_utc AS waktu, 6 AS kolom,
+    SELECT 'nasa' AS sumber, 'hourly' AS granularitas, waktu, 6 AS kolom,
            num_nulls("T2M (°C)", "WS2M (m/s)", "WD2M (°)", "PRECTOTCORR (mm/jam)", "RH2M (%)", "PS (kPa)") AS kosong
     FROM nasa_hourly
     UNION ALL
-    SELECT 'openmeteo', 'hourly', waktu_utc, 8,
+    SELECT 'openmeteo', 'hourly', waktu, 8,
            num_nulls("temperature_2m (°C)", "wind_speed_10m (kn)", "wind_direction_10m (°)", "relative_humidity_2m (%)",
                      "precipitation (mm)", "sunshine_duration (s)", "surface_pressure (hPa)", "visibility (m)")
     FROM openmeteo_hourly
@@ -231,8 +233,8 @@ log AS (
 )
 SELECT k.sumber,
        k.granularitas,
-       (l.run_sukses_terakhir AT TIME ZONE 'Asia/Jakarta')::timestamp(0) AS run_sukses_terakhir_wib,
-       (d.data_terbaru AT TIME ZONE 'Asia/Jakarta')::timestamp(0) AS data_terbaru_wib,
+       date_trunc('second', l.run_sukses_terakhir) AS run_sukses_terakhir_wib,
+       date_trunc('second', d.data_terbaru) AS data_terbaru_wib,
        coalesce(l.run_gagal_24_jam, 0) AS run_gagal_24_jam_terakhir,
        d.persen_null_7_hari
 FROM kombinasi k
@@ -268,7 +270,7 @@ WITH batas AS (
     GROUP BY sumber, granularitas
 ),
 panas AS (
-    SELECT 'nasa' AS sumber, 'hourly' AS granularitas, p.parameter, t.waktu_utc AS waktu, p.nilai
+    SELECT 'nasa' AS sumber, 'hourly' AS granularitas, p.parameter, t.waktu, p.nilai
     FROM nasa_hourly t
     CROSS JOIN LATERAL (VALUES
         ('T2M (°C)', t."T2M (°C)"), ('WS2M (m/s)', t."WS2M (m/s)"), ('WD2M (°)', t."WD2M (°)"),
@@ -283,7 +285,7 @@ panas AS (
         ('PRECTOTCORR (mm/hari)', t."PRECTOTCORR (mm/hari)"), ('RH2M (%)', t."RH2M (%)")
     ) AS p (parameter, nilai)
     UNION ALL
-    SELECT 'openmeteo', 'hourly', p.parameter, t.waktu_utc, p.nilai
+    SELECT 'openmeteo', 'hourly', p.parameter, t.waktu, p.nilai
     FROM openmeteo_hourly t
     CROSS JOIN LATERAL (VALUES
         ('temperature_2m (°C)', t."temperature_2m (°C)"), ('wind_speed_10m (kn)', t."wind_speed_10m (kn)"),
@@ -319,8 +321,8 @@ gabung AS (
 SELECT sumber,
        granularitas,
        parameter,
-       (min(awal) AT TIME ZONE 'Asia/Jakarta')::timestamp(0) AS data_mulai,
-       (max(akhir) AT TIME ZONE 'Asia/Jakarta')::timestamp(0) AS data_terakhir,
+       date_trunc('second', min(awal)) AS data_mulai,
+       date_trunc('second', max(akhir)) AS data_terakhir,
        sum(jumlah_baris)::bigint AS jumlah_baris,
        sum(jumlah_terisi)::bigint AS jumlah_terisi,
        round(100.0 * (sum(jumlah_baris) - sum(jumlah_terisi)) / nullif(sum(jumlah_baris), 0), 2) AS persen_kosong

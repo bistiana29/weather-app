@@ -2,8 +2,9 @@
 import logging
 import os
 import sys
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from dotenv import load_dotenv
 
@@ -20,10 +21,15 @@ SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 STORAGE_BUCKET = "weather-archive"
 
+LOCAL_TZ = "Asia/Jakarta"
+WIB = ZoneInfo(LOCAL_TZ)
+
 START_DATE = date(2022, 1, 1)
+BACKFILL_END = datetime(2026, 11, 11, 23, 0, tzinfo=WIB)
+STASIUN_START = date(2024, 6, 14)
+STASIUN_END = date(2026, 6, 15)
 HOT_DAYS = 130
 MATURE_DAYS = 120
-LOCAL_TZ = "Asia/Jakarta"
 
 NASA_TIME_STANDARD = {"hourly": "UTC", "daily": "LST"}
 NASA_COMMUNITY = "RE"

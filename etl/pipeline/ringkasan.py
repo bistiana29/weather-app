@@ -7,7 +7,7 @@ semua file yang sudah ada di Storage (hanya membaca Storage, tidak memanggil API
 """
 import logging
 import sys
-from datetime import datetime, timezone
+from datetime import datetime
 
 import pandas as pd
 
@@ -26,7 +26,7 @@ ON CONFLICT (sumber, granularitas, bulan, parameter) DO UPDATE SET jumlah_baris 
 
 def simpan(conn, spec: TableSpec, ym: str, df: pd.DataFrame) -> None:
     """df harus isi lengkap file bulan ym (sesudah digabung), bukan hanya data yang baru ditambahkan."""
-    waktu = pd.to_datetime(df["waktu_utc"], utc=True)
+    waktu = pd.to_datetime(df["waktu"], utc=True)
     rows = []
     for col in spec.value_cols:
         terisi = waktu[df[col].notna()]
@@ -41,7 +41,7 @@ def simpan(conn, spec: TableSpec, ym: str, df: pd.DataFrame) -> None:
 def main() -> int:
     config.setup_logging()
     client = storage.SupabaseStorageClient()
-    months = pd.period_range(config.START_DATE, datetime.now(timezone.utc).date(), freq="M").strftime("%Y-%m")
+    months = pd.period_range(config.START_DATE, datetime.now(config.WIB).date(), freq="M").strftime("%Y-%m")
     files = 0
     with db.connect() as conn:
         db.prepare(conn)

@@ -1,6 +1,7 @@
 """Lapis dingin data hourly 153 kelurahan: Parquet bulanan di Supabase Storage, dengan salinan staging di _work/parquet_staging/.
 
-Path objek {sumber}/{granularitas}/{YYYY}/{YYYY-MM}.parquet, kompresi zstd, nilai float32,
+Path objek {sumber}/{granularitas}/{YYYY}/{YYYY-MM}.parquet (bulan WIB), kolom waktu bertipe timestamp Asia/Jakarta,
+kompresi zstd, nilai float32,
 baris terurut (kelurahan_id, waktu). Batas 50 MB per file mengikuti batas unggah Supabase gratis."""
 import io
 import logging
@@ -29,7 +30,7 @@ def local_staging_path(source: str, granularity: str, ym: str) -> Path:
 
 
 def month_key(df: pd.DataFrame, spec: TableSpec) -> pd.Series:
-    return pd.to_datetime(df["waktu_utc"], utc=True).dt.strftime("%Y-%m")
+    return pd.to_datetime(df["waktu"], utc=True).dt.tz_convert(config.LOCAL_TZ).dt.strftime("%Y-%m")
 
 
 def normalize_for_parquet(df: pd.DataFrame, spec: TableSpec) -> pd.DataFrame:
@@ -39,7 +40,7 @@ def normalize_for_parquet(df: pd.DataFrame, spec: TableSpec) -> pd.DataFrame:
     else:
         out = transform.coalesce_dupes(transform.drop_all_null(df[cols].copy(), spec), spec)
     out["kelurahan_id"] = out["kelurahan_id"].astype("int32")
-    out["waktu_utc"] = pd.to_datetime(out["waktu_utc"], utc=True).dt.floor("us")
+    out["waktu"] = pd.to_datetime(out["waktu"], utc=True).dt.tz_convert(config.LOCAL_TZ).dt.floor("us")
     for c in spec.value_cols:
         out[c] = pd.to_numeric(out[c], errors="coerce").astype("float32")
     return out.sort_values(list(spec.key_cols), kind="mergesort").reset_index(drop=True)
@@ -54,7 +55,7 @@ def merge_coalesce_frames(existing_df: pd.DataFrame | None, new_df: pd.DataFrame
 def dataframe_to_parquet_bytes(df: pd.DataFrame, spec: TableSpec) -> tuple[bytes, pd.DataFrame]:
     norm = normalize_for_parquet(df, spec)
     schema = pa.schema([pa.field("kelurahan_id", pa.int32(), nullable=False),
-                        pa.field("waktu_utc", pa.timestamp("us", tz="UTC"), nullable=False),
+                        pa.field("waktu", pa.timestamp("us", tz=config.LOCAL_TZ), nullable=False),
                         *[pa.field(c, pa.float32()) for c in spec.value_cols]])
     buf = io.BytesIO()
     pq.write_table(pa.Table.from_pandas(norm, schema=schema, preserve_index=False), buf, compression="zstd")
@@ -66,7 +67,7 @@ def dataframe_to_parquet_bytes(df: pd.DataFrame, spec: TableSpec) -> tuple[bytes
 
 def parquet_bytes_to_dataframe(data: bytes, spec: TableSpec) -> pd.DataFrame:
     df = pq.read_table(io.BytesIO(data)).to_pandas()
-    df["waktu_utc"] = pd.to_datetime(df["waktu_utc"], utc=True)
+    df["waktu"] = pd.to_datetime(df["waktu"], utc=True).dt.tz_convert(config.LOCAL_TZ)
     return df
 
 

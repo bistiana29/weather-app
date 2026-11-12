@@ -1,16 +1,19 @@
 """Data daily NASA POWER dan Open-Meteo di titik stasiun BMKG, untuk dibandingkan dengan observasi harian BMKG.
 Hanya disimpan di Postgres dan tidak dijadwalkan. Aman dijalankan berulang (upsert COALESCE):
 
-    python -m pipeline.stasiun [--start-date 2022-01-01]
+    python -m pipeline.stasiun [--start-date 2024-06-14] [--end-date 2026-06-15]
+
+Rentang default mengikuti data observasi BMKG (15 Jun 2024 sampai 14 Jun 2026), ditambah 1 hari di tiap ujung
+untuk menguji pergeseran hari.
 """
 import argparse
 import logging
 import sys
-from datetime import date, datetime, timezone
+from datetime import date
 
 import pandas as pd
 
-from . import api, backfill, config, db, params
+from . import api, config, db, params
 
 logger = logging.getLogger(__name__)
 
@@ -47,10 +50,9 @@ def run(conn, spec: params.TableSpec, stasiun: pd.DataFrame, start: date, end: d
     try:
         frames, elevations = [], {}
         for r in stasiun.itertuples(index=False):
-            for s, e in backfill.yearly_slices(start, end):
-                df, elevation = api.fetch_daily_stasiun(spec, int(r.id_wmo), float(r.latitude), float(r.longitude), s, e)
-                frames.append(df)
-                elevations[int(r.id_wmo)] = elevation
+            df, elevation = api.fetch_daily_stasiun(spec, int(r.id_wmo), float(r.latitude), float(r.longitude), start, end)
+            frames.append(df)
+            elevations[int(r.id_wmo)] = elevation
         combined = pd.concat([f for f in frames if not f.empty], ignore_index=True)
         stats = db.upsert(conn, spec, combined)
         with conn.cursor() as cur:
@@ -70,10 +72,11 @@ def run(conn, spec: params.TableSpec, stasiun: pd.DataFrame, start: date, end: d
 def main(argv: list[str] | None = None) -> int:
     config.setup_logging()
     p = argparse.ArgumentParser(description="Data daily NASA POWER dan Open-Meteo di titik stasiun BMKG")
-    p.add_argument("--start-date", type=str, default=config.START_DATE.isoformat())
+    p.add_argument("--start-date", type=str, default=config.STASIUN_START.isoformat())
+    p.add_argument("--end-date", type=str, default=config.STASIUN_END.isoformat())
     args = p.parse_args(argv)
 
-    start, end = date.fromisoformat(args.start_date), datetime.now(timezone.utc).date()
+    start, end = date.fromisoformat(args.start_date), date.fromisoformat(args.end_date)
     stasiun = load_stasiun_csv()
     ok = True
     with db.connect() as conn:

@@ -24,7 +24,7 @@ class TableSpec:
 
     @property
     def time_col(self) -> str:
-        return "waktu_utc" if self.granularity == "hourly" else "tanggal"
+        return "waktu" if self.granularity == "hourly" else "tanggal"
 
     @property
     def key_cols(self) -> tuple[str, str]:

@@ -1,10 +1,10 @@
 """Membaca data untuk pemodelan dan validasi.
 
     from pipeline import load_dataset, load_stasiun
-    df = load_dataset("nasa", "2022-01-01", "2026-11-01", mature_only=True)   # hourly 153 kelurahan
+    df = load_dataset("nasa", "2022-01-01", "2026-11-01", mature_only=True)   # hourly 153 kelurahan, waktu WIB
     st = load_stasiun("openmeteo", "2022-01-01")                              # daily titik stasiun BMKG
 """
-from datetime import date, datetime, time as dtime, timezone
+from datetime import date, datetime, time as dtime
 
 import pandas as pd
 from psycopg import sql
@@ -15,15 +15,16 @@ from .params import TableSpec
 I, L, S = sql.Identifier, sql.Literal, sql.SQL
 
 
-def _to_utc_ts(val: str | date | datetime, end_of_day: bool) -> pd.Timestamp:
+def _to_wib_ts(val: str | date | datetime, end_of_day: bool) -> pd.Timestamp:
+    """Nilai tanpa zona waktu dianggap WIB."""
     if isinstance(val, date) and not isinstance(val, datetime):
-        return pd.Timestamp(datetime.combine(val, dtime.max if end_of_day else dtime.min, tzinfo=timezone.utc))
+        return pd.Timestamp(datetime.combine(val, dtime.max if end_of_day else dtime.min, tzinfo=config.WIB))
     ts = pd.Timestamp(val)
     if ts.tzinfo is not None:
-        return ts.tz_convert("UTC")
+        return ts.tz_convert(config.LOCAL_TZ)
     if end_of_day and len(str(val).strip()) <= 10:
         ts += pd.Timedelta(hours=23, minutes=59, seconds=59)
-    return ts.tz_localize("UTC")
+    return ts.tz_localize(config.LOCAL_TZ)
 
 
 def _filter_frame_range(df: pd.DataFrame, start_bound, end_bound, kelurahan_ids: list[int] | None = None) -> pd.DataFrame:
@@ -31,7 +32,7 @@ def _filter_frame_range(df: pd.DataFrame, start_bound, end_bound, kelurahan_ids:
         return df
     if kelurahan_ids:
         df = df[df["kelurahan_id"].isin(kelurahan_ids)]
-    t = pd.to_datetime(df["waktu_utc"], utc=True)
+    t = pd.to_datetime(df["waktu"], utc=True)
     return df[(t >= start_bound) & (t <= end_bound)].reset_index(drop=True)
 
 
@@ -57,15 +58,15 @@ def _read_hot_postgres(spec: TableSpec, start_bound, end_bound, kelurahan_ids: l
 def load_dataset(sumber: str, mulai: str | date | datetime, akhir: str | date | datetime,
                  mature_only: bool = False, kelurahan_ids: list[int] | None = None) -> pd.DataFrame:
     """Data hourly 153 kelurahan: gabungan Parquet bulanan dan Postgres dengan aturan COALESCE
-    (nilai Postgres menang jika non-NULL).
+    (nilai Postgres menang jika non-NULL). mulai/akhir tanpa zona dianggap WIB; kolom waktu dikembalikan dalam WIB.
 
     mature_only=True hanya mengembalikan data yang lebih tua dari MATURE_DAYS (120 hari), yaitu data yang
     tidak akan direvisi lagi oleh sumber.
     """
     spec = params.get_spec(sumber.lower().strip())
-    start_bound, end_bound = _to_utc_ts(mulai, end_of_day=False), _to_utc_ts(akhir, end_of_day=True)
+    start_bound, end_bound = _to_wib_ts(mulai, end_of_day=False), _to_wib_ts(akhir, end_of_day=True)
     if mature_only:
-        end_bound = min(end_bound, pd.Timestamp.now(tz="UTC") - pd.Timedelta(days=config.MATURE_DAYS))
+        end_bound = min(end_bound, pd.Timestamp.now(tz=config.LOCAL_TZ) - pd.Timedelta(days=config.MATURE_DAYS))
     if start_bound > end_bound:
         return storage.normalize_for_parquet(pd.DataFrame(columns=[*spec.key_cols, *spec.value_cols]), spec)
 
@@ -77,7 +78,8 @@ def load_dataset(sumber: str, mulai: str | date | datetime, akhir: str | date | 
 
 
 def load_stasiun(sumber: str, mulai: str | date | None = None, akhir: str | date | None = None) -> pd.DataFrame:
-    """Data daily titik stasiun BMKG dari Postgres, dengan kolom id_wmo, nama_stasiun, tanggal, lalu nilai parameter."""
+    """Data daily titik stasiun BMKG dari Postgres, dengan kolom id_wmo, nama_stasiun, tanggal, lalu nilai parameter.
+    tanggal adalah tanggal lokal sumber (LST untuk NASA, WIB untuk Open-Meteo), tanpa jam."""
     spec = params.get_spec(sumber.lower().strip(), "daily")
     # Tanggal lewat sql.Literal, bukan parameter %s, karena nama kolom seperti "RH2M (%)" mengandung tanda %.
     where = S("TRUE")

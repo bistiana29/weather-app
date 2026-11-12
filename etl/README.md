@@ -27,10 +27,17 @@ Setiap nama kolom nilai memuat satuannya, misalnya `"T2M (°C)"`.
 
 | Tabel | Kunci | Waktu | Isi |
 |---|---|---|---|
-| `nasa_hourly` | `kelurahan_id`, `waktu_utc` | UTC, jam awal periode | hourly 153 kelurahan |
-| `openmeteo_hourly` | `kelurahan_id`, `waktu_utc` | UTC, jam awal periode | hourly 153 kelurahan |
+| `nasa_hourly` | `kelurahan_id`, `waktu` | jam awal periode, WIB | hourly 153 kelurahan |
+| `openmeteo_hourly` | `kelurahan_id`, `waktu` | jam awal periode, WIB | hourly 153 kelurahan |
 | `nasa_daily_stasiun` | `id_wmo`, `tanggal` | LST (waktu matahari lokal) | daily 3 stasiun BMKG |
 | `openmeteo_daily_stasiun` | `id_wmo`, `tanggal` | WIB (Asia/Jakarta) | daily 3 stasiun BMKG |
+
+**Zona waktu: semua waktu ditampilkan dalam WIB (Asia/Jakarta, +07).**
+- **Postgres:** kolom waktu bertipe `timestamptz`, yang menyimpan titik waktu yang pasti. Zona default database `postgres`, role `postgres`, dan setiap koneksi pipeline diatur ke Asia/Jakarta, sehingga hasil query dan view tampil dengan `+07`. Koneksi lewat Session pooler Supabase bisa memakai ulang koneksi server lama yang masih UTC sampai koneksi itu diganti; jika di SQL Editor masih tampil `+00`, jalankan `SET TIME ZONE 'Asia/Jakarta';`.
+- **Parquet:** kolom `waktu` disimpan sebagai timestamp berzona Asia/Jakarta, dan file dikelompokkan per bulan WIB.
+- **API:** NASA hourly tetap diminta dengan `time-standard=UTC` dan Open-Meteo hourly dengan `timezone=GMT`; keduanya dikonversi ke WIB di `transform.py`. LST tidak dipakai untuk hourly karena LST sekitar UTC+7,5 jam, bukan WIB.
+- **Aturan waktu:** batas 130 hari, "jam masa depan tidak disimpan", lookback, dan rotasi deep_refresh dihitung dalam WIB.
+- **Pengecualian:** jadwal cron GitHub Actions tetap ditulis dalam UTC, karena begitu aturan GitHub. Penghitung kuota harian Open-Meteo juga mengikuti hari UTC, karena kuotanya direset pukul 00:00 UTC.
 
 Tabel pendukung:
 - `kelurahan` dan `stasiun_bmkg`: daftar lokasi.
@@ -51,8 +58,8 @@ Data hourly diambil otomatis oleh GitHub Actions, yaitu layanan GitHub yang menj
 
 - **Lookback** adalah rentang hari ke belakang yang diambil ulang setiap kali job berjalan.
 - **Menit jadwal tidak di :00.** Antrean GitHub paling padat pada awal jam, jadi menit jadwal sengaja digeser. Jadwal GitHub memang bisa terlambat beberapa menit, dan itu aman karena ada lookback.
-- **Open-Meteo hourly diambil tiap 3 jam** (jam UTC 00, 03, 06, ... atau 07, 10, 13, ... WIB) untuk menghemat kuota, sedangkan NASA diambil tiap jam. Jam yang terlewat, baik karena jadwal 3 jam maupun run yang gagal, tetap terisi karena setiap run mengambil ulang 7 hari terakhir.
-- **deep_refresh** memilih kelurahan dengan `kelurahan_id % 7 == tanggal.toordinal() % 7`, sehingga seluruh 153 kelurahan tersegarkan sekali dalam 7 hari. `toordinal()` adalah nomor urut hari sejak tahun 1, jadi rotasinya tidak rusak saat pergantian tahun.
+- **Open-Meteo hourly diambil tiap 3 jam** (pukul 07, 10, 13, 16, 19, 22, 01, 04 WIB, yaitu jam UTC 00, 03, 06, ...) untuk menghemat kuota, sedangkan NASA diambil tiap jam. Jam yang terlewat, baik karena jadwal 3 jam maupun run yang gagal, tetap terisi karena setiap run mengambil ulang 7 hari terakhir.
+- **deep_refresh** memilih kelurahan dengan `kelurahan_id % 7 == tanggal.toordinal() % 7` (tanggal WIB), sehingga seluruh 153 kelurahan tersegarkan sekali dalam 7 hari. `toordinal()` adalah nomor urut hari sejak tahun 1, jadi rotasinya tidak rusak saat pergantian tahun.
 - **Concurrency**: setiap workflow punya grup sendiri dengan `cancel-in-progress: false`. Jika run sebelumnya belum selesai, run baru menunggu, bukan berjalan bersamaan. GitHub hanya menyimpan satu run yang menunggu; run menunggu yang lebih lama dibatalkan.
 - **Jalan manual**: semua workflow bisa dijalankan dari tab Actions lewat tombol "Run workflow" (`workflow_dispatch`).
 - **Saklar jadwal `SCHEDULE_ENABLED`**: jadwal hanya berjalan jika repository variable `SCHEDULE_ENABLED` bernilai `true`. Repository variable adalah pengaturan teks di GitHub, bukan rahasia. Selama belum diisi, run terjadwal tampil sebagai *skipped*, tetapi jalan manual tetap bisa. Isi variabel ini setelah backfill selesai (lihat bagian Backfill).
@@ -68,61 +75,69 @@ Kuota gratis Open-Meteo 10.000 bobot panggilan per hari. Pipeline membatasi diri
 | `hourly`: 8 run × 153 kelurahan × 2 panggilan (archive dan visibility) | 2.448 per hari |
 | `deep_refresh`: sekitar 22 kelurahan × 7 | 153 per hari |
 | **Total jadwal otomatis** | **sekitar 2.600 per hari** |
-| Backfill hourly 2022 sampai sekarang, sekali | sekitar 15.500 |
-| `pipeline.stasiun`, setiap kali dijalankan | sekitar 343 |
+| Backfill hourly 2022-01-01 s.d. 2026-11-11 WIB, sekali | 15.571 |
+| `pipeline.stasiun` (rentang default), setiap kali dijalankan | sekitar 141 |
 
 ## Backfill
 
-Backfill adalah pengisian data hourly lama, dari 2022-01-01 sampai hari ini, untuk 153 kelurahan. Proses ini dijalankan manual di laptop, bukan di GitHub, karena butuh lebih dari satu hari. Sebagai pembanding, satu job GitHub Actions dibatasi 6 jam.
+Backfill adalah pengisian data hourly lama untuk 153 kelurahan, dengan rentang tetap **2022-01-01 00:00 WIB sampai 2026-11-11 23:00 WIB** (inklusif; `config.BACKFILL_END`). Proses ini dijalankan manual di laptop, bukan di GitHub, karena butuh lebih dari satu hari; satu job GitHub Actions dibatasi 6 jam.
 
-**Selesaikan backfill dulu, baru aktifkan jadwal.** Backfill dan jadwal otomatis memakai kuota Open-Meteo yang sama. Penghitung kuota hanya lokal: laptop menyimpannya di `_work/openmeteo_budget.json`, sedangkan server GitHub selalu mulai dari nol. Karena keduanya tidak saling tahu, jika berjalan bersamaan totalnya bisa melewati batas asli Open-Meteo. Akibatnya Open-Meteo menolak dengan HTTP 429 dan keduanya sering berhenti. Data tidak rusak, tetapi prosesnya menjadi lebih lama.
+Isinya NASA POWER, Open-Meteo archive, dan visibility (Historical Forecast API). Pembagian penyimpanannya:
+- **Data sebelum batas 130 hari** (dihitung saat backfill berjalan, 00:00 WIB) langsung masuk Parquet.
+- **Data 130 hari terakhir** masuk Postgres.
+
+**Selesaikan backfill dulu, baru aktifkan jadwal.** Backfill dan jadwal otomatis memakai kuota Open-Meteo yang sama, padahal penghitung kuotanya hanya lokal. Laptop menyimpannya di `_work/openmeteo_budget.json`, sedangkan server GitHub selalu mulai dari nol, jadi keduanya tidak saling tahu. Kalau berjalan bersamaan, totalnya bisa melewati batas asli Open-Meteo. Akibatnya Open-Meteo menolak dengan HTTP 429 dan keduanya sering berhenti. Data tidak rusak, tetapi prosesnya menjadi lebih lama.
 
 ### Menjalankan
 
-Lihat dulu perkiraannya, lalu jalankan backfill dari folder `etl` dengan venv aktif:
+Lihat dulu perkiraannya. `--estimate-only` juga menghitung potongan yang sudah selesai dari `ingestion_log`, tanpa memanggil API.
 
 ```bash
-python -m pipeline.backfill --estimate-only
-systemd-inhibit --what=sleep:shutdown:handle-lid-switch --why="backfill" python -m pipeline.backfill
+cd ~/Documents/KULIAH/PA/weather-app/etl
+.venv/bin/python -m pipeline.backfill --estimate-only
+setsid -f systemd-inhibit --what=sleep:shutdown --why="backfill" .venv/bin/python -m pipeline.backfill > _work/backfill.log 2>&1
 ```
 
-- **`systemd-inhibit`** mencegah laptop sleep (`sleep`) atau dimatikan (`shutdown`) selama backfill berjalan.
-- **`handle-lid-switch`** ditambahkan karena di systemd, menutup lid tetap membuat laptop sleep walaupun `sleep` dihalangi.
-- **Terminal harus tetap terbuka.** Perintah ini berjalan di depan; menutup terminal atau VS Code ikut menghentikan backfill.
+- **`systemd-inhibit --what=sleep:shutdown`** mencegah laptop sleep atau dimatikan selama backfill berjalan. Menutup lid tetap membuat laptop sleep (aturan default systemd). Jika lid akan ditutup, pakai `--what=sleep:shutdown:handle-lid-switch`.
+- **`setsid -f`** menjalankan backfill lepas dari terminal, sehingga tetap berjalan walaupun terminal atau VS Code ditutup. `nohup` tidak cukup, karena `systemd-inhibit` mengembalikan sinyal HUP ke default.
+- **`> _work/backfill.log 2>&1`** menyimpan semua output ke log. `_work/` tidak masuk Git.
 
-Jika ingin bisa menutup terminal, jalankan di latar belakang dengan `setsid -f` dan simpan output ke log:
+Memantau dan menghentikan:
 
 ```bash
-setsid -f systemd-inhibit --what=sleep:shutdown:handle-lid-switch --why="backfill" .venv/bin/python -m pipeline.backfill > _work/backfill.log 2>&1
-tail -f _work/backfill.log             # progres; Ctrl+C hanya menutup tampilan
+tail -f _work/backfill.log             # progres langsung; Ctrl+C hanya menutup tampilan
 pgrep -af "pipeline.backfill"          # tidak ada output = sudah berhenti
-pkill -INT -f "pipeline.backfill"      # menghentikan dengan aman; kirim sekali, lalu tunggu
+grep -c "\[backfill\]" _work/backfill.log   # jumlah potongan yang selesai pada run ini
+pkill -INT -f "pipeline.backfill"      # menghentikan dengan aman; kirim sekali, lalu tunggu sampai pgrep kosong
 ```
 
-`nohup` tidak cukup untuk ini, karena `systemd-inhibit` mengembalikan sinyal HUP ke default untuk proses yang dijalankannya.
-
-Backfill aman dihentikan di tengah jalan, misalnya dengan `Ctrl+C`. Potongan (sumber, tahun, kelurahan) yang sudah sukses tercatat di `ingestion_log` dan dilewati pada run berikutnya. File Parquet yang belum sempat terunggah juga diunggah otomatis di awal run berikutnya.
+Backfill aman dihentikan di tengah jalan. Potongan (sumber, tahun WIB, kelurahan) yang sudah sukses tercatat di `ingestion_log` dan dilewati pada run berikutnya. File Parquet yang belum sempat terunggah juga diunggah otomatis di awal run berikutnya. Untuk melanjutkan, jalankan lagi perintah `setsid -f ...` yang sama; log lama akan tertimpa.
 
 ### Saat backfill berhenti sendiri
 
-Lihat pesan terakhirnya, misalnya dengan `grep -E "Kuota|429|Traceback|Backfill selesai" _work/backfill.log | tail -3`:
+Lihat pesan terakhirnya dengan `grep -E "Kuota|429|Traceback|Backfill selesai" _work/backfill.log | tail -3`:
 
 | Pesan terakhir | Yang dilakukan |
 |---|---|
 | `Kuota per jam Open-Meteo penuh` | Tunggu 1 jam, lalu jalankan lagi |
-| `Kuota harian Open-Meteo penuh` | Jalankan lagi besok setelah pukul 07:00 WIB (kuota harian direset pukul 00:00 UTC) |
+| `Kuota harian Open-Meteo penuh` | Jalankan lagi setelah pukul 07:00 WIB (kuota harian direset pukul 00:00 UTC) |
 | `HTTP 429` | Tunggu 1 jam, lalu jalankan lagi |
 | `Traceback` | Ada error; simpan log dan periksa sebelum melanjutkan |
 | `Potongan baru diproses: 0` | Backfill selesai |
 
 ### Perkiraan durasi
 
-Totalnya **sekitar 2 hari**: 765 request NASA dan 1.530 panggilan Open-Meteo (bobot sekitar 15.500, atau 1,73 hari kuota).
+Total kebutuhan: 1.530 potongan, 918 request NASA, dan 1.530 panggilan Open-Meteo dengan bobot 15.571, setara 1,73 hari kuota.
 
-1. **Hari pertama:** NASA dikerjakan lebih dulu (beberapa jam), lalu Open-Meteo sampai kuota per jam habis (4.500). Satu jam kemudian, run kedua berjalan sampai kuota harian habis (9.000).
-2. **Hari kedua:** dua run lagi untuk sisa bobot sekitar 6.500.
+1. **NASA lebih dulu**, sekitar 1 jam (sekitar 3 detik per request ditambah jeda).
+2. **Open-Meteo sampai kuota per jam habis** (4.500). Satu jam kemudian, run kedua berjalan sampai kuota harian habis (9.000).
+3. **Hari berikutnya setelah 07:00 WIB**, dua run lagi untuk sisa bobot sekitar 6.600.
+
+Total sekitar 2 hari kalender, dengan sekitar 4 kali menjalankan perintah dan sekitar 4–5 jam waktu berjalan.
 
 ### Mengaktifkan jadwal otomatis
+
+Jadwal harus dinyalakan **setelah backfill selesai, dan paling lambat 2026-11-18**, yaitu 7 hari setelah batas akhir backfill (2026-11-11 23:00 WIB). Lookback job hourly hanya 7 hari. Kalau jadwal baru menyala sesudah tanggal itu, jam setelah batas akhir backfill tidak terjangkau lagi dan akan ada celah data. Celah sampai 120 hari masih tertutup perlahan oleh deep_refresh, tetapi perlu 7 hari per putaran.
 
 Lakukan hanya setelah backfill menampilkan `Potongan baru diproses: 0`. Mulai saat ini, jangan menjalankan backfill di laptop lagi.
 
@@ -143,11 +158,13 @@ Setelah itu buka `status_pengambilan_data` di Supabase. Pastikan `run_sukses_ter
 
 Aturan nilainya sama dengan data hourly: -999/NaN menjadi NULL, dan upsert memakai COALESCE.
 
-**Perintah**: `python -m pipeline.stasiun [--start-date 2022-01-01]` mengambil data dari tanggal mulai sampai tanggal terbaru yang tersedia, dipotong per tahun. Perintah ini **tidak dijadwalkan**. Jalankan manual kapan saja untuk memperbarui datanya; aman diulang karena memakai upsert. Satu run memakai 15 request NASA dan bobot Open-Meteo sekitar 343, memakai penghitung kuota yang sama, dan dicatat di `ingestion_log` sebagai job `stasiun`. Membacanya:
+**Rentang**: default **2024-06-14 sampai 2026-06-15**, sama untuk ketiga stasiun. Ini rentang data observasi BMKG (15 Jun 2024–14 Jun 2026), ditambah 1 hari di tiap ujung untuk menguji pergeseran hari. Rentang bisa diganti dengan `--start-date` dan `--end-date`.
+
+**Perintah**: `python -m pipeline.stasiun [--start-date 2024-06-14] [--end-date 2026-06-15]`, dengan satu request per stasiun per sumber. Perintah ini **tidak dijadwalkan**. Jalankan manual kapan saja untuk memperbarui datanya; aman diulang karena memakai upsert. Satu run memakai 3 request NASA dan bobot Open-Meteo sekitar 141, memakai penghitung kuota yang sama, dan dicatat di `ingestion_log` sebagai job `stasiun`. Membacanya:
 
 ```python
 from pipeline import load_stasiun
-df = load_stasiun("nasa", mulai="2022-01-01")   # kolom: id_wmo, nama_stasiun, tanggal, lalu parameter
+df = load_stasiun("nasa", mulai="2024-06-15", akhir="2026-06-14")   # kolom: id_wmo, nama_stasiun, tanggal, lalu parameter
 ```
 
 **Konvensi waktu**, dicatat dari respons API:
@@ -162,7 +179,7 @@ Penyesuaian dengan definisi hari BMKG dilakukan di tahap analisis, bukan di ETL.
 
 **Catatan untuk analisis**:
 - **NASA:** Perak I dan Maritim Tanjung Perak jatuh di sel grid yang sama, jadi nilainya identik 100% untuk semua parameter.
-- **Open-Meteo:** angin, hujan, dan sunshine identik 100%, dan kelembapan 98,8%. Suhunya berbeda karena Open-Meteo menyesuaikan suhu dengan elevasi titik (5 m dan 6 m): hanya 1–7% hari yang nilainya sama persis.
+- **Open-Meteo:** angin, hujan, dan sunshine identik 100%, dan kelembapan 98,6% (rentang 2024-06-14 s.d. 2026-06-15). Suhunya berbeda karena Open-Meteo menyesuaikan suhu dengan elevasi titik (5 m dan 6 m): hanya 1–7% hari yang nilainya sama persis.
 
 ## Memantau pipeline
 
@@ -198,7 +215,7 @@ Agar baris di sekitar batas 130 hari tidak terhitung dua kali, baris Postgres ya
 ## Penanganan missing value
 
 - **-999 dan NaN menjadi NULL.** NASA memakai -999 sebagai tanda "tidak ada data", dan Open-Meteo mengirim `null`. Keduanya disimpan sebagai NULL. Baris yang semua nilainya NULL tidak disimpan.
-- **Upsert COALESCE.** Upsert berarti menambah baris baru atau memperbarui baris yang kuncinya sudah ada. COALESCE berarti memakai nilai baru jika tidak NULL, dan mempertahankan nilai lama jika nilai baru NULL. Jadi NULL tidak pernah menimpa data yang sudah ada. Contoh untuk kelurahan 1, 2026-11-08 00:00 UTC:
+- **Upsert COALESCE.** Upsert berarti menambah baris baru atau memperbarui baris yang kuncinya sudah ada. COALESCE berarti memakai nilai baru jika tidak NULL, dan mempertahankan nilai lama jika nilai baru NULL. Jadi NULL tidak pernah menimpa data yang sudah ada. Contoh untuk kelurahan 1, 2026-11-08 07:00 WIB:
 
   | | `temperature_2m (°C)` | `visibility (m)` |
   |---|---|---|
@@ -207,12 +224,12 @@ Agar baris di sekitar batas 130 hari tidak terhitung dua kali, baris Postgres ya
   | Sesudah upsert | 28.0 | 10000.0 |
 
 - **Lookback 7 hari dan penyegaran 120 hari.** Sumber sering mengirim nilai terlambat atau merevisinya. Lookback 7 hari mengisi NULL dari beberapa hari terakhir, dan deep_refresh mengambil ulang 120 hari untuk menangkap revisi yang lebih lambat.
-- **Waktu masa depan tidak disimpan.** Yang dibuang: baris hourly setelah jam UTC yang sedang berjalan, dan baris daily stasiun untuk hari ini (WIB) dan sesudahnya. Dengan begitu angka prakiraan tidak pernah tercampur dengan data pengamatan.
+- **Waktu masa depan tidak disimpan.** Yang dibuang: baris hourly setelah jam WIB yang sedang berjalan, dan baris daily stasiun untuk hari ini (WIB) dan sesudahnya. Dengan begitu angka prakiraan tidak pernah tercampur dengan data pengamatan.
 - **`fetched_at` dan `mature_only`.** `fetched_at` hanya berubah jika baris menerima nilai non-NULL baru yang berbeda, jadi kolom ini menunjukkan kapan data terakhir berubah. Data yang lebih tua dari 120 hari dianggap matang, karena tidak akan direvisi lagi. Untuk melatih model, pakai `mature_only=True`:
 
   ```python
   from pipeline import load_dataset
-  df = load_dataset("nasa", "2022-01-01", "2026-11-01", mature_only=True)   # hourly 153 kelurahan
+  df = load_dataset("nasa", "2022-01-01", "2026-11-01", mature_only=True)   # hourly 153 kelurahan; tanggal dan kolom waktu dalam WIB
   ```
 
 - **`visibility` bisa NULL.** Kolom ini diambil dari Historical Forecast API, terpisah dari variabel lain. Jika panggilan itu gagal, baris tetap disimpan dengan `visibility` NULL, lalu diisi oleh run berikutnya lewat COALESCE.
@@ -225,7 +242,7 @@ Agar baris di sekitar batas 130 hari tidak terhitung dua kali, baris Postgres ya
 | `pipeline/config.py` | path, variabel dari `.env`, dan konstanta (batas kuota, 130/120 hari) |
 | `pipeline/params.py` | daftar parameter dan nama kolom bersatuan untuk tiap tabel |
 | `pipeline/api.py` | memanggil NASA POWER dan Open-Meteo: retry, jeda, penghitung kuota, berhenti saat HTTP 429 |
-| `pipeline/transform.py` | mengubah JSON API menjadi tabel: -999/NaN ke NULL, waktu ke UTC, buang waktu masa depan |
+| `pipeline/transform.py` | mengubah JSON API menjadi tabel: -999/NaN ke NULL, waktu ke WIB, buang waktu masa depan |
 | `pipeline/db.py` | koneksi Postgres, menjalankan `schema.sql`, daftar kelurahan, upsert COALESCE, `ingestion_log` |
 | `pipeline/storage.py` | membaca dan menulis Parquet bulanan di Supabase Storage dan `_work/parquet_staging/` |
 | `pipeline/ingest.py` | job `hourly` dan `deep_refresh` |
@@ -252,6 +269,6 @@ source .venv/bin/activate              # fish: source .venv/bin/activate.fish
 python -m pipeline.ingest hourly       # atau deep_refresh; opsi --lookback-days, --kelurahan-ids
 python -m pipeline.compact
 python -m pipeline.backfill            # opsi --estimate-only, --start-date, --kelurahan-ids (lihat bagian Backfill)
-python -m pipeline.stasiun             # daily titik stasiun BMKG; opsi --start-date
+python -m pipeline.stasiun             # daily titik stasiun BMKG; opsi --start-date, --end-date
 python -m pipeline.ringkasan           # isi ulang ringkasan_arsip dari Parquet yang ada di Storage
 ```

@@ -1,5 +1,6 @@
-"""Backfill lokal data hourly 153 kelurahan dari 2022-01-01 sampai hari ini. Bisa dihentikan dan dilanjutkan kapan
-saja: setiap potongan (sumber, tahun, kelurahan) yang sukses dicatat di ingestion_log dan dilewati pada run berikutnya.
+"""Backfill lokal data hourly 153 kelurahan, dari 2022-01-01 00:00 WIB sampai config.BACKFILL_END (2026-11-11 23:00 WIB).
+Bisa dihentikan dan dilanjutkan kapan saja: setiap potongan (sumber, tahun WIB, kelurahan) yang sukses dicatat di
+ingestion_log dan dilewati pada run berikutnya.
 
     python -m pipeline.backfill --estimate-only
     python -m pipeline.backfill [--start-date 2022-01-01] [--kelurahan-ids 1,2]
@@ -8,7 +9,7 @@ import argparse
 import itertools
 import logging
 import sys
-from datetime import date, datetime, time as dtime, timedelta, timezone
+from datetime import date, datetime, time as dtime, timedelta
 
 import pandas as pd
 
@@ -17,34 +18,55 @@ from .params import TableSpec
 
 logger = logging.getLogger(__name__)
 
-def yearly_slices(start: date, end: date) -> list[tuple[date, date]]:
-    slices = [(max(start, date(y, 1, 1)), min(end, date(y, 12, 31))) for y in range(start.year, end.year + 1)]
+
+def yearly_slices(start: datetime, end: datetime) -> list[tuple[datetime, datetime]]:
+    """Potongan per tahun WIB: 1 Jan 00:00 sampai 31 Des 23:00 WIB, dipangkas ke start..end."""
+    slices = [(max(start, datetime(y, 1, 1, 0, tzinfo=config.WIB)), min(end, datetime(y, 12, 31, 23, tzinfo=config.WIB)))
+              for y in range(start.year, end.year + 1)]
     return [(s, e) for s, e in slices if s <= e]
 
 
 def split_hot_cold(df: pd.DataFrame, spec: TableSpec, cutoff_date: date) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Baris sejak cutoff masuk Postgres (lapis panas); baris lebih tua langsung ke Parquet (lapis dingin)."""
+    """Baris sejak cutoff_date 00:00 WIB masuk Postgres (lapis panas); baris lebih tua langsung ke Parquet (lapis dingin)."""
     if df.empty:
         return df.copy(), df.copy()
-    is_hot = pd.to_datetime(df["waktu_utc"], utc=True) >= pd.Timestamp(
-        datetime.combine(cutoff_date, dtime.min, tzinfo=timezone.utc))
+    cutoff = pd.Timestamp(datetime.combine(cutoff_date, dtime.min, tzinfo=config.WIB))
+    is_hot = pd.to_datetime(df["waktu"], utc=True) >= cutoff
     return df[is_hot].reset_index(drop=True), df[~is_hot].reset_index(drop=True)
 
 
-def estimate_backfill(kel_count: int, slices: list[tuple[date, date]]) -> dict[str, float]:
-    variable_counts = [len(params.OPENMETEO_HOURLY.params_for("default")),
-                       len(params.OPENMETEO_HOURLY.params_for("historical_forecast"))]
-    weight_per_kel = sum(api.call_weight(1, (e - s).days + 1, n) for s, e in slices for n in variable_counts)
-    total_weight = weight_per_kel * kel_count
-    return {
-        "kelurahan_count": kel_count,
-        "year_slices": len(slices),
-        "om_calls": kel_count * len(slices) * len(variable_counts),
-        "om_total_weight": total_weight,
-        "om_daily_budget": config.OPENMETEO_LIMIT_DAY,
-        "om_estimated_days": total_weight / config.OPENMETEO_LIMIT_DAY,
-        "nasa_total_requests": kel_count * len(slices),
-    }
+def completed_chunks(conn) -> set[tuple[str, int, datetime, datetime]]:
+    with conn.cursor() as cur:
+        cur.execute("SELECT sumber, kelurahan_id, rentang_mulai, rentang_akhir FROM ingestion_log WHERE job = 'backfill' "
+                    "AND status = 'success' AND granularitas = 'hourly' AND tujuan = 'backfill_chunk'")
+        done = set(cur.fetchall())
+    conn.commit()
+    return done
+
+
+def estimate_backfill(kel_ids: list[int], slices: list[tuple[datetime, datetime]], done: set) -> dict:
+    """Jumlah panggilan dan bobot Open-Meteo untuk semua potongan dan untuk potongan yang belum selesai."""
+    n_vars = [len(params.OPENMETEO_HOURLY.params_for("default")), len(params.OPENMETEO_HOURLY.params_for("historical_forecast"))]
+    est = {"potongan": 0, "selesai": 0, "nasa_request": 0, "nasa_request_sisa": 0, "om_panggilan": 0,
+           "om_panggilan_sisa": 0, "om_bobot": 0.0, "om_bobot_sisa": 0.0}
+    for source, (s, e), kel_id in itertools.product(params.SOURCES, slices, kel_ids):
+        d0, d1 = api.utc_dates(s, e)
+        is_done = (source, kel_id, s, e) in done
+        est["potongan"] += 1
+        est["selesai"] += is_done
+        if source == "nasa":
+            n = len(api._date_chunks(d0, d1, api.NASA_MAX_DAYS_PER_HOURLY_REQUEST))
+            est["nasa_request"] += n
+            est["nasa_request_sisa"] += 0 if is_done else n
+        else:
+            w = sum(api.call_weight(1, (d1 - d0).days + 1, v) for v in n_vars)
+            est["om_panggilan"] += len(n_vars)
+            est["om_bobot"] += w
+            if not is_done:
+                est["om_panggilan_sisa"] += len(n_vars)
+                est["om_bobot_sisa"] += w
+    est["om_hari_kuota_sisa"] = est["om_bobot_sisa"] / config.OPENMETEO_LIMIT_DAY
+    return est
 
 
 def unflushed_months(conn) -> set[tuple[str, str, str]]:
@@ -84,24 +106,32 @@ def flush_dirty_months(conn, storage_client: storage.SupabaseStorageClient, dirt
 
 def main(argv: list[str] | None = None) -> int:
     config.setup_logging()
-    p = argparse.ArgumentParser(description="Backfill data hourly dari 2022-01-01 sampai hari ini (bisa dilanjutkan)")
-    p.add_argument("--start-date", type=str, default=config.START_DATE.isoformat())
+    p = argparse.ArgumentParser(description="Backfill data hourly 2022-01-01 00:00 WIB sampai 2026-11-11 23:00 WIB (bisa dilanjutkan)")
+    p.add_argument("--start-date", type=str, default=config.START_DATE.isoformat(), help="Tanggal mulai (WIB)")
     p.add_argument("--kelurahan-ids", type=str, default=None, help="Daftar kelurahan_id dipisah koma, mis. 1,2")
     p.add_argument("--estimate-only", action="store_true", help="Hanya tampilkan perkiraan kuota dan durasi")
     args = p.parse_args(argv)
 
-    today = datetime.now(timezone.utc).date()
-    cutoff_date = today - timedelta(days=config.HOT_DAYS)
+    cutoff_date = datetime.now(config.WIB).date() - timedelta(days=config.HOT_DAYS)
     kel_ids = [int(x) for x in args.kelurahan_ids.split(",") if x.strip()] if args.kelurahan_ids else None
     kel_df = db.load_kelurahan(kel_ids)
-    slices = yearly_slices(date.fromisoformat(args.start_date), today)
+    start = datetime.combine(date.fromisoformat(args.start_date), dtime.min, tzinfo=config.WIB)
+    slices = yearly_slices(start, config.BACKFILL_END)
 
-    est = estimate_backfill(len(kel_df), slices)
-    logger.info("Estimasi backfill (%d kelurahan x %d potongan tahun, cutoff lapis panas=%s): "
-                "Open-Meteo %d panggilan, total bobot=%.1f (~%.2f hari pada batas %d/hari), NASA %d request",
-                est["kelurahan_count"], est["year_slices"], cutoff_date, est["om_calls"], est["om_total_weight"],
-                est["om_estimated_days"], est["om_daily_budget"], est["nasa_total_requests"])
     if args.estimate_only:
+        with db.connect() as conn:
+            done = completed_chunks(conn)
+        est = estimate_backfill(kel_df["kelurahan_id"].tolist(), slices, done)
+        logger.info("Rentang %s s.d. %s WIB, %d kelurahan x %d potongan tahun x 2 sumber, cutoff lapis panas %s 00:00 WIB",
+                    start.strftime("%Y-%m-%d %H:%M"), config.BACKFILL_END.strftime("%Y-%m-%d %H:%M"), len(kel_df),
+                    len(slices), cutoff_date)
+        logger.info("Potongan: %d total, %d sudah selesai, %d tersisa", est["potongan"], est["selesai"],
+                    est["potongan"] - est["selesai"])
+        logger.info("NASA POWER: %d request (sisa %d)", est["nasa_request"], est["nasa_request_sisa"])
+        logger.info("Open-Meteo: %d panggilan, bobot %.1f (sisa %d panggilan, bobot %.1f = %.2f hari kuota %d/hari, "
+                    "minimal %.1f jam pada batas %d/jam)", est["om_panggilan"], est["om_bobot"], est["om_panggilan_sisa"],
+                    est["om_bobot_sisa"], est["om_hari_kuota_sisa"], config.OPENMETEO_LIMIT_DAY,
+                    est["om_bobot_sisa"] / config.OPENMETEO_LIMIT_HOUR, config.OPENMETEO_LIMIT_HOUR)
         return 0
 
     storage_client = storage.SupabaseStorageClient()
@@ -120,12 +150,11 @@ def main(argv: list[str] | None = None) -> int:
             for source, (s, e) in itertools.product(params.SOURCES, slices):
                 spec = params.get_spec(source)
                 granularity = spec.granularity
-                t_start, t_end = db.day_bounds(s, e)
                 for r in kel_df.itertuples(index=False):
                     kel_id = int(r.kelurahan_id)
-                    if db.checkpoint_done(conn, source, granularity, kel_id, t_start, t_end, "backfill_chunk"):
+                    if db.checkpoint_done(conn, source, granularity, kel_id, s, e, "backfill_chunk"):
                         continue
-                    log_id = db.log_start(conn, "backfill", source, granularity, kel_id, t_start, t_end, "backfill_chunk")
+                    log_id = db.log_start(conn, "backfill", source, granularity, kel_id, s, e, "backfill_chunk")
                     try:
                         df = api.fetch_hourly(source, kel_id, float(r.latitude), float(r.longitude), s, e)
                         hot_df, cold_df = split_hot_cold(df, spec, cutoff_date)
@@ -150,8 +179,9 @@ def main(argv: list[str] | None = None) -> int:
                         db.log_finish(conn, log_id, "failed", pesan_error=str(exc))
                         raise
                     processed += 1
-                    logger.info("[backfill] %s/%s kel=%d (%s..%s): total=%d (hot=%d, cold=%d)",
-                                source, granularity, kel_id, s, e, len(df), len(hot_df), len(cold_df))
+                    logger.info("[backfill] %s/%s kel=%d (%s..%s WIB): total=%d (hot=%d, cold=%d)",
+                                source, granularity, kel_id, s.strftime("%Y-%m-%d %H:%M"), e.strftime("%Y-%m-%d %H:%M"),
+                                len(df), len(hot_df), len(cold_df))
                 flush_dirty_months(conn, storage_client, dirty_months)
                 if stopped_by:
                     break
