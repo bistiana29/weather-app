@@ -42,43 +42,6 @@ COMMENT ON COLUMN "nasa_hourly"."waktu_utc" IS 'Jam awal periode, UTC';
 
 COMMENT ON COLUMN "nasa_hourly"."fetched_at" IS 'Terakhir kali baris menerima setidaknya satu nilai non-NULL baru dari sumber';
 
-CREATE TABLE IF NOT EXISTS "nasa_daily" (
-    kelurahan_id integer NOT NULL REFERENCES kelurahan (kelurahan_id),
-    "tanggal" date NOT NULL,
-    "T2M (°C)" real,
-    "T2M_MAX (°C)" real,
-    "T2M_MIN (°C)" real,
-    "WS2M (m/s)" real,
-    "WS2M_MAX (m/s)" real,
-    "WD2M (°)" real,
-    "PRECTOTCORR (mm/hari)" real,
-    "RH2M (%)" real,
-    fetched_at timestamptz NOT NULL DEFAULT now(),
-    PRIMARY KEY (kelurahan_id, "tanggal")
-);
-
-CREATE INDEX IF NOT EXISTS "nasa_daily_tanggal_idx" ON "nasa_daily" ("tanggal");
-
-COMMENT ON COLUMN "nasa_daily"."T2M (°C)" IS 'Temperature at 2 Meters';
-
-COMMENT ON COLUMN "nasa_daily"."T2M_MAX (°C)" IS 'Temperature at 2 Meters Maximum';
-
-COMMENT ON COLUMN "nasa_daily"."T2M_MIN (°C)" IS 'Temperature at 2 Meters Minimum';
-
-COMMENT ON COLUMN "nasa_daily"."WS2M (m/s)" IS 'Wind Speed at 2 Meters';
-
-COMMENT ON COLUMN "nasa_daily"."WS2M_MAX (m/s)" IS 'Wind Speed at 2 Meters Maximum';
-
-COMMENT ON COLUMN "nasa_daily"."WD2M (°)" IS 'Wind Direction at 2 Meters';
-
-COMMENT ON COLUMN "nasa_daily"."PRECTOTCORR (mm/hari)" IS 'Precipitation Corrected';
-
-COMMENT ON COLUMN "nasa_daily"."RH2M (%)" IS 'Relative Humidity at 2 Meters';
-
-COMMENT ON COLUMN "nasa_daily"."tanggal" IS 'Tanggal LST (NASA POWER time-standard=LST)';
-
-COMMENT ON COLUMN "nasa_daily"."fetched_at" IS 'Terakhir kali baris menerima setidaknya satu nilai non-NULL baru dari sumber';
-
 CREATE TABLE IF NOT EXISTS "openmeteo_hourly" (
     kelurahan_id integer NOT NULL REFERENCES kelurahan (kelurahan_id),
     "waktu_utc" timestamptz NOT NULL,
@@ -116,46 +79,6 @@ COMMENT ON COLUMN "openmeteo_hourly"."waktu_utc" IS 'Jam awal periode, UTC';
 
 COMMENT ON COLUMN "openmeteo_hourly"."fetched_at" IS 'Terakhir kali baris menerima setidaknya satu nilai non-NULL baru dari sumber';
 
-CREATE TABLE IF NOT EXISTS "openmeteo_daily" (
-    kelurahan_id integer NOT NULL REFERENCES kelurahan (kelurahan_id),
-    "tanggal" date NOT NULL,
-    "temperature_2m_mean (°C)" real,
-    "temperature_2m_max (°C)" real,
-    "temperature_2m_min (°C)" real,
-    "wind_speed_10m_mean (kn)" real,
-    "wind_speed_10m_max (kn)" real,
-    "wind_direction_10m_dominant (°)" real,
-    "precipitation_sum (mm)" real,
-    "relative_humidity_2m_mean (%)" real,
-    "sunshine_duration (s)" real,
-    fetched_at timestamptz NOT NULL DEFAULT now(),
-    PRIMARY KEY (kelurahan_id, "tanggal")
-);
-
-CREATE INDEX IF NOT EXISTS "openmeteo_daily_tanggal_idx" ON "openmeteo_daily" ("tanggal");
-
-COMMENT ON COLUMN "openmeteo_daily"."temperature_2m_mean (°C)" IS 'Mean daily air temperature at 2 meters above ground';
-
-COMMENT ON COLUMN "openmeteo_daily"."temperature_2m_max (°C)" IS 'Maximum daily air temperature at 2 meters above ground';
-
-COMMENT ON COLUMN "openmeteo_daily"."temperature_2m_min (°C)" IS 'Minimum daily air temperature at 2 meters above ground';
-
-COMMENT ON COLUMN "openmeteo_daily"."wind_speed_10m_mean (kn)" IS 'Mean daily wind speed at 10 meters above ground';
-
-COMMENT ON COLUMN "openmeteo_daily"."wind_speed_10m_max (kn)" IS 'Maximum daily wind speed at 10 meters above ground';
-
-COMMENT ON COLUMN "openmeteo_daily"."wind_direction_10m_dominant (°)" IS 'Dominant daily wind direction at 10 meters above ground';
-
-COMMENT ON COLUMN "openmeteo_daily"."precipitation_sum (mm)" IS 'Sum of daily precipitation';
-
-COMMENT ON COLUMN "openmeteo_daily"."relative_humidity_2m_mean (%)" IS 'Mean daily relative humidity at 2 meters above ground';
-
-COMMENT ON COLUMN "openmeteo_daily"."sunshine_duration (s)" IS 'Number of seconds of sunshine per day';
-
-COMMENT ON COLUMN "openmeteo_daily"."tanggal" IS 'Tanggal lokal Asia/Jakarta';
-
-COMMENT ON COLUMN "openmeteo_daily"."fetched_at" IS 'Terakhir kali baris menerima setidaknya satu nilai non-NULL baru dari sumber';
-
 CREATE TABLE IF NOT EXISTS "ingestion_log" (
     id bigserial PRIMARY KEY,
     job text NOT NULL,
@@ -178,41 +101,117 @@ ALTER TABLE "kelurahan" ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE "nasa_hourly" ENABLE ROW LEVEL SECURITY;
 
-ALTER TABLE "nasa_daily" ENABLE ROW LEVEL SECURITY;
-
 ALTER TABLE "openmeteo_hourly" ENABLE ROW LEVEL SECURITY;
-
-ALTER TABLE "openmeteo_daily" ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE "ingestion_log" ENABLE ROW LEVEL SECURITY;
 
--- Ringkasan kesehatan pipeline untuk dibuka di Supabase Table Editor, satu baris per sumber dan granularitas.
+-- Titik stasiun BMKG untuk validasi daily. Elevasi API diisi oleh pipeline/stasiun.py dari respons API
+-- (elevasi titik grid yang dipakai sumber), karena bisa berbeda jauh dari elevasi stasiun.
+CREATE TABLE IF NOT EXISTS stasiun_bmkg (
+    id_wmo integer PRIMARY KEY,
+    nama text NOT NULL,
+    latitude double precision NOT NULL,
+    longitude double precision NOT NULL,
+    elevasi_m real,
+    elevasi_openmeteo_m real,
+    elevasi_nasa_m real
+);
+
+CREATE TABLE IF NOT EXISTS "nasa_daily_stasiun" (
+    id_wmo integer NOT NULL REFERENCES stasiun_bmkg (id_wmo),
+    "tanggal" date NOT NULL,
+    "T2M (°C)" real,
+    "T2M_MAX (°C)" real,
+    "T2M_MIN (°C)" real,
+    "WS2M (m/s)" real,
+    "WS2M_MAX (m/s)" real,
+    "WD2M (°)" real,
+    "PRECTOTCORR (mm/hari)" real,
+    "RH2M (%)" real,
+    fetched_at timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (id_wmo, "tanggal")
+);
+
+COMMENT ON COLUMN "nasa_daily_stasiun"."T2M (°C)" IS 'Temperature at 2 Meters';
+
+COMMENT ON COLUMN "nasa_daily_stasiun"."T2M_MAX (°C)" IS 'Temperature at 2 Meters Maximum';
+
+COMMENT ON COLUMN "nasa_daily_stasiun"."T2M_MIN (°C)" IS 'Temperature at 2 Meters Minimum';
+
+COMMENT ON COLUMN "nasa_daily_stasiun"."WS2M (m/s)" IS 'Wind Speed at 2 Meters';
+
+COMMENT ON COLUMN "nasa_daily_stasiun"."WS2M_MAX (m/s)" IS 'Wind Speed at 2 Meters Maximum';
+
+COMMENT ON COLUMN "nasa_daily_stasiun"."WD2M (°)" IS 'Wind Direction at 2 Meters';
+
+COMMENT ON COLUMN "nasa_daily_stasiun"."PRECTOTCORR (mm/hari)" IS 'Precipitation Corrected';
+
+COMMENT ON COLUMN "nasa_daily_stasiun"."RH2M (%)" IS 'Relative Humidity at 2 Meters';
+
+COMMENT ON COLUMN "nasa_daily_stasiun"."tanggal" IS 'Tanggal LST (NASA POWER time-standard=LST)';
+
+COMMENT ON COLUMN "nasa_daily_stasiun"."fetched_at" IS 'Terakhir kali baris menerima setidaknya satu nilai non-NULL baru dari sumber';
+
+CREATE TABLE IF NOT EXISTS "openmeteo_daily_stasiun" (
+    id_wmo integer NOT NULL REFERENCES stasiun_bmkg (id_wmo),
+    "tanggal" date NOT NULL,
+    "temperature_2m_mean (°C)" real,
+    "temperature_2m_max (°C)" real,
+    "temperature_2m_min (°C)" real,
+    "wind_speed_10m_mean (kn)" real,
+    "wind_speed_10m_max (kn)" real,
+    "wind_direction_10m_dominant (°)" real,
+    "precipitation_sum (mm)" real,
+    "relative_humidity_2m_mean (%)" real,
+    "sunshine_duration (s)" real,
+    fetched_at timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (id_wmo, "tanggal")
+);
+
+COMMENT ON COLUMN "openmeteo_daily_stasiun"."temperature_2m_mean (°C)" IS 'Mean daily air temperature at 2 meters above ground';
+
+COMMENT ON COLUMN "openmeteo_daily_stasiun"."temperature_2m_max (°C)" IS 'Maximum daily air temperature at 2 meters above ground';
+
+COMMENT ON COLUMN "openmeteo_daily_stasiun"."temperature_2m_min (°C)" IS 'Minimum daily air temperature at 2 meters above ground';
+
+COMMENT ON COLUMN "openmeteo_daily_stasiun"."wind_speed_10m_mean (kn)" IS 'Mean daily wind speed at 10 meters above ground';
+
+COMMENT ON COLUMN "openmeteo_daily_stasiun"."wind_speed_10m_max (kn)" IS 'Maximum daily wind speed at 10 meters above ground';
+
+COMMENT ON COLUMN "openmeteo_daily_stasiun"."wind_direction_10m_dominant (°)" IS 'Dominant daily wind direction at 10 meters above ground';
+
+COMMENT ON COLUMN "openmeteo_daily_stasiun"."precipitation_sum (mm)" IS 'Sum of daily precipitation';
+
+COMMENT ON COLUMN "openmeteo_daily_stasiun"."relative_humidity_2m_mean (%)" IS 'Mean daily relative humidity at 2 meters above ground';
+
+COMMENT ON COLUMN "openmeteo_daily_stasiun"."sunshine_duration (s)" IS 'Number of seconds of sunshine per day';
+
+COMMENT ON COLUMN "openmeteo_daily_stasiun"."tanggal" IS 'Tanggal lokal Asia/Jakarta';
+
+COMMENT ON COLUMN "openmeteo_daily_stasiun"."fetched_at" IS 'Terakhir kali baris menerima setidaknya satu nilai non-NULL baru dari sumber';
+
+ALTER TABLE "stasiun_bmkg" ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE "nasa_daily_stasiun" ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE "openmeteo_daily_stasiun" ENABLE ROW LEVEL SECURITY;
+
+-- Ringkasan kesehatan job terjadwal (hourly 153 kelurahan) untuk dibuka di Supabase Table Editor, satu baris per sumber.
 -- Hanya job yang mengambil dari API yang dihitung; compact dan backfill_flush tidak mengambil data baru.
 -- security_invoker = true agar RLS tabel asal tetap berlaku, sehingga view ini tidak membuka data lewat API publik.
 CREATE OR REPLACE VIEW status_pengambilan_data WITH (security_invoker = true) AS
 WITH kombinasi (sumber, granularitas) AS (
-    VALUES ('nasa', 'daily'), ('nasa', 'hourly'), ('openmeteo', 'daily'), ('openmeteo', 'hourly')
+    VALUES ('nasa', 'hourly'), ('openmeteo', 'hourly')
 ),
 sel AS (
     SELECT 'nasa' AS sumber, 'hourly' AS granularitas, waktu_utc AS waktu, 6 AS kolom,
            num_nulls("T2M (°C)", "WS2M (m/s)", "WD2M (°)", "PRECTOTCORR (mm/jam)", "RH2M (%)", "PS (kPa)") AS kosong
     FROM nasa_hourly
     UNION ALL
-    SELECT 'nasa', 'daily', tanggal::timestamp AT TIME ZONE 'Asia/Jakarta', 8,
-           num_nulls("T2M (°C)", "T2M_MAX (°C)", "T2M_MIN (°C)", "WS2M (m/s)", "WS2M_MAX (m/s)", "WD2M (°)",
-                     "PRECTOTCORR (mm/hari)", "RH2M (%)")
-    FROM nasa_daily
-    UNION ALL
     SELECT 'openmeteo', 'hourly', waktu_utc, 8,
            num_nulls("temperature_2m (°C)", "wind_speed_10m (kn)", "wind_direction_10m (°)", "relative_humidity_2m (%)",
                      "precipitation (mm)", "sunshine_duration (s)", "surface_pressure (hPa)", "visibility (m)")
     FROM openmeteo_hourly
-    UNION ALL
-    SELECT 'openmeteo', 'daily', tanggal::timestamp AT TIME ZONE 'Asia/Jakarta', 9,
-           num_nulls("temperature_2m_mean (°C)", "temperature_2m_max (°C)", "temperature_2m_min (°C)",
-                     "wind_speed_10m_mean (kn)", "wind_speed_10m_max (kn)", "wind_direction_10m_dominant (°)",
-                     "precipitation_sum (mm)", "relative_humidity_2m_mean (%)", "sunshine_duration (s)")
-    FROM openmeteo_daily
 ),
 data AS (
     SELECT sumber, granularitas,
@@ -227,7 +226,7 @@ log AS (
            max(selesai_at) FILTER (WHERE status = 'success') AS run_sukses_terakhir,
            count(*) FILTER (WHERE status = 'failed' AND mulai_at >= now() - interval '24 hours') AS run_gagal_24_jam
     FROM ingestion_log
-    WHERE job IN ('hourly', 'daily', 'deep_refresh', 'backfill')
+    WHERE job IN ('hourly', 'deep_refresh', 'backfill')
     GROUP BY sumber, granularitas
 )
 SELECT k.sumber,
@@ -240,3 +239,91 @@ FROM kombinasi k
 LEFT JOIN data d USING (sumber, granularitas)
 LEFT JOIN log l USING (sumber, granularitas)
 ORDER BY k.sumber, k.granularitas;
+
+-- Ringkasan per parameter untuk setiap file Parquet bulanan (lapis dingin), diisi oleh pipeline/ringkasan.py.
+-- Disimpan di Postgres agar status data tidak perlu mengunduh semua file Parquet setiap kali dibuka.
+CREATE TABLE IF NOT EXISTS ringkasan_arsip (
+    sumber text NOT NULL,
+    granularitas text NOT NULL,
+    bulan text NOT NULL,
+    parameter text NOT NULL,
+    jumlah_baris integer NOT NULL,
+    jumlah_terisi integer NOT NULL,
+    waktu_awal_terisi timestamptz,
+    waktu_akhir_terisi timestamptz,
+    diperbarui_pada timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (sumber, granularitas, bulan, parameter)
+);
+
+ALTER TABLE "ringkasan_arsip" ENABLE ROW LEVEL SECURITY;
+
+-- Status data per parameter. Hourly 153 kelurahan: lapis dingin dari ringkasan_arsip ditambah lapis panas yang
+-- dihitung langsung. Daily titik stasiun (granularitas 'daily_stasiun'): dihitung langsung dari tabelnya.
+-- Baris Postgres yang waktunya tidak lebih baru dari data terakhir di arsip dilewati, karena baris itu
+-- sudah tercakup di Parquet (misalnya selama compact belum menghapusnya), sehingga tidak terhitung dua kali.
+CREATE OR REPLACE VIEW status_data_parameter WITH (security_invoker = true) AS
+WITH batas AS (
+    SELECT sumber, granularitas, max(waktu_akhir_terisi) AS akhir_arsip
+    FROM ringkasan_arsip
+    GROUP BY sumber, granularitas
+),
+panas AS (
+    SELECT 'nasa' AS sumber, 'hourly' AS granularitas, p.parameter, t.waktu_utc AS waktu, p.nilai
+    FROM nasa_hourly t
+    CROSS JOIN LATERAL (VALUES
+        ('T2M (°C)', t."T2M (°C)"), ('WS2M (m/s)', t."WS2M (m/s)"), ('WD2M (°)', t."WD2M (°)"),
+        ('PRECTOTCORR (mm/jam)', t."PRECTOTCORR (mm/jam)"), ('RH2M (%)', t."RH2M (%)"), ('PS (kPa)', t."PS (kPa)")
+    ) AS p (parameter, nilai)
+    UNION ALL
+    SELECT 'nasa', 'daily_stasiun', p.parameter, t.tanggal::timestamp AT TIME ZONE 'Asia/Jakarta', p.nilai
+    FROM nasa_daily_stasiun t
+    CROSS JOIN LATERAL (VALUES
+        ('T2M (°C)', t."T2M (°C)"), ('T2M_MAX (°C)', t."T2M_MAX (°C)"), ('T2M_MIN (°C)', t."T2M_MIN (°C)"),
+        ('WS2M (m/s)', t."WS2M (m/s)"), ('WS2M_MAX (m/s)', t."WS2M_MAX (m/s)"), ('WD2M (°)', t."WD2M (°)"),
+        ('PRECTOTCORR (mm/hari)', t."PRECTOTCORR (mm/hari)"), ('RH2M (%)', t."RH2M (%)")
+    ) AS p (parameter, nilai)
+    UNION ALL
+    SELECT 'openmeteo', 'hourly', p.parameter, t.waktu_utc, p.nilai
+    FROM openmeteo_hourly t
+    CROSS JOIN LATERAL (VALUES
+        ('temperature_2m (°C)', t."temperature_2m (°C)"), ('wind_speed_10m (kn)', t."wind_speed_10m (kn)"),
+        ('wind_direction_10m (°)', t."wind_direction_10m (°)"), ('relative_humidity_2m (%)', t."relative_humidity_2m (%)"),
+        ('precipitation (mm)', t."precipitation (mm)"), ('sunshine_duration (s)', t."sunshine_duration (s)"),
+        ('surface_pressure (hPa)', t."surface_pressure (hPa)"), ('visibility (m)', t."visibility (m)")
+    ) AS p (parameter, nilai)
+    UNION ALL
+    SELECT 'openmeteo', 'daily_stasiun', p.parameter, t.tanggal::timestamp AT TIME ZONE 'Asia/Jakarta', p.nilai
+    FROM openmeteo_daily_stasiun t
+    CROSS JOIN LATERAL (VALUES
+        ('temperature_2m_mean (°C)', t."temperature_2m_mean (°C)"), ('temperature_2m_max (°C)', t."temperature_2m_max (°C)"),
+        ('temperature_2m_min (°C)', t."temperature_2m_min (°C)"), ('wind_speed_10m_mean (kn)', t."wind_speed_10m_mean (kn)"),
+        ('wind_speed_10m_max (kn)', t."wind_speed_10m_max (kn)"), ('wind_direction_10m_dominant (°)', t."wind_direction_10m_dominant (°)"),
+        ('precipitation_sum (mm)', t."precipitation_sum (mm)"), ('relative_humidity_2m_mean (%)', t."relative_humidity_2m_mean (%)"),
+        ('sunshine_duration (s)', t."sunshine_duration (s)")
+    ) AS p (parameter, nilai)
+),
+gabung AS (
+    SELECT p.sumber, p.granularitas, p.parameter, count(*) AS jumlah_baris, count(p.nilai) AS jumlah_terisi,
+           min(p.waktu) FILTER (WHERE p.nilai IS NOT NULL) AS awal,
+           max(p.waktu) FILTER (WHERE p.nilai IS NOT NULL) AS akhir
+    FROM panas p
+    LEFT JOIN batas b USING (sumber, granularitas)
+    WHERE p.waktu > coalesce(b.akhir_arsip, '-infinity')
+    GROUP BY p.sumber, p.granularitas, p.parameter
+    UNION ALL
+    SELECT sumber, granularitas, parameter, sum(jumlah_baris), sum(jumlah_terisi),
+           min(waktu_awal_terisi), max(waktu_akhir_terisi)
+    FROM ringkasan_arsip
+    GROUP BY sumber, granularitas, parameter
+)
+SELECT sumber,
+       granularitas,
+       parameter,
+       (min(awal) AT TIME ZONE 'Asia/Jakarta')::timestamp(0) AS data_mulai,
+       (max(akhir) AT TIME ZONE 'Asia/Jakarta')::timestamp(0) AS data_terakhir,
+       sum(jumlah_baris)::bigint AS jumlah_baris,
+       sum(jumlah_terisi)::bigint AS jumlah_terisi,
+       round(100.0 * (sum(jumlah_baris) - sum(jumlah_terisi)) / nullif(sum(jumlah_baris), 0), 2) AS persen_kosong
+FROM gabung
+GROUP BY sumber, granularitas, parameter
+ORDER BY sumber, granularitas, parameter;

@@ -1,4 +1,5 @@
-"""Parameter tiap tabel. Nama kolom = "<kode API> (<satuan>)"; satuan sesuai metadata API (Open-Meteo memakai wind_speed_unit=kn)."""
+"""Parameter tiap tabel. Nama kolom = "<kode API> (<satuan>)"; satuan sesuai metadata API (Open-Meteo memakai wind_speed_unit=kn).
+Hourly diambil untuk 153 kelurahan; daily hanya untuk titik stasiun BMKG."""
 from dataclasses import dataclass
 
 
@@ -19,6 +20,7 @@ class TableSpec:
     source: str
     granularity: str
     params: tuple[Param, ...]
+    location_col: str = "kelurahan_id"
 
     @property
     def time_col(self) -> str:
@@ -26,7 +28,7 @@ class TableSpec:
 
     @property
     def key_cols(self) -> tuple[str, str]:
-        return ("kelurahan_id", self.time_col)
+        return (self.location_col, self.time_col)
 
     @property
     def value_cols(self) -> list[str]:
@@ -45,7 +47,7 @@ NASA_HOURLY = TableSpec("nasa_hourly", "nasa", "hourly", (
     Param("PS", "kPa"),
 ))
 
-NASA_DAILY = TableSpec("nasa_daily", "nasa", "daily", (
+NASA_DAILY_STASIUN = TableSpec("nasa_daily_stasiun", "nasa", "daily", (
     Param("T2M", "°C"),
     Param("T2M_MAX", "°C"),
     Param("T2M_MIN", "°C"),
@@ -54,7 +56,7 @@ NASA_DAILY = TableSpec("nasa_daily", "nasa", "daily", (
     Param("WD2M", "°"),
     Param("PRECTOTCORR", "mm/hari"),
     Param("RH2M", "%"),
-))
+), location_col="id_wmo")
 
 # Archive API tidak menyediakan visibility, jadi kolom itu diambil dari Historical Forecast API.
 OPENMETEO_HOURLY = TableSpec("openmeteo_hourly", "openmeteo", "hourly", (
@@ -68,7 +70,7 @@ OPENMETEO_HOURLY = TableSpec("openmeteo_hourly", "openmeteo", "hourly", (
     Param("visibility", "m", endpoint="historical_forecast"),
 ))
 
-OPENMETEO_DAILY = TableSpec("openmeteo_daily", "openmeteo", "daily", (
+OPENMETEO_DAILY_STASIUN = TableSpec("openmeteo_daily_stasiun", "openmeteo", "daily", (
     Param("temperature_2m_mean", "°C"),
     Param("temperature_2m_max", "°C"),
     Param("temperature_2m_min", "°C"),
@@ -78,14 +80,16 @@ OPENMETEO_DAILY = TableSpec("openmeteo_daily", "openmeteo", "daily", (
     Param("precipitation_sum", "mm"),
     Param("relative_humidity_2m_mean", "%"),
     Param("sunshine_duration", "s"),
-))
+), location_col="id_wmo")
 
-TABLES = {(t.source, t.granularity): t for t in (NASA_HOURLY, NASA_DAILY, OPENMETEO_HOURLY, OPENMETEO_DAILY)}
+TABLES = {t.source: t for t in (NASA_HOURLY, OPENMETEO_HOURLY)}
+STASIUN_TABLES = {t.source: t for t in (NASA_DAILY_STASIUN, OPENMETEO_DAILY_STASIUN)}
 SOURCES = ("nasa", "openmeteo")
 
 
-def get_spec(source: str, granularity: str) -> TableSpec:
+def get_spec(source: str, granularity: str = "hourly") -> TableSpec:
+    tables = TABLES if granularity == "hourly" else STASIUN_TABLES if granularity == "daily" else {}
     try:
-        return TABLES[(source, granularity)]
+        return tables[source]
     except KeyError:
         raise ValueError(f"Kombinasi tidak dikenal: {source}/{granularity}") from None

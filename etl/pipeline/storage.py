@@ -1,9 +1,10 @@
-"""Lapis dingin: Parquet bulanan di Supabase Storage, dengan salinan staging di _work/parquet_staging/.
+"""Lapis dingin data hourly 153 kelurahan: Parquet bulanan di Supabase Storage, dengan salinan staging di _work/parquet_staging/.
 
 Path objek {sumber}/{granularitas}/{YYYY}/{YYYY-MM}.parquet, kompresi zstd, nilai float32,
 baris terurut (kelurahan_id, waktu). Batas 50 MB per file mengikuti batas unggah Supabase gratis."""
 import io
 import logging
+import time
 from pathlib import Path
 
 import pandas as pd
@@ -28,9 +29,7 @@ def local_staging_path(source: str, granularity: str, ym: str) -> Path:
 
 
 def month_key(df: pd.DataFrame, spec: TableSpec) -> pd.Series:
-    if spec.granularity == "hourly":
-        return pd.to_datetime(df["waktu_utc"], utc=True).dt.strftime("%Y-%m")
-    return pd.to_datetime(df["tanggal"]).dt.strftime("%Y-%m")
+    return pd.to_datetime(df["waktu_utc"], utc=True).dt.strftime("%Y-%m")
 
 
 def normalize_for_parquet(df: pd.DataFrame, spec: TableSpec) -> pd.DataFrame:
@@ -40,10 +39,7 @@ def normalize_for_parquet(df: pd.DataFrame, spec: TableSpec) -> pd.DataFrame:
     else:
         out = transform.coalesce_dupes(transform.drop_all_null(df[cols].copy(), spec), spec)
     out["kelurahan_id"] = out["kelurahan_id"].astype("int32")
-    if spec.granularity == "hourly":
-        out["waktu_utc"] = pd.to_datetime(out["waktu_utc"], utc=True).dt.floor("us")
-    else:
-        out["tanggal"] = pd.to_datetime(out["tanggal"]).dt.date
+    out["waktu_utc"] = pd.to_datetime(out["waktu_utc"], utc=True).dt.floor("us")
     for c in spec.value_cols:
         out[c] = pd.to_numeric(out[c], errors="coerce").astype("float32")
     return out.sort_values(list(spec.key_cols), kind="mergesort").reset_index(drop=True)
@@ -57,9 +53,8 @@ def merge_coalesce_frames(existing_df: pd.DataFrame | None, new_df: pd.DataFrame
 
 def dataframe_to_parquet_bytes(df: pd.DataFrame, spec: TableSpec) -> tuple[bytes, pd.DataFrame]:
     norm = normalize_for_parquet(df, spec)
-    time_field = (pa.field("waktu_utc", pa.timestamp("us", tz="UTC"), nullable=False) if spec.granularity == "hourly"
-                  else pa.field("tanggal", pa.date32(), nullable=False))
-    schema = pa.schema([pa.field("kelurahan_id", pa.int32(), nullable=False), time_field,
+    schema = pa.schema([pa.field("kelurahan_id", pa.int32(), nullable=False),
+                        pa.field("waktu_utc", pa.timestamp("us", tz="UTC"), nullable=False),
                         *[pa.field(c, pa.float32()) for c in spec.value_cols]])
     buf = io.BytesIO()
     pq.write_table(pa.Table.from_pandas(norm, schema=schema, preserve_index=False), buf, compression="zstd")
@@ -71,10 +66,7 @@ def dataframe_to_parquet_bytes(df: pd.DataFrame, spec: TableSpec) -> tuple[bytes
 
 def parquet_bytes_to_dataframe(data: bytes, spec: TableSpec) -> pd.DataFrame:
     df = pq.read_table(io.BytesIO(data)).to_pandas()
-    if spec.granularity == "hourly":
-        df["waktu_utc"] = pd.to_datetime(df["waktu_utc"], utc=True)
-    else:
-        df["tanggal"] = pd.to_datetime(df["tanggal"]).dt.date
+    df["waktu_utc"] = pd.to_datetime(df["waktu_utc"], utc=True)
     return df
 
 
@@ -120,8 +112,9 @@ class SupabaseStorageClient:
                                headers={"Content-Type": "application/octet-stream", "x-upsert": "true"}, timeout=120)
         r.raise_for_status()
 
-    def upsert_monthly_parquet(self, spec: TableSpec, ym: str, new_df: pd.DataFrame) -> dict[str, int]:
-        """Gabungkan new_df ke Parquet bulan ym di Storage, unggah, lalu unduh ulang untuk memastikan jumlah barisnya."""
+    def upsert_monthly_parquet(self, spec: TableSpec, ym: str, new_df: pd.DataFrame) -> dict:
+        """Gabungkan new_df ke Parquet bulan ym di Storage, unggah, lalu unduh ulang untuk memastikan jumlah barisnya.
+        "frame" berisi isi lengkap file setelah digabung, untuk ringkasan_arsip."""
         obj_path = remote_object_path(spec.source, spec.granularity, ym)
         existing_bytes = self.download_bytes(obj_path)
         existing_df = parquet_bytes_to_dataframe(existing_bytes, spec) if existing_bytes else None
@@ -132,11 +125,16 @@ class SupabaseStorageClient:
             raise RuntimeError(f"Jumlah baris {obj_path} menyusut ({len(norm_df)} < {before_rows}); batal unggah")
         self.upload_bytes(obj_path, raw_bytes)
 
-        verify_bytes = self.download_bytes(obj_path)
-        if not verify_bytes:
-            raise RuntimeError(f"Verifikasi gagal: {obj_path} tidak ditemukan setelah unggah")
-        remote_rows = pq.read_metadata(io.BytesIO(verify_bytes)).num_rows
-        if remote_rows != len(norm_df):
+        # Supabase Storage bisa menyajikan versi lama beberapa detik setelah file ditimpa, jadi coba beberapa kali.
+        for attempt in range(1, 6):
+            verify_bytes = self.download_bytes(obj_path)
+            remote_rows = pq.read_metadata(io.BytesIO(verify_bytes)).num_rows if verify_bytes else 0
+            if remote_rows == len(norm_df):
+                break
+            logger.info("Verifikasi %s belum cocok (remote=%d, expected=%d), cek lagi dalam %ds",
+                        obj_path, remote_rows, len(norm_df), 3 * attempt)
+            time.sleep(3 * attempt)
+        else:
             raise RuntimeError(f"Verifikasi {obj_path} gagal: remote={remote_rows} != expected={len(norm_df)}")
 
         local_path = local_staging_path(spec.source, spec.granularity, ym)
@@ -144,4 +142,4 @@ class SupabaseStorageClient:
         local_path.write_bytes(raw_bytes)
         logger.info("Parquet %s terverifikasi: %d baris (sebelumnya %d), %.1f KB",
                     obj_path, len(norm_df), before_rows, len(raw_bytes) / 1024)
-        return {"before_rows": before_rows, "after_rows": len(norm_df), "bytes": len(raw_bytes)}
+        return {"before_rows": before_rows, "after_rows": len(norm_df), "bytes": len(raw_bytes), "frame": norm_df}

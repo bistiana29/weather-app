@@ -12,7 +12,7 @@ from datetime import date, datetime, time as dtime, timedelta, timezone
 import pandas as pd
 from psycopg import sql
 
-from . import config, db, params, storage
+from . import config, db, params, ringkasan, storage
 from .params import TableSpec
 
 logger = logging.getLogger(__name__)
@@ -24,20 +24,15 @@ def _month_bounds_utc(ym: str) -> tuple[datetime, datetime]:
     return start, (start + timedelta(days=32)).replace(day=1)
 
 
-def _cutoff_value(spec: TableSpec, cutoff_date: date):
-    return datetime.combine(cutoff_date, dtime.min, tzinfo=timezone.utc) if spec.granularity == "hourly" else cutoff_date
-
-
 def _fetch_cold_rows_from_pg(conn, spec: TableSpec, cutoff_date: date) -> pd.DataFrame:
-    where = S("{tc} < {cutoff}").format(tc=I(spec.time_col), cutoff=L(_cutoff_value(spec, cutoff_date)))
+    cutoff = datetime.combine(cutoff_date, dtime.min, tzinfo=timezone.utc)
+    where = S("{tc} < {cutoff}").format(tc=I(spec.time_col), cutoff=L(cutoff))
     return db.read_frame(conn, spec, where)
 
 
 def _delete_compacted_month_from_pg(conn, spec: TableSpec, ym: str, cutoff_date: date) -> int:
     lo, hi = _month_bounds_utc(ym)
     hi = min(hi, datetime.combine(cutoff_date, dtime.min, tzinfo=timezone.utc))
-    if spec.granularity == "daily":
-        lo, hi = lo.date(), hi.date()
     q = S("DELETE FROM {t} WHERE {tc} >= {lo} AND {tc} < {hi}").format(
         t=I(spec.name), tc=I(spec.time_col), lo=L(lo), hi=L(hi))
     with conn.cursor() as cur:
@@ -65,6 +60,7 @@ def compact_table(conn, storage_client: storage.SupabaseStorageClient, spec: Tab
             if info["after_rows"] < len(grp):
                 raise RuntimeError(f"Verifikasi gagal pada {spec.name} {ym}: "
                                    f"after_rows={info['after_rows']} < batch={len(grp)}")
+            ringkasan.simpan(conn, spec, ym, info["frame"])
             deleted = _delete_compacted_month_from_pg(conn, spec, ym, cutoff_date)
             db.log_finish(conn, log_id, "success", jumlah_baris=deleted)
         except Exception as exc:

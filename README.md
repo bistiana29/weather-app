@@ -1,6 +1,6 @@
 # Weather App
 
-Weather App adalah sistem pemantauan dan peringatan risiko cuaca ekstrem untuk setiap kelurahan di Kota Surabaya. Sistem ini mengumpulkan data cuaca per jam dan per hari dari NASA POWER dan Open-Meteo untuk 153 kelurahan, menyimpannya di Supabase, lalu memakainya untuk membangun model risiko yang hasilnya akan disajikan lewat backend dan antarmuka web.
+Weather App adalah sistem pemantauan dan peringatan risiko cuaca ekstrem untuk setiap kelurahan di Kota Surabaya. Sistem ini mengumpulkan data cuaca per jam dari NASA POWER dan Open-Meteo untuk 153 kelurahan (ditambah data harian di 3 titik stasiun BMKG untuk validasi sumber), menyimpannya di Supabase, lalu memakainya untuk membangun model risiko yang hasilnya akan disajikan lewat backend dan antarmuka web.
 
 | Folder | Fungsi |
 |---|---|

@@ -72,23 +72,24 @@ def _date_chunks(start: date, end: date, max_days: int) -> list[tuple[date, date
     return chunks
 
 
-def fetch_nasa(granularity: str, kelurahan_id: int, lat: float, lon: float, start: date, end: date) -> pd.DataFrame:
-    spec = params.get_spec("nasa", granularity)
-    chunks = _date_chunks(start, end, NASA_MAX_DAYS_PER_HOURLY_REQUEST) if granularity == "hourly" else [(start, end)]
-    frames = []
-    for c_start, c_end in chunks:
-        query = {
-            "parameters": ",".join(p.api_code for p in spec.params),
-            "community": config.NASA_COMMUNITY,
-            "longitude": lon,
-            "latitude": lat,
-            "start": c_start.strftime("%Y%m%d"),
-            "end": c_end.strftime("%Y%m%d"),
-            "format": "JSON",
-            "time-standard": config.NASA_TIME_STANDARD[granularity],
-        }
-        payload = _get_json(f"{NASA_URL}/{granularity}/point", query, max_retries=6, before_call=_wait_nasa_turn)
-        frames.append(transform.nasa_to_frame(payload, spec, kelurahan_id))
+def _nasa_get(spec: params.TableSpec, lat: float, lon: float, start: date, end: date) -> dict:
+    query = {
+        "parameters": ",".join(p.api_code for p in spec.params),
+        "community": config.NASA_COMMUNITY,
+        "longitude": lon,
+        "latitude": lat,
+        "start": start.strftime("%Y%m%d"),
+        "end": end.strftime("%Y%m%d"),
+        "format": "JSON",
+        "time-standard": config.NASA_TIME_STANDARD[spec.granularity],
+    }
+    return _get_json(f"{NASA_URL}/{spec.granularity}/point", query, max_retries=6, before_call=_wait_nasa_turn)
+
+
+def fetch_nasa_hourly(kelurahan_id: int, lat: float, lon: float, start: date, end: date) -> pd.DataFrame:
+    spec = params.NASA_HOURLY
+    frames = [transform.nasa_to_frame(_nasa_get(spec, lat, lon, s, e), spec, kelurahan_id)
+              for s, e in _date_chunks(start, end, NASA_MAX_DAYS_PER_HOURLY_REQUEST)]
     df = pd.concat(frames, ignore_index=True) if frames else transform.empty_frame(spec)
     return transform.drop_all_null(transform.drop_future(df, spec), spec)
 
@@ -181,18 +182,24 @@ def fetch_openmeteo_hourly(kelurahan_id: int, lat: float, lon: float, start: dat
     return transform.drop_all_null(transform.drop_future(df, spec), spec)
 
 
-def fetch_openmeteo_daily(kelurahan_id: int, lat: float, lon: float, start: date, end: date) -> pd.DataFrame:
-    spec = params.OPENMETEO_DAILY
-    payload = _openmeteo_get(ARCHIVE_URL, spec, "default", lat, lon, start, end,
-                             {"wind_speed_unit": config.OPENMETEO_WIND_UNIT, "timezone": config.LOCAL_TZ})
-    df = transform.openmeteo_to_frame(payload, spec, kelurahan_id, "default")
-    return transform.drop_all_null(transform.drop_future(df, spec), spec)
-
-
-def fetch(source: str, granularity: str, kelurahan_id: int, lat: float, lon: float,
-          start: date, end: date) -> pd.DataFrame:
+def fetch_hourly(source: str, kelurahan_id: int, lat: float, lon: float, start: date, end: date) -> pd.DataFrame:
     if source == "nasa":
-        return fetch_nasa(granularity, kelurahan_id, lat, lon, start, end)
-    if granularity == "hourly":
-        return fetch_openmeteo_hourly(kelurahan_id, lat, lon, start, end)
-    return fetch_openmeteo_daily(kelurahan_id, lat, lon, start, end)
+        return fetch_nasa_hourly(kelurahan_id, lat, lon, start, end)
+    return fetch_openmeteo_hourly(kelurahan_id, lat, lon, start, end)
+
+
+def fetch_daily_stasiun(spec: params.TableSpec, id_wmo: int, lat: float, lon: float,
+                        start: date, end: date) -> tuple[pd.DataFrame, float | None]:
+    """Data daily satu stasiun, beserta elevasi titik grid yang dipakai API. Elevasi tidak di-set (default API)
+    agar caranya sama dengan data hourly 153 kelurahan."""
+    if spec.source == "nasa":
+        payload = _nasa_get(spec, lat, lon, start, end)
+        df = transform.nasa_to_frame(payload, spec, id_wmo)
+        coords = payload.get("geometry", {}).get("coordinates", [])
+        elevation = coords[2] if len(coords) > 2 else None
+    else:
+        payload = _openmeteo_get(ARCHIVE_URL, spec, "default", lat, lon, start, end,
+                                 {"wind_speed_unit": config.OPENMETEO_WIND_UNIT, "timezone": config.LOCAL_TZ})
+        df = transform.openmeteo_to_frame(payload, spec, id_wmo, "default")
+        elevation = payload.get("elevation")
+    return transform.drop_all_null(transform.drop_future(df, spec), spec), elevation

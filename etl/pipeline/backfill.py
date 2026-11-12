@@ -1,5 +1,5 @@
-"""Backfill lokal dari 2022-01-01 sampai hari ini. Bisa dihentikan dan dilanjutkan kapan saja: setiap potongan
-(sumber, granularitas, tahun, kelurahan) yang sukses dicatat di ingestion_log dan dilewati pada run berikutnya.
+"""Backfill lokal data hourly 153 kelurahan dari 2022-01-01 sampai hari ini. Bisa dihentikan dan dilanjutkan kapan
+saja: setiap potongan (sumber, tahun, kelurahan) yang sukses dicatat di ingestion_log dan dilewati pada run berikutnya.
 
     python -m pipeline.backfill --estimate-only
     python -m pipeline.backfill [--start-date 2022-01-01] [--kelurahan-ids 1,2]
@@ -12,13 +12,10 @@ from datetime import date, datetime, time as dtime, timedelta, timezone
 
 import pandas as pd
 
-from . import api, config, db, params, storage
+from . import api, config, db, params, ringkasan, storage
 from .params import TableSpec
 
 logger = logging.getLogger(__name__)
-
-GRANULARITIES = ("daily", "hourly")
-
 
 def yearly_slices(start: date, end: date) -> list[tuple[date, date]]:
     slices = [(max(start, date(y, 1, 1)), min(end, date(y, 12, 31))) for y in range(start.year, end.year + 1)]
@@ -29,18 +26,14 @@ def split_hot_cold(df: pd.DataFrame, spec: TableSpec, cutoff_date: date) -> tupl
     """Baris sejak cutoff masuk Postgres (lapis panas); baris lebih tua langsung ke Parquet (lapis dingin)."""
     if df.empty:
         return df.copy(), df.copy()
-    if spec.granularity == "hourly":
-        is_hot = pd.to_datetime(df["waktu_utc"], utc=True) >= pd.Timestamp(
-            datetime.combine(cutoff_date, dtime.min, tzinfo=timezone.utc))
-    else:
-        is_hot = pd.to_datetime(df["tanggal"]).dt.date >= cutoff_date
+    is_hot = pd.to_datetime(df["waktu_utc"], utc=True) >= pd.Timestamp(
+        datetime.combine(cutoff_date, dtime.min, tzinfo=timezone.utc))
     return df[is_hot].reset_index(drop=True), df[~is_hot].reset_index(drop=True)
 
 
 def estimate_backfill(kel_count: int, slices: list[tuple[date, date]]) -> dict[str, float]:
     variable_counts = [len(params.OPENMETEO_HOURLY.params_for("default")),
-                       len(params.OPENMETEO_HOURLY.params_for("historical_forecast")),
-                       len(params.OPENMETEO_DAILY.params_for("default"))]
+                       len(params.OPENMETEO_HOURLY.params_for("historical_forecast"))]
     weight_per_kel = sum(api.call_weight(1, (e - s).days + 1, n) for s, e in slices for n in variable_counts)
     total_weight = weight_per_kel * kel_count
     return {
@@ -50,14 +43,30 @@ def estimate_backfill(kel_count: int, slices: list[tuple[date, date]]) -> dict[s
         "om_total_weight": total_weight,
         "om_daily_budget": config.OPENMETEO_LIMIT_DAY,
         "om_estimated_days": total_weight / config.OPENMETEO_LIMIT_DAY,
-        "nasa_total_requests": kel_count * len(slices) * len(GRANULARITIES),
+        "nasa_total_requests": kel_count * len(slices),
     }
+
+
+def unflushed_months(conn) -> set[tuple[str, str, str]]:
+    """File staging yang lebih baru dari unggahan sukses terakhirnya, misalnya karena run sebelumnya
+    terhenti saat mengunggah. Tanpa ini, bulan tersebut tidak pernah diunggah karena checkpoint-nya sudah sukses."""
+    with conn.cursor() as cur:
+        cur.execute("SELECT sumber, granularitas, tujuan, max(selesai_at) FROM ingestion_log "
+                    "WHERE status = 'success' AND tujuan LIKE 'storage:%' GROUP BY 1, 2, 3")
+        flushed = {(s, g, t.removeprefix("storage:")): ts for s, g, t, ts in cur.fetchall()}
+    conn.commit()
+    pending = set()
+    for path in (config.WORK_DIR / "parquet_staging").glob("*/hourly/*/*.parquet"):
+        key = (path.parts[-4], path.parts[-3], path.stem)
+        if key not in flushed or path.stat().st_mtime > flushed[key].timestamp():
+            pending.add(key)
+    return pending
 
 
 def flush_dirty_months(conn, storage_client: storage.SupabaseStorageClient, dirty_months: set[tuple[str, str, str]]) -> None:
     """Unggah file staging bulan yang berubah ke Supabase Storage."""
     for source, granularity, ym in sorted(dirty_months):
-        spec = params.get_spec(source, granularity)
+        spec = params.get_spec(source)
         local_path = storage.local_staging_path(source, granularity, ym)
         if not local_path.exists():
             continue
@@ -65,6 +74,7 @@ def flush_dirty_months(conn, storage_client: storage.SupabaseStorageClient, dirt
         try:
             staged = storage.parquet_bytes_to_dataframe(local_path.read_bytes(), spec)
             info = storage_client.upsert_monthly_parquet(spec, ym, staged)
+            ringkasan.simpan(conn, spec, ym, info["frame"])
             db.log_finish(conn, log_id, "success", jumlah_baris=info["after_rows"])
         except Exception as exc:
             db.log_finish(conn, log_id, "failed", pesan_error=str(exc))
@@ -74,7 +84,7 @@ def flush_dirty_months(conn, storage_client: storage.SupabaseStorageClient, dirt
 
 def main(argv: list[str] | None = None) -> int:
     config.setup_logging()
-    p = argparse.ArgumentParser(description="Backfill data cuaca dari 2022-01-01 sampai hari ini (bisa dilanjutkan)")
+    p = argparse.ArgumentParser(description="Backfill data hourly dari 2022-01-01 sampai hari ini (bisa dilanjutkan)")
     p.add_argument("--start-date", type=str, default=config.START_DATE.isoformat())
     p.add_argument("--kelurahan-ids", type=str, default=None, help="Daftar kelurahan_id dipisah koma, mis. 1,2")
     p.add_argument("--estimate-only", action="store_true", help="Hanya tampilkan perkiraan kuota dan durasi")
@@ -102,9 +112,14 @@ def main(argv: list[str] | None = None) -> int:
 
     with db.connect() as conn:
         db.prepare(conn)
+        leftover = unflushed_months(conn)
+        if leftover:
+            logger.info("Mengunggah %d file staging yang belum terunggah dari run sebelumnya", len(leftover))
+            flush_dirty_months(conn, storage_client, leftover)
         try:
-            for source, granularity, (s, e) in itertools.product(params.SOURCES, GRANULARITIES, slices):
-                spec = params.get_spec(source, granularity)
+            for source, (s, e) in itertools.product(params.SOURCES, slices):
+                spec = params.get_spec(source)
+                granularity = spec.granularity
                 t_start, t_end = db.day_bounds(s, e)
                 for r in kel_df.itertuples(index=False):
                     kel_id = int(r.kelurahan_id)
@@ -112,7 +127,7 @@ def main(argv: list[str] | None = None) -> int:
                         continue
                     log_id = db.log_start(conn, "backfill", source, granularity, kel_id, t_start, t_end, "backfill_chunk")
                     try:
-                        df = api.fetch(source, granularity, kel_id, float(r.latitude), float(r.longitude), s, e)
+                        df = api.fetch_hourly(source, kel_id, float(r.latitude), float(r.longitude), s, e)
                         hot_df, cold_df = split_hot_cold(df, spec, cutoff_date)
                         if not hot_df.empty:
                             db.upsert(conn, spec, hot_df)

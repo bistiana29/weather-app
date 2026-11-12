@@ -1,6 +1,6 @@
-"""Job pengambilan rutin ke Postgres (lapis panas).
+"""Job pengambilan rutin data hourly 153 kelurahan ke Postgres (lapis panas).
 
-    python -m pipeline.ingest hourly|daily|deep_refresh [--lookback-days N] [--kelurahan-ids 1,2]
+    python -m pipeline.ingest hourly|deep_refresh [--lookback-days N] [--kelurahan-ids 1,2]
 """
 import argparse
 import logging
@@ -14,8 +14,7 @@ from . import api, config, db, params
 
 logger = logging.getLogger(__name__)
 
-GRANULARITIES = {"hourly": ("hourly",), "daily": ("daily",), "deep_refresh": ("daily", "hourly")}
-DEFAULT_LOOKBACK_DAYS = {"hourly": 7, "daily": 7, "deep_refresh": config.MATURE_DAYS}
+DEFAULT_LOOKBACK_DAYS = {"hourly": 7, "deep_refresh": config.MATURE_DAYS}
 QUOTA_ERRORS = (api.RateLimitError, api.BudgetExceededError)
 
 
@@ -26,9 +25,9 @@ def rotation_ids(all_ids: list[int], day: date) -> list[int]:
     return [k for k in all_ids if k % 7 == day.toordinal() % 7]
 
 
-def _fetch_all(source: str, granularity: str, kel_df: pd.DataFrame, start: date, end: date) -> list[pd.DataFrame]:
+def _fetch_all(source: str, kel_df: pd.DataFrame, start: date, end: date) -> list[pd.DataFrame]:
     def one(r):
-        return api.fetch(source, granularity, int(r.kelurahan_id), float(r.latitude), float(r.longitude), start, end)
+        return api.fetch_hourly(source, int(r.kelurahan_id), float(r.latitude), float(r.longitude), start, end)
 
     rows = list(kel_df.itertuples(index=False))
     if source == "openmeteo":
@@ -43,38 +42,36 @@ def _fetch_all(source: str, granularity: str, kel_df: pd.DataFrame, start: date,
             raise
 
 
-def run(conn, job: str, source: str, granularity: str, kel_df: pd.DataFrame, start: date, end: date) -> bool:
+def run(conn, job: str, source: str, kel_df: pd.DataFrame, start: date, end: date) -> bool:
     """Ambil semua kelurahan dulu, baru tulis sekali. Jika satu panggilan gagal, tidak ada data yang ditulis."""
-    spec = params.get_spec(source, granularity)
+    spec = params.get_spec(source)
     t_start, t_end = db.day_bounds(start, end)
-    log_id = db.log_start(conn, job, source, granularity, None, t_start, t_end, "postgres")
+    log_id = db.log_start(conn, job, source, spec.granularity, None, t_start, t_end, "postgres")
     try:
-        frames = [df for df in _fetch_all(source, granularity, kel_df, start, end) if not df.empty]
+        frames = [df for df in _fetch_all(source, kel_df, start, end) if not df.empty]
         combined = pd.concat(frames, ignore_index=True) if frames else None
         stats = db.upsert(conn, spec, combined) if combined is not None else {"inserted": 0, "updated": 0, "unchanged": 0}
         total = 0 if combined is None else len(combined)
         db.log_finish(conn, log_id, "success", jumlah_baris=total)
         logger.info("[%s] %s/%s (%d kelurahan, %s..%s): rows=%d, inserted=%d, updated=%d, unchanged=%d",
-                    job, source, granularity, len(kel_df), start, end, total,
+                    job, source, spec.granularity, len(kel_df), start, end, total,
                     stats["inserted"], stats["updated"], stats["unchanged"])
         return True
     except QUOTA_ERRORS as exc:
         db.log_finish(conn, log_id, "failed", pesan_error=f"Dihentikan karena batas kuota: {exc}")
-        logger.error("[%s] %s/%s dihentikan karena batas kuota, tidak ada data yang ditulis: %s",
-                     job, source, granularity, exc)
+        logger.error("[%s] %s/hourly dihentikan karena batas kuota, tidak ada data yang ditulis: %s", job, source, exc)
         raise
     except Exception as exc:
         db.log_finish(conn, log_id, "failed", pesan_error=str(exc))
-        logger.exception("[%s] Gagal pada %s/%s: %s", job, source, granularity, exc)
+        logger.exception("[%s] Gagal pada %s/hourly: %s", job, source, exc)
         return False
 
 
 def main(argv: list[str] | None = None) -> int:
     config.setup_logging()
-    p = argparse.ArgumentParser(description="Job pengambilan data cuaca ke Postgres")
-    p.add_argument("job", choices=list(GRANULARITIES))
-    p.add_argument("--lookback-days", type=int, default=None,
-                   help="Default: 7 untuk hourly dan daily, 120 untuk deep_refresh")
+    p = argparse.ArgumentParser(description="Job pengambilan data cuaca hourly ke Postgres")
+    p.add_argument("job", choices=list(DEFAULT_LOOKBACK_DAYS))
+    p.add_argument("--lookback-days", type=int, default=None, help="Default: 7 untuk hourly, 120 untuk deep_refresh")
     p.add_argument("--kelurahan-ids", type=str, default=None, help="Daftar kelurahan_id dipisah koma, mis. 1,2")
     args = p.parse_args(argv)
 
@@ -98,14 +95,13 @@ def main(argv: list[str] | None = None) -> int:
         db.prepare(conn)
         try:
             for source in params.SOURCES:
-                for granularity in GRANULARITIES[args.job]:
-                    # Open-Meteo hourly cukup tiap N jam untuk menghemat kuota; lookback 7 hari menutup jam yang terlewat.
-                    if (args.job == "hourly" and source == "openmeteo" and not kel_ids
-                            and now.hour % config.OPENMETEO_HOURLY_EVERY_N_HOURS != 0):
-                        logger.info("Melewati openmeteo/hourly pada jam UTC %02d (jadwal tiap %d jam)",
-                                    now.hour, config.OPENMETEO_HOURLY_EVERY_N_HOURS)
-                        continue
-                    ok = run(conn, args.job, source, granularity, kel_df, start, end) and ok
+                # Open-Meteo hourly cukup tiap N jam untuk menghemat kuota; lookback 7 hari menutup jam yang terlewat.
+                if (args.job == "hourly" and source == "openmeteo" and not kel_ids
+                        and now.hour % config.OPENMETEO_HOURLY_EVERY_N_HOURS != 0):
+                    logger.info("Melewati openmeteo/hourly pada jam UTC %02d (jadwal tiap %d jam)",
+                                now.hour, config.OPENMETEO_HOURLY_EVERY_N_HOURS)
+                    continue
+                ok = run(conn, args.job, source, kel_df, start, end) and ok
         except QUOTA_ERRORS:
             ok = False
     return 0 if ok else 1

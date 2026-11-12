@@ -18,7 +18,7 @@ def empty_frame(spec: TableSpec) -> pd.DataFrame:
     return pd.DataFrame(columns=[*spec.key_cols, *spec.value_cols])
 
 
-def nasa_to_frame(payload: dict, spec: TableSpec, kelurahan_id: int) -> pd.DataFrame:
+def nasa_to_frame(payload: dict, spec: TableSpec, location_id: int) -> pd.DataFrame:
     expected_ts = config.NASA_TIME_STANDARD[spec.granularity]
     header = payload.get("header", {})
     if header.get("time_standard") != expected_ts:
@@ -40,11 +40,11 @@ def nasa_to_frame(payload: dict, spec: TableSpec, kelurahan_id: int) -> pd.DataF
     else:
         t = pd.to_datetime(keys, format="%Y%m%d").date
     df.insert(0, spec.time_col, t)
-    df.insert(0, "kelurahan_id", int(kelurahan_id))
+    df.insert(0, spec.location_col, int(location_id))
     return df.reset_index(drop=True)
 
 
-def openmeteo_to_frame(payload: dict, spec: TableSpec, kelurahan_id: int, endpoint: str = "default") -> pd.DataFrame:
+def openmeteo_to_frame(payload: dict, spec: TableSpec, location_id: int, endpoint: str = "default") -> pd.DataFrame:
     params = spec.params_for(endpoint)
     block = spec.granularity
     if block not in payload:
@@ -64,7 +64,7 @@ def openmeteo_to_frame(payload: dict, spec: TableSpec, kelurahan_id: int, endpoi
         if payload.get("timezone") != config.LOCAL_TZ:
             raise SourceFormatError(f"Open-Meteo daily harus memakai timezone {config.LOCAL_TZ}")
         t = pd.to_datetime(times).date
-    data = {"kelurahan_id": int(kelurahan_id), spec.time_col: t}
+    data = {spec.location_col: int(location_id), spec.time_col: t}
     for p in params:
         vals = payload[block].get(p.api_code)
         if vals is None:

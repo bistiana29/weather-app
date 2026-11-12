@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 WORK_DIR = BASE_DIR / "_work"
 KELURAHAN_CSV = BASE_DIR / "koordinat_kelurahan_surabaya.csv"
+STASIUN_CSV = BASE_DIR / "koordinat_BMKG_surabaya.csv"
 SCHEMA_SQL = BASE_DIR / "schema.sql"
 
 load_dotenv(BASE_DIR / ".env", override=False)

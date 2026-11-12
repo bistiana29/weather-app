@@ -113,8 +113,8 @@ def upsert(conn: psycopg.Connection, spec: TableSpec, df: pd.DataFrame) -> dict[
 
 def read_frame(conn: psycopg.Connection, spec: TableSpec, where: sql.Composable) -> pd.DataFrame:
     cols = [*spec.key_cols, *spec.value_cols]
-    q = S("SELECT {cols} FROM {t} WHERE {where} ORDER BY kelurahan_id, {tc}").format(
-        cols=S(", ").join(I(c) for c in cols), t=I(spec.name), where=where, tc=I(spec.time_col))
+    q = S("SELECT {cols} FROM {t} WHERE {where} ORDER BY {loc}, {tc}").format(
+        cols=S(", ").join(I(c) for c in cols), t=I(spec.name), where=where, loc=I(spec.location_col), tc=I(spec.time_col))
     with conn.cursor() as cur:
         cur.execute(q)
         rows = cur.fetchall()
@@ -124,8 +124,6 @@ def read_frame(conn: psycopg.Connection, spec: TableSpec, where: sql.Composable)
     df = pd.DataFrame(rows, columns=cols)
     if spec.granularity == "hourly":
         df["waktu_utc"] = pd.to_datetime(df["waktu_utc"], utc=True)
-    else:
-        df["tanggal"] = pd.to_datetime(df["tanggal"]).dt.date
     return df
 
 
