@@ -1,0 +1,254 @@
+.landing {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  padding-top: 12px;
+}
+
+/* Hero */
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 48px;
+  min-height: 520px;
+}
+
+.hero-teks {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.hero-lencana {
+  padding: 6px 14px;
+  background: var(--putih);
+  box-shadow: var(--neu-raised-kecil);
+}
+
+.hero h1 {
+  font-size: clamp(34px, 4.6vw, 58px);
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+}
+
+.hero h1 span {
+  display: block;
+  color: var(--biru);
+}
+
+.hero-deskripsi {
+  max-width: 560px;
+  font-size: 17px;
+  color: var(--teks-sekunder);
+}
+
+.hero-aksi {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 4px;
+}
+
+/* Kartu ilustrasi peta */
+.hero-peta {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px;
+}
+
+.hero-peta-kepala {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.hero-peta-judul {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 17px;
+  color: var(--navy);
+}
+
+.hero-peta-gambar {
+  display: block;
+  aspect-ratio: 1 / 0.82;
+  padding: 12px;
+  border-radius: 18px;
+  background: var(--putih);
+  box-shadow: var(--neu-inset);
+}
+
+.hero-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+}
+
+.hero-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hero-legend-warna {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  border: 1px solid rgba(20, 32, 46, 0.18);
+}
+
+/* Kartu fitur bento dengan lebar berbeda */
+.fitur {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: var(--jarak-bento);
+}
+
+.fitur-kelurahan {
+  grid-column: span 4;
+}
+
+.fitur-parameter {
+  grid-column: span 5;
+}
+
+.fitur-wa {
+  grid-column: span 3;
+}
+
+.fitur-kartu {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  height: 100%;
+  padding: 24px;
+}
+
+.fitur-kartu h2 {
+  font-size: 19px;
+}
+
+.fitur-ikon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: var(--permukaan);
+  color: var(--biru);
+  box-shadow: var(--neu-raised-kecil);
+}
+
+.fitur-ikon-terang {
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--putih);
+  box-shadow: none;
+}
+
+.fitur-angka {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.fitur-angka .angka-utama {
+  font-size: 52px;
+}
+
+.fitur-wa-teks {
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 14px;
+}
+
+.fitur-wa .btn {
+  margin-top: auto;
+}
+
+.fitur-chip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: auto 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--target-sentuh);
+  padding: 0 16px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: var(--radius-pill);
+  background: var(--permukaan);
+  box-shadow: var(--neu-raised-kecil);
+  color: var(--navy);
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.chip:hover {
+  color: var(--biru);
+}
+
+/* Tablet */
+@media (max-width: 1279px) {
+  .hero {
+    gap: 32px;
+    min-height: 0;
+  }
+
+  .fitur-kelurahan,
+  .fitur-parameter {
+    grid-column: span 6;
+  }
+
+  .fitur-wa {
+    grid-column: span 12;
+  }
+}
+
+/* Mobile */
+@media (max-width: 767px) {
+  .landing {
+    gap: 28px;
+    padding-top: 4px;
+  }
+
+  .hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .hero-deskripsi {
+    font-size: 15px;
+  }
+
+  .hero-aksi {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .hero-peta {
+    padding: 16px;
+  }
+
+  .fitur-kelurahan,
+  .fitur-parameter,
+  .fitur-wa {
+    grid-column: span 12;
+  }
+}

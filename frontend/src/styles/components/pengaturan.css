@@ -1,0 +1,111 @@
+/* Simulasi pesan peringatan WA */
+.simulasi {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.simulasi-kepala {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.simulasi-kepala h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+}
+
+.simulasi-catatan {
+  font-size: 13px;
+}
+
+/* Layar percakapan bernuansa langit */
+.simulasi-layar {
+  display: flex;
+  flex-direction: column;
+  min-height: 340px;
+  padding: 16px;
+  border-radius: 20px;
+  background: linear-gradient(180deg, #d6f1f8 0%, #eef5fa 100%);
+  box-shadow: var(--neu-inset);
+}
+
+.simulasi-kosong {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex: 1;
+  padding: 24px;
+  text-align: center;
+  color: var(--teks-sekunder);
+}
+
+.pesan-wa {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 100%;
+  padding: 14px 16px 26px;
+  border-radius: 4px 18px 18px 18px;
+  background: var(--putih);
+  box-shadow: 0 2px 8px rgba(27, 54, 93, 0.12);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--navy);
+}
+
+.pesan-wa-judul {
+  font-weight: 700;
+}
+
+.pesan-wa-sub {
+  color: var(--teks-sekunder);
+  font-size: 13px;
+}
+
+.pesan-wa-kel {
+  margin-top: 6px;
+}
+
+.pesan-wa-nama {
+  font-weight: 700;
+}
+
+.pesan-wa-kel ul {
+  margin: 2px 0 0;
+  padding-left: 18px;
+}
+
+.pesan-wa-aman {
+  color: var(--teks-sekunder);
+}
+
+.pesan-wa-lain {
+  margin-top: 6px;
+  font-weight: 600;
+}
+
+.pesan-wa-tautan {
+  overflow-wrap: anywhere;
+}
+
+.pesan-wa-kaki {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--teks-sekunder);
+}
+
+.pesan-wa-jam {
+  position: absolute;
+  right: 12px;
+  bottom: 6px;
+  font-size: 11px;
+  color: var(--teks-sekunder);
+}

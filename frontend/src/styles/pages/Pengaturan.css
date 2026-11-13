@@ -1,0 +1,220 @@
+.pengaturan {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 1200px;
+}
+
+.pengaturan-kepala h1 {
+  font-size: 28px;
+  margin-bottom: 4px;
+}
+
+/* Grid dua kolom: pengaturan di kiri, simulasi di kanan */
+.pengaturan-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 400px);
+  align-items: start;
+  gap: var(--jarak-bento);
+}
+
+.pengaturan-kiri {
+  display: flex;
+  flex-direction: column;
+  gap: var(--jarak-bento);
+  min-width: 0;
+}
+
+.pengaturan-kanan {
+  position: sticky;
+  top: 24px;
+  min-width: 0;
+}
+
+.bagian {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px;
+}
+
+.bagian-kepala {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.bagian-kepala h2,
+.hapus-baris h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+}
+
+.bagian-skeleton-teks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Kelurahan pantauan */
+.pantauan-hitung {
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  box-shadow: var(--neu-inset);
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.pantauan-catatan {
+  font-size: 13px;
+}
+
+.pantauan-tag {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: var(--target-sentuh);
+  padding-left: 16px;
+  border-radius: var(--radius-pill);
+  background: var(--permukaan);
+  box-shadow: var(--neu-raised-kecil);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  font-weight: 600;
+}
+
+.tag-hapus {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--target-sentuh);
+  height: var(--target-sentuh);
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--teks-sekunder);
+}
+
+.tag-hapus:hover {
+  color: var(--galat);
+}
+
+/* Info akun */
+.info-akun {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin: 0;
+}
+
+.info-akun dt {
+  font-size: 13px;
+}
+
+.info-akun dd {
+  margin: 2px 0 0;
+  min-height: 24px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.info-akun-catatan {
+  font-size: 13px;
+}
+
+.info-akun-tombol {
+  align-self: flex-start;
+}
+
+/* Zona hapus akun */
+.hapus-baris {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+/* Bar simpan; menempel di bawah layar hanya saat ada perubahan */
+.pengaturan-aksi {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sedang);
+  box-shadow: var(--neu-inset);
+}
+
+.pengaturan-aksi.mengambang {
+  position: sticky;
+  bottom: 16px;
+  z-index: 10;
+  background: rgba(238, 245, 250, 0.96);
+  box-shadow: var(--bayangan-mengambang);
+}
+
+.pengaturan-aksi-status {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+}
+
+.pengaturan-tersimpan {
+  font-weight: 600;
+  color: var(--navy);
+}
+
+/* Tablet: simulasi turun ke bawah */
+@media (max-width: 1279px) {
+  .pengaturan-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pengaturan-kanan {
+    position: static;
+  }
+}
+
+/* Mobile */
+@media (max-width: 767px) {
+  .pengaturan-kepala h1 {
+    font-size: 22px;
+  }
+
+  .bagian {
+    padding: 18px;
+  }
+
+  .info-akun {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .hapus-baris {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .pengaturan-aksi {
+    flex-wrap: wrap;
+  }
+
+  .pengaturan-aksi.mengambang {
+    bottom: calc(var(--tinggi-nav-bawah) + 10px);
+  }
+
+  .pengaturan-aksi-status {
+    flex-basis: 100%;
+  }
+}

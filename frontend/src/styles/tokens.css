@@ -1,0 +1,63 @@
+:root {
+  /* Warna brand */
+  --navy: #1b365d;
+  --biru: #005a9c;
+  --biru-hover: #004a82;
+  --langit: #60c1e5;
+  --biru-muda: #a0e0ef;
+  --putih: #ffffff;
+
+  /* Permukaan dan teks */
+  --permukaan: #eef5fa;
+  --permukaan-2: #e4f1f8;
+  --permukaan-kartu: #f4f9fc;
+  --teks: #1b365d;
+  --teks-sekunder: #4a5d78;
+  --garis: #c9dbe8;
+  --garis-kuat: #8fa8bf;
+  --galat: #b3192f;
+  --sukses: #1b365d;
+
+  /* Gradasi dari palet brand */
+  --gradasi-langit: linear-gradient(180deg, #a0e0ef 0%, #d6f1f8 40%, #eef5fa 100%);
+  --gradasi-sorotan: linear-gradient(140deg, #005a9c 0%, #1b365d 100%);
+  --gradasi-kartu-nilai: linear-gradient(160deg, #d6f1f8 0%, #ffffff 100%);
+
+  /* Warna data (terpisah dari brand) */
+  --data-0: #f3f4f1;
+  --data-1: #fde9a8;
+  --data-2: #f9b44c;
+  --data-3: #ee6a2c;
+  --data-4: #c21f3a;
+  --data-5: #6b0f3a;
+  --data-teks-gelap: #14202e;
+  --data-batas: #9aa3ae;
+
+  /* Neumorphism */
+  --neu-raised: -6px -6px 14px rgba(255, 255, 255, 0.95), 6px 6px 16px rgba(27, 54, 93, 0.14);
+  --neu-raised-kecil: -3px -3px 8px rgba(255, 255, 255, 0.95), 3px 3px 8px rgba(27, 54, 93, 0.14);
+  --neu-inset: inset 3px 3px 7px rgba(27, 54, 93, 0.13), inset -3px -3px 7px rgba(255, 255, 255, 0.95);
+  --bayangan-mengambang: 0 8px 24px rgba(27, 54, 93, 0.16);
+
+  /* Radius dan jarak */
+  --radius-kartu: 24px;
+  --radius-sedang: 16px;
+  --radius-kecil: 12px;
+  --radius-pill: 999px;
+  --jarak-bento: 20px;
+  --target-sentuh: 44px;
+
+  /* Tipografi */
+  --font-heading: 'Montserrat', system-ui, sans-serif;
+  --font-teks: 'Plus Jakarta Sans', system-ui, sans-serif;
+
+  /* Motion */
+  --durasi-cepat: 150ms;
+  --durasi-sedang: 250ms;
+  --durasi-lambat: 350ms;
+  --easing: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Tinggi elemen tetap */
+  --tinggi-navbar: 68px;
+  --tinggi-nav-bawah: 64px;
+}

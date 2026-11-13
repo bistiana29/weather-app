@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Spesifikasi dan gambar inspirasi lokal, jangan di-commit
+docs/
