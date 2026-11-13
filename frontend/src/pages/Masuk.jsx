@@ -58,7 +58,7 @@ export default function Masuk() {
         </p>
       }
     >
-      {(lokasi.state?.pesan || pesanKeluar) && <Pesan>{lokasi.state?.pesan || pesanKeluar}</Pesan>}
+      {(pesanKeluar || lokasi.state?.pesan) && <Pesan>{pesanKeluar || lokasi.state?.pesan}</Pesan>}
       {galatServer && <Pesan nada="galat">{galatServer}</Pesan>}
 
       <form className="auth-form" onSubmit={kirim} noValidate>

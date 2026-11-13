@@ -15,16 +15,15 @@ import Pengaturan from './pages/Pengaturan'
 import ResetPassword from './pages/ResetPassword'
 import TidakDitemukan from './pages/TidakDitemukan'
 import VerifikasiOtp from './pages/VerifikasiOtp'
-import AdminDashboard from './pages/admin/Dashboard'
-import AdminData from './pages/admin/Data'
-import AdminModel from './pages/admin/Model'
-import AdminNotifikasi from './pages/admin/Notifikasi'
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: { staleTime: 5 * 60 * 1000, refetchOnWindowFocus: false, retry: 1 },
   },
 })
+
+// Muat halaman berat secara terpisah agar bundel awal tetap kecil
+const halaman = (modul) => ({ Component: modul.default })
 
 // Wadah halaman autentikasi tanpa navbar
 function HalamanMandiri() {
@@ -44,7 +43,7 @@ const router = createBrowserRouter([
       { path: 'peta-risiko', element: <Navigate to="/peta-risiko/hujan" replace /> },
       {
         path: 'peta-risiko/:parameter',
-        lazy: () => import('./pages/PetaRisiko').then((m) => ({ Component: m.default })),
+        lazy: () => import('./pages/PetaRisiko').then(halaman),
       },
       { path: '*', element: <TidakDitemukan /> },
     ],
@@ -61,19 +60,21 @@ const router = createBrowserRouter([
   },
   {
     element: <ProtectedRoute role="user" />,
+    hydrateFallbackElement: <div className="halaman-mandiri" aria-busy="true" />,
     children: [{ element: <UserLayout />, children: [{ path: 'pengaturan', element: <Pengaturan /> }] }],
   },
   {
     element: <ProtectedRoute role="admin" />,
+    hydrateFallbackElement: <div className="halaman-mandiri" aria-busy="true" />,
     children: [
       {
         path: 'admin',
         element: <AdminLayout />,
         children: [
-          { index: true, element: <AdminDashboard /> },
-          { path: 'data', element: <AdminData /> },
-          { path: 'model', element: <AdminModel /> },
-          { path: 'notifikasi', element: <AdminNotifikasi /> },
+          { index: true, lazy: () => import('./pages/admin/Dashboard').then(halaman) },
+          { path: 'data', lazy: () => import('./pages/admin/Data').then(halaman) },
+          { path: 'model', lazy: () => import('./pages/admin/Model').then(halaman) },
+          { path: 'notifikasi', lazy: () => import('./pages/admin/Notifikasi').then(halaman) },
         ],
       },
     ],

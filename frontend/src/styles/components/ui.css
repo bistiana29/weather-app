@@ -192,6 +192,29 @@
   border: 1px solid var(--garis);
 }
 
+.badge-sukses {
+  background: #e3f4fa;
+  color: var(--navy);
+  border: 1px solid #bfe6f3;
+}
+
+.badge-berjalan {
+  background: var(--biru);
+  color: var(--putih);
+}
+
+.badge-peringatan {
+  background: var(--data-1);
+  color: var(--data-teks-gelap);
+  border: 1px solid #f3d27a;
+}
+
+.badge-gagal {
+  background: #fbe9ec;
+  color: var(--galat);
+  border: 1px solid #f1c3cb;
+}
+
 .badge-info {
   background: #d6f1f8;
   color: var(--navy);
@@ -199,7 +222,7 @@
 
 /* Tooltip */
 .tooltip {
-  z-index: 1200;
+  z-index: 1400;
   padding: 6px 10px;
   border-radius: 8px;
   background: var(--navy);
@@ -211,7 +234,7 @@
 
 /* Panel mengambang (popover, dropdown) */
 .popover-panel {
-  z-index: 1100;
+  z-index: 1400;
   background: var(--putih);
   border: 1px solid var(--garis);
   border-radius: var(--radius-sedang);
@@ -691,6 +714,16 @@
   border: 0;
   background: transparent;
   outline: none;
+}
+
+.input-kotak textarea {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 0;
+  background: transparent;
+  outline: none;
+  resize: vertical;
 }
 
 .input-kotak input::placeholder {

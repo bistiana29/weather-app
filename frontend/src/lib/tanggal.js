@@ -52,3 +52,28 @@ export function formatRingkas(iso) {
 export function namaHariPendek(iso) {
   return HARI_PENDEK[keDate(iso).getDay()]
 }
+
+const FORMAT_WAKTU = new Intl.DateTimeFormat('id-ID', {
+  timeZone: ZONA,
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+})
+
+// "13 Nov 2026 09.41 WIB" dari timestamp ISO berzona
+export function formatWaktuWib(iso) {
+  if (!iso) return '–'
+  return `${FORMAT_WAKTU.format(new Date(iso)).replace(',', '')} WIB`
+}
+
+// Durasi singkat antara dua timestamp, mis. "3 mnt 12 dtk"
+export function formatDurasi(mulai, selesai) {
+  if (!mulai || !selesai) return '–'
+  const detik = Math.round((new Date(selesai) - new Date(mulai)) / 1000)
+  if (detik < 60) return `${detik} dtk`
+  const menit = Math.floor(detik / 60)
+  if (menit < 60) return `${menit} mnt ${detik % 60} dtk`
+  return `${Math.floor(menit / 60)} jam ${menit % 60} mnt`
+}

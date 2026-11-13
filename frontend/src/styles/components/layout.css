@@ -435,6 +435,11 @@
   gap: 4px;
 }
 
+.layout-pesan {
+  max-width: 1200px;
+  margin-bottom: 16px;
+}
+
 @media (max-width: 767px) {
   .layout-sidebar {
     display: block;

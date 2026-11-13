@@ -3,6 +3,7 @@ import { motion } from 'motion/react'
 import { Outlet, useLocation, useNavigate } from 'react-router'
 import { useAuth } from '../../lib/auth'
 import Logo from './Logo'
+import Pesan from '../ui/Pesan'
 import Sidebar from './Sidebar'
 import '../../styles/components/layout.css'
 
@@ -56,6 +57,11 @@ export default function UserLayout() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
       >
+        {lokasi.state?.pesan && (
+          <div className="layout-pesan">
+            <Pesan nada="galat">{lokasi.state.pesan}</Pesan>
+          </div>
+        )}
         <Outlet />
       </motion.main>
     </div>

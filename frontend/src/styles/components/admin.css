@@ -1,0 +1,275 @@
+/* Kepala halaman admin */
+.admin-kepala {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.admin-kepala h1 {
+  font-size: 28px;
+  margin-bottom: 4px;
+}
+
+.admin-kepala-aksi {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.berputar svg {
+  animation: putar 1s linear infinite;
+}
+
+@keyframes putar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Tabel data admin */
+.tabel {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.tabel th {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--garis-kuat);
+  text-align: left;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--teks-sekunder);
+  white-space: nowrap;
+}
+
+.tabel td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--garis);
+  vertical-align: top;
+  white-space: nowrap;
+}
+
+.tabel tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.tabel .angka {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.tabel code {
+  font-size: 12.5px;
+  color: var(--navy);
+}
+
+.log-galat {
+  display: block;
+  max-width: 320px;
+  margin-top: 4px;
+  font-size: 12.5px;
+  color: var(--galat);
+  white-space: normal;
+}
+
+/* Heatmap kelengkapan */
+.heatmap {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.heatmap-blok {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.heatmap-judul {
+  font-size: 15px;
+}
+
+.heatmap-tabel {
+  border-collapse: separate;
+  border-spacing: 4px;
+  font-size: 12px;
+}
+
+.heatmap-param {
+  padding-right: 8px;
+  text-align: left;
+  font-weight: 500;
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  color: var(--navy);
+  white-space: nowrap;
+}
+
+.heatmap-tgl {
+  min-width: 28px;
+  font-weight: 600;
+  color: var(--navy);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.heatmap-tgl span {
+  display: block;
+  font-weight: 500;
+  color: var(--teks-sekunder);
+}
+
+.heatmap-sel {
+  display: inline-block;
+  width: 28px;
+  height: 22px;
+  border-radius: 6px;
+  vertical-align: middle;
+}
+
+td.heatmap-sel {
+  display: table-cell;
+}
+
+.hm-penuh {
+  background: var(--biru);
+}
+
+.hm-tinggi {
+  background: var(--langit);
+}
+
+.hm-sebagian {
+  background: var(--data-1);
+  box-shadow: inset 0 0 0 1px #e9c96a;
+}
+
+.hm-kosong {
+  background: #f1c3cb;
+  box-shadow: inset 0 0 0 1px #d98a98;
+}
+
+.hm-tanpa {
+  background: repeating-linear-gradient(45deg, #e4ebf0 0 4px, #f6f9fb 4px 8px);
+  box-shadow: inset 0 0 0 1px var(--garis);
+}
+
+.heatmap-legenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+}
+
+.heatmap-legenda li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.heatmap-legenda .heatmap-sel {
+  width: 18px;
+  height: 14px;
+  border-radius: 4px;
+}
+
+/* Dialog backfill */
+.backfill-sumber {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.backfill-sumber legend {
+  margin-bottom: 4px;
+}
+
+.backfill-rentang {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.backfill-catatan {
+  font-size: 13px;
+}
+
+/* Unggah CSV */
+.unggah {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.unggah > p {
+  font-size: 13px;
+}
+
+.unggah-berkas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.unggah-berkas label {
+  cursor: pointer;
+}
+
+.unggah-berkas input:focus-visible + label {
+  outline: 3px solid var(--langit);
+  outline-offset: 2px;
+}
+
+.unggah-nama {
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.unggah-tombol {
+  align-self: flex-start;
+}
+
+/* Grafik evaluasi model */
+.grafik-evaluasi {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+}
+
+.grafik-evaluasi-area {
+  position: relative;
+  height: 260px;
+}
+
+.grafik-evaluasi-kosong {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: var(--teks-sekunder);
+  pointer-events: none;
+}
+
+@media (max-width: 767px) {
+  .admin-kepala h1 {
+    font-size: 22px;
+  }
+
+  .backfill-rentang {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -1,0 +1,373 @@
+.admin {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 1320px;
+}
+
+/* Grid bento admin 12 kolom */
+.admin-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: var(--jarak-bento);
+}
+
+.span-penuh {
+  grid-column: span 12;
+}
+
+.span-dua-pertiga {
+  grid-column: span 8;
+}
+
+.span-setengah {
+  grid-column: span 6;
+}
+
+.span-etl,
+.span-sepertiga {
+  grid-column: span 4;
+}
+
+.span-kecil {
+  grid-column: span 3;
+}
+
+.span-mini {
+  grid-column: span 2;
+}
+
+.admin-grid > * {
+  min-width: 0;
+}
+
+.admin-kartu {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  height: 100%;
+  padding: 22px;
+}
+
+.admin-kartu-kepala {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.admin-judul-kartu {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 17px;
+}
+
+.admin-catatan {
+  font-size: 13px;
+}
+
+.admin-filter {
+  min-width: 220px;
+}
+
+.admin-tautan {
+  margin-top: auto;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--target-sentuh);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+/* Kartu angka ringkas */
+.admin-angka-judul {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--teks-sekunder);
+}
+
+.admin-angka-isi {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.admin-angka-baris {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-angka-baris .angka-utama {
+  font-size: 32px;
+  color: var(--navy);
+}
+
+.admin-sumber {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-sumber li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+}
+
+.admin-sumber-nama {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  min-width: 96px;
+}
+
+.admin-sumber .teks-sekunder {
+  flex-basis: 100%;
+  font-size: 13px;
+}
+
+/* Alur harian */
+.alur {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.alur-langkah {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  gap: 6px;
+  min-width: 0;
+}
+
+.alur-kotak {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  padding: 14px;
+  border-radius: 18px;
+  background: var(--permukaan);
+  box-shadow: var(--neu-raised-kecil);
+}
+
+.alur-nama {
+  font-weight: 700;
+  color: var(--navy);
+}
+
+.alur-jam {
+  min-height: 20px;
+  font-size: 13px;
+}
+
+.alur-panah {
+  flex-shrink: 0;
+  color: var(--teks-sekunder);
+}
+
+/* Daftar perlu perhatian */
+.perhatian {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.perhatian-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--target-sentuh);
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--permukaan-2);
+  box-shadow: var(--neu-inset);
+  color: var(--navy);
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.perhatian-item span {
+  flex: 1;
+}
+
+.perhatian-item svg:first-child {
+  flex-shrink: 0;
+  color: var(--galat);
+}
+
+.perhatian-item:hover {
+  color: var(--biru);
+}
+
+/* Titik pengambilan */
+.titik {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.titik-ringkas .angka-utama {
+  font-size: 32px;
+}
+
+.titik-sub {
+  margin-bottom: 4px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.titik-daftar {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding-left: 18px;
+  font-size: 14px;
+}
+
+/* Riwayat model */
+.riwayat {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.riwayat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  box-shadow: var(--neu-inset);
+  font-size: 14px;
+}
+
+.riwayat-meta {
+  font-size: 12.5px;
+}
+
+/* Gateway dan ringkasan kiriman */
+.gateway {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+}
+
+.gateway dt {
+  font-size: 13px;
+}
+
+.gateway dd {
+  margin: 2px 0 0;
+  font-weight: 600;
+}
+
+.ringkas-kirim {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.ringkas-kirim-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  box-shadow: var(--neu-inset);
+  font-weight: 600;
+}
+
+.ringkas-kirim-item .angka-utama {
+  font-size: 34px;
+  color: var(--navy);
+}
+
+.ringkas-kirim-item.gagal .angka-utama {
+  color: var(--galat);
+}
+
+/* Tablet: kartu jadi dua kolom */
+@media (max-width: 1279px) {
+  .span-dua-pertiga,
+  .span-setengah,
+  .span-sepertiga,
+  .span-etl {
+    grid-column: span 12;
+  }
+
+  .span-kecil,
+  .span-mini {
+    grid-column: span 4;
+  }
+
+  .alur {
+    flex-wrap: wrap;
+  }
+
+  .alur-langkah {
+    flex: 1 1 30%;
+  }
+}
+
+/* Mobile */
+@media (max-width: 767px) {
+  .admin-grid > * {
+    grid-column: span 12;
+  }
+
+  .admin-kartu {
+    padding: 18px;
+  }
+
+  .admin-filter {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .alur {
+    flex-direction: column;
+    flex-wrap: nowrap;
+  }
+
+  .alur-langkah {
+    flex: none;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .alur-panah {
+    align-self: center;
+    transform: rotate(90deg);
+  }
+
+  .ringkas-kirim {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

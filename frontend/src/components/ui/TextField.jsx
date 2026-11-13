@@ -3,7 +3,7 @@ import { useId, useState } from 'react'
 import '../../styles/components/ui.css'
 
 // Kolom isian berlabel dengan pesan bantuan/galat, awalan, dan tombol lihat password
-export default function TextField({ label, galat, bantuan, awalan, type = 'text', className = '', ...props }) {
+export default function TextField({ label, galat, bantuan, awalan, type = 'text', baris, className = '', ...props }) {
   const id = useId()
   const [lihat, setLihat] = useState(false)
   const sandi = type === 'password'
@@ -14,13 +14,17 @@ export default function TextField({ label, galat, bantuan, awalan, type = 'text'
       <label htmlFor={id} className="field-label">{label}</label>
       <div className={`input-kotak ${galat ? 'galat' : ''}`}>
         {awalan && <span className="input-awalan" aria-hidden="true">{awalan}</span>}
-        <input
-          id={id}
-          type={sandi && lihat ? 'text' : type}
-          aria-invalid={Boolean(galat)}
-          aria-describedby={idKeterangan}
-          {...props}
-        />
+        {baris ? (
+          <textarea id={id} rows={baris} aria-invalid={Boolean(galat)} aria-describedby={idKeterangan} {...props} />
+        ) : (
+          <input
+            id={id}
+            type={sandi && lihat ? 'text' : type}
+            aria-invalid={Boolean(galat)}
+            aria-describedby={idKeterangan}
+            {...props}
+          />
+        )}
         {sandi && (
           <button
             type="button"
