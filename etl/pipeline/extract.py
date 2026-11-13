@@ -1,5 +1,9 @@
-"""Pengambilan data dari NASA POWER dan Open-Meteo: retry untuk galat sementara, jeda antar-panggilan,
-dan penghitung kuota Open-Meteo yang disimpan lokal di _work/openmeteo_budget.json."""
+"""
+Extract: mengambil data cuaca mentah dari NASA POWER dan Open-Meteo, dengan retry, jeda, dan penghitung kuota Open-Meteo.
+
+Alur file: ingest.py / backfill.py / stasiun.py → extract.py → transform.py
+Alur fungsi: fetch_hourly() / fetch_daily_stasiun() → _nasa_get() / _openmeteo_get() (acquire_budget()) → _get_json() → transform.nasa_to_frame() / openmeteo_to_frame()
+"""
 import json
 import logging
 import threading
@@ -36,6 +40,7 @@ _nasa_last_call = 0.0
 _openmeteo_last_call = 0.0
 
 
+# Menunggu sampai jeda minimal antar-request NASA terpenuhi (aman dipakai banyak thread)
 def _wait_nasa_turn() -> None:
     global _nasa_last_call
     with _nasa_lock:
@@ -45,6 +50,7 @@ def _wait_nasa_turn() -> None:
         _nasa_last_call = time.monotonic()
 
 
+# GET JSON dengan retry backoff; HTTP 429 langsung menjadi RateLimitError tanpa retry
 def _get_json(url: str, query: dict, max_retries: int, before_call=None) -> dict:
     for attempt in range(1, max_retries + 1):
         if before_call:
@@ -63,6 +69,7 @@ def _get_json(url: str, query: dict, max_retries: int, before_call=None) -> dict
             time.sleep(delay)
 
 
+# Memecah rentang tanggal menjadi potongan berisi paling banyak max_days hari
 def _date_chunks(start: date, end: date, max_days: int) -> list[tuple[date, date]]:
     chunks = []
     while start <= end:
@@ -72,6 +79,7 @@ def _date_chunks(start: date, end: date, max_days: int) -> list[tuple[date, date
     return chunks
 
 
+# Menyusun query NASA POWER lalu memanggil _get_json()
 def _nasa_get(spec: params.TableSpec, lat: float, lon: float, start: date, end: date) -> dict:
     query = {
         "parameters": ",".join(p.api_code for p in spec.params),
@@ -86,6 +94,7 @@ def _nasa_get(spec: params.TableSpec, lat: float, lon: float, start: date, end: 
     return _get_json(f"{NASA_URL}/{spec.granularity}/point", query, max_retries=6, before_call=_wait_nasa_turn)
 
 
+# Mengambil NASA hourly per potongan 366 hari dan mengubahnya lewat transform.nasa_to_frame()
 def fetch_nasa_hourly(kelurahan_id: int, lat: float, lon: float, start: date, end: date) -> pd.DataFrame:
     spec = params.NASA_HOURLY
     frames = [transform.nasa_to_frame(_nasa_get(spec, lat, lon, s, e), spec, kelurahan_id)
@@ -94,13 +103,14 @@ def fetch_nasa_hourly(kelurahan_id: int, lat: float, lon: float, start: date, en
     return transform.drop_all_null(transform.drop_future(df, spec), spec)
 
 
+# Menghitung bobot panggilan dengan rumus resmi Open-Meteo: nLocations * max(1, (nDays / 14) * (nVariables / 10))
 def call_weight(n_locations: int, n_days: int, n_variables: int) -> float:
-    """Rumus bobot resmi Open-Meteo: nLocations * max(1, (nDays / 14) * (nVariables / 10))."""
     if n_locations <= 0 or n_days <= 0 or n_variables <= 0:
         return 0.0
     return n_locations * max(1.0, (n_days / 14.0) * (n_variables / 10.0))
 
 
+# Menjumlahkan bobot yang terpakai pada hari UTC ini, 1 jam terakhir, dan 1 menit terakhir
 def budget_usage(events: list[tuple[float, float]], now: float) -> dict[str, float]:
     day_start = datetime.fromtimestamp(now, tz=timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
     return {
@@ -110,6 +120,7 @@ def budget_usage(events: list[tuple[float, float]], now: float) -> dict[str, flo
     }
 
 
+# Membaca riwayat pemakaian kuota dari _work/openmeteo_budget.json
 def _load_budget_events() -> list[tuple[float, float]]:
     try:
         return [(float(ts), float(w)) for ts, w in json.loads(BUDGET_FILE.read_text(encoding="utf-8"))["events"]]
@@ -120,8 +131,8 @@ def _load_budget_events() -> list[tuple[float, float]]:
         return []
 
 
+# Menolak panggilan yang melewati kuota harian/per jam, menunggu bila melewati kuota per menit, lalu mencatat bobotnya
 def acquire_budget(weight: float) -> None:
-    """Tolak panggilan yang melewati batas harian/per jam; tunggu sebentar jika melewati batas per menit."""
     global _openmeteo_last_call
     now = time.time()
     events = _load_budget_events()
@@ -146,6 +157,7 @@ def acquire_budget(weight: float) -> None:
     BUDGET_FILE.write_text(json.dumps({"events": [e for e in events if e[0] >= cutoff]}), encoding="utf-8")
 
 
+# Menyusun query Open-Meteo, memanggil acquire_budget(), lalu _get_json()
 def _openmeteo_get(url: str, spec: params.TableSpec, endpoint: str, lat: float, lon: float,
                    start: date, end: date, extra: dict) -> dict:
     variables = spec.params_for(endpoint)
@@ -161,6 +173,7 @@ def _openmeteo_get(url: str, spec: params.TableSpec, endpoint: str, lat: float, 
     return _get_json(url, query, max_retries=5)
 
 
+# Mengambil Open-Meteo archive dan visibility (Historical Forecast), lalu menggabungkan keduanya
 def fetch_openmeteo_hourly(kelurahan_id: int, lat: float, lon: float, start: date, end: date) -> pd.DataFrame:
     spec = params.OPENMETEO_HOURLY
     archive = _openmeteo_get(ARCHIVE_URL, spec, "default", lat, lon, start, end,
@@ -182,13 +195,13 @@ def fetch_openmeteo_hourly(kelurahan_id: int, lat: float, lon: float, start: dat
     return transform.drop_all_null(transform.drop_future(df, spec), spec)
 
 
+# Mengubah rentang WIB menjadi tanggal UTC yang harus diminta, karena hourly diminta dalam UTC
 def utc_dates(start: datetime, end: datetime) -> tuple[date, date]:
-    """Tanggal UTC yang harus diminta agar rentang start..end (WIB) tercakup, karena hourly diminta dalam UTC."""
     return start.astimezone(timezone.utc).date(), end.astimezone(timezone.utc).date()
 
 
+# Memanggil fetch_nasa_hourly() atau fetch_openmeteo_hourly() sesuai sumber, lalu memangkas ke start..end (WIB)
 def fetch_hourly(source: str, kelurahan_id: int, lat: float, lon: float, start: datetime, end: datetime) -> pd.DataFrame:
-    """Data hourly satu kelurahan untuk start..end (inklusif, waktu berzona). Kolom waktu dalam WIB."""
     d_start, d_end = utc_dates(start, end)
     if source == "nasa":
         df = fetch_nasa_hourly(kelurahan_id, lat, lon, d_start, d_end)
@@ -200,10 +213,10 @@ def fetch_hourly(source: str, kelurahan_id: int, lat: float, lon: float, start: 
     return df[(t >= pd.Timestamp(start)) & (t <= pd.Timestamp(end))].reset_index(drop=True)
 
 
+# Mengambil data daily satu stasiun BMKG beserta elevasi titik grid yang dipakai API
 def fetch_daily_stasiun(spec: params.TableSpec, id_wmo: int, lat: float, lon: float,
                         start: date, end: date) -> tuple[pd.DataFrame, float | None]:
-    """Data daily satu stasiun, beserta elevasi titik grid yang dipakai API. Elevasi tidak di-set (default API)
-    agar caranya sama dengan data hourly 153 kelurahan."""
+    # Elevasi tidak di-set (default API) agar caranya sama dengan data hourly 153 kelurahan.
     if spec.source == "nasa":
         payload = _nasa_get(spec, lat, lon, start, end)
         df = transform.nasa_to_frame(payload, spec, id_wmo)

@@ -1,9 +1,8 @@
-"""Backfill lokal data hourly 153 kelurahan, dari 2022-01-01 00:00 WIB sampai config.BACKFILL_END (2026-11-11 23:00 WIB).
-Bisa dihentikan dan dilanjutkan kapan saja: setiap potongan (sumber, tahun WIB, kelurahan) dicatat success di
-ingestion_log setelah datanya terunggah dan terverifikasi, lalu dilewati pada run berikutnya.
+"""
+Pengendali: backfill manual data hourly 153 kelurahan dari 2022-01-01 00:00 sampai 2026-11-11 23:00 WIB, bisa dihentikan dan dilanjutkan.
 
-    python -m pipeline.backfill --estimate-only
-    python -m pipeline.backfill [--start-date 2022-01-01] [--kelurahan-ids 1,2]
+Alur file: manual → backfill.py → extract.py, load.py
+Alur fungsi: main() → yearly_slices() → extract.fetch_hourly() → split_hot_cold() → load.upsert() / load.stage_monthly_frame() → commit_chunks() → flush_dirty_months()
 """
 import argparse
 import itertools
@@ -13,7 +12,7 @@ from datetime import date, datetime, time as dtime, timedelta
 
 import pandas as pd
 
-from . import api, config, db, params, ringkasan, storage
+from . import config, extract, load, params
 from .params import TableSpec
 
 logger = logging.getLogger(__name__)
@@ -21,15 +20,15 @@ logger = logging.getLogger(__name__)
 FLUSH_EVERY_CHUNKS = 10
 
 
+# Memotong rentang per tahun WIB (1 Jan 00:00 sampai 31 Des 23:00), dipangkas ke start..end
 def yearly_slices(start: datetime, end: datetime) -> list[tuple[datetime, datetime]]:
-    """Potongan per tahun WIB: 1 Jan 00:00 sampai 31 Des 23:00 WIB, dipangkas ke start..end."""
     slices = [(max(start, datetime(y, 1, 1, 0, tzinfo=config.WIB)), min(end, datetime(y, 12, 31, 23, tzinfo=config.WIB)))
               for y in range(start.year, end.year + 1)]
     return [(s, e) for s, e in slices if s <= e]
 
 
+# Memisahkan baris sejak cutoff_date 00:00 WIB (Postgres) dari baris yang lebih tua (Parquet)
 def split_hot_cold(df: pd.DataFrame, spec: TableSpec, cutoff_date: date) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Baris sejak cutoff_date 00:00 WIB masuk Postgres (lapis panas); baris lebih tua langsung ke Parquet (lapis dingin)."""
     if df.empty:
         return df.copy(), df.copy()
     cutoff = pd.Timestamp(datetime.combine(cutoff_date, dtime.min, tzinfo=config.WIB))
@@ -37,6 +36,7 @@ def split_hot_cold(df: pd.DataFrame, spec: TableSpec, cutoff_date: date) -> tupl
     return df[is_hot].reset_index(drop=True), df[~is_hot].reset_index(drop=True)
 
 
+# Membaca semua potongan backfill berstatus success dari ingestion_log
 def completed_chunks(conn) -> set[tuple[str, int, datetime, datetime]]:
     with conn.cursor() as cur:
         cur.execute("SELECT sumber, kelurahan_id, rentang_mulai, rentang_akhir FROM ingestion_log WHERE job = 'backfill' "
@@ -46,22 +46,22 @@ def completed_chunks(conn) -> set[tuple[str, int, datetime, datetime]]:
     return done
 
 
+# Menghitung jumlah potongan, request NASA, dan bobot Open-Meteo, total dan yang tersisa
 def estimate_backfill(kel_ids: list[int], slices: list[tuple[datetime, datetime]], done: set) -> dict:
-    """Jumlah panggilan dan bobot Open-Meteo untuk semua potongan dan untuk potongan yang belum selesai."""
     n_vars = [len(params.OPENMETEO_HOURLY.params_for("default")), len(params.OPENMETEO_HOURLY.params_for("historical_forecast"))]
     est = {"potongan": 0, "selesai": 0, "nasa_request": 0, "nasa_request_sisa": 0, "om_panggilan": 0,
            "om_panggilan_sisa": 0, "om_bobot": 0.0, "om_bobot_sisa": 0.0}
     for source, (s, e), kel_id in itertools.product(params.SOURCES, slices, kel_ids):
-        d0, d1 = api.utc_dates(s, e)
+        d0, d1 = extract.utc_dates(s, e)
         is_done = (source, kel_id, s, e) in done
         est["potongan"] += 1
         est["selesai"] += is_done
         if source == "nasa":
-            n = len(api._date_chunks(d0, d1, api.NASA_MAX_DAYS_PER_HOURLY_REQUEST))
+            n = len(extract._date_chunks(d0, d1, extract.NASA_MAX_DAYS_PER_HOURLY_REQUEST))
             est["nasa_request"] += n
             est["nasa_request_sisa"] += 0 if is_done else n
         else:
-            w = sum(api.call_weight(1, (d1 - d0).days + 1, v) for v in n_vars)
+            w = sum(extract.call_weight(1, (d1 - d0).days + 1, v) for v in n_vars)
             est["om_panggilan"] += len(n_vars)
             est["om_bobot"] += w
             if not is_done:
@@ -71,35 +71,36 @@ def estimate_backfill(kel_ids: list[int], slices: list[tuple[datetime, datetime]
     return est
 
 
+# Mencari file pending yang belum terunggah, misalnya karena run sebelumnya terhenti saat mengunggah
 def unflushed_months() -> set[tuple[str, str, str]]:
-    """File pending yang belum terunggah, misalnya karena run sebelumnya terhenti saat mengunggah."""
     return {(path.parts[-4], path.parts[-3], path.stem)
             for path in (config.WORK_DIR / "parquet_pending").glob("*/hourly/*/*.parquet")}
 
 
-def flush_dirty_months(conn, storage_client: storage.SupabaseStorageClient, dirty_months: set[tuple[str, str, str]]) -> None:
-    """Unggah file pending bulan yang berubah ke Supabase Storage. File pending dihapus setelah unggahan terverifikasi."""
+# Mengunggah file pending lewat load.upsert_monthly_parquet() dan load.simpan_ringkasan(), lalu menghapus file pending
+def flush_dirty_months(conn, storage_client: load.SupabaseStorageClient, dirty_months: set[tuple[str, str, str]]) -> None:
     for source, granularity, ym in sorted(dirty_months):
         spec = params.get_spec(source)
-        pending_path = storage.local_pending_path(source, granularity, ym)
+        pending_path = load.local_pending_path(source, granularity, ym)
         if pending_path.exists():
-            log_id = db.log_start(conn, "backfill_flush", source, granularity, None, None, None, f"storage:{ym}")
+            log_id = load.log_start(conn, "backfill_flush", source, granularity, None, None, None, f"storage:{ym}")
             try:
-                pending = storage.parquet_bytes_to_dataframe(pending_path.read_bytes(), spec)
+                pending = load.parquet_bytes_to_dataframe(pending_path.read_bytes(), spec)
                 info = storage_client.upsert_monthly_parquet(spec, ym, pending)
-                ringkasan.simpan(conn, spec, ym, info["frame"])
-                db.log_finish(conn, log_id, "success", jumlah_baris=info["after_rows"])
+                load.simpan_ringkasan(conn, spec, ym, info["frame"])
+                load.log_finish(conn, log_id, "success", jumlah_baris=info["after_rows"])
             except KeyboardInterrupt:
-                db.log_finish(conn, log_id, "aborted", pesan_error="dihentikan manual saat mengunggah; file pending "
-                                                                   "tetap ada dan diunggah ulang pada run berikutnya")
+                load.log_finish(conn, log_id, "aborted", pesan_error="dihentikan manual saat mengunggah; file pending "
+                                                                     "tetap ada dan diunggah ulang pada run berikutnya")
                 raise
             except Exception as exc:
-                db.log_finish(conn, log_id, "failed", pesan_error=str(exc))
+                load.log_finish(conn, log_id, "failed", pesan_error=str(exc))
                 raise
             pending_path.unlink()
         dirty_months.discard((source, granularity, ym))
 
 
+# Menjalankan --estimate-only, atau mengambil setiap potongan (sumber, tahun, kelurahan) yang belum success
 def main(argv: list[str] | None = None) -> int:
     config.setup_logging()
     p = argparse.ArgumentParser(description="Backfill data hourly 2022-01-01 00:00 WIB sampai 2026-11-11 23:00 WIB (bisa dilanjutkan)")
@@ -110,12 +111,12 @@ def main(argv: list[str] | None = None) -> int:
 
     cutoff_date = datetime.now(config.WIB).date() - timedelta(days=config.HOT_DAYS)
     kel_ids = [int(x) for x in args.kelurahan_ids.split(",") if x.strip()] if args.kelurahan_ids else None
-    kel_df = db.load_kelurahan(kel_ids)
+    kel_df = load.load_kelurahan(kel_ids)
     start = datetime.combine(date.fromisoformat(args.start_date), dtime.min, tzinfo=config.WIB)
     slices = yearly_slices(start, config.BACKFILL_END)
 
     if args.estimate_only:
-        with db.connect() as conn:
+        with load.connect() as conn:
             done = completed_chunks(conn)
         est = estimate_backfill(kel_df["kelurahan_id"].tolist(), slices, done)
         logger.info("Rentang %s s.d. %s WIB, %d kelurahan x %d potongan tahun x 2 sumber, cutoff lapis panas %s 00:00 WIB",
@@ -131,32 +132,32 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     config.acquire_run_lock("backfill")
-    storage_client = storage.SupabaseStorageClient()
+    storage_client = load.SupabaseStorageClient()
     storage_client.ensure_bucket()
     dirty_months: set[tuple[str, str, str]] = set()
     awaiting_flush: list[tuple[int, int]] = []
     processed = 0
     stopped_by: Exception | None = None
 
+    # Memanggil flush_dirty_months() lalu menandai success potongan yang datanya ikut terunggah
     def commit_chunks(final: bool = False) -> None:
-        """Unggah data pending, lalu tandai success potongan yang datanya ikut terunggah. Jika unggahan terakhir
-        (final) gagal, potongan itu dicatat failed/aborted sehingga diambil ulang pada run berikutnya."""
         try:
             flush_dirty_months(conn, storage_client, dirty_months)
         except BaseException as exc:
+            # Jika unggahan terakhir gagal, potongannya dicatat failed/aborted agar diambil ulang pada run berikutnya.
             if final:
                 status = "aborted" if isinstance(exc, KeyboardInterrupt) else "failed"
                 for log_id, _ in awaiting_flush:
-                    db.log_finish(conn, log_id, status, pesan_error=f"data belum terunggah ke Storage: {exc!r}")
+                    load.log_finish(conn, log_id, status, pesan_error=f"data belum terunggah ke Storage: {exc!r}")
                 awaiting_flush.clear()
             raise
         for log_id, n_rows in awaiting_flush:
-            db.log_finish(conn, log_id, "success", jumlah_baris=n_rows)
+            load.log_finish(conn, log_id, "success", jumlah_baris=n_rows)
         awaiting_flush.clear()
 
     logger.info("========== Run backfill mulai ==========")
-    with db.connect() as conn:
-        db.prepare(conn)
+    with load.connect() as conn:
+        load.prepare(conn)
         leftover = unflushed_months()
         if leftover:
             logger.info("Mengunggah %d file pending yang belum terunggah dari run sebelumnya", len(leftover))
@@ -167,34 +168,34 @@ def main(argv: list[str] | None = None) -> int:
                 granularity = spec.granularity
                 for r in kel_df.itertuples(index=False):
                     kel_id = int(r.kelurahan_id)
-                    if db.checkpoint_done(conn, source, granularity, kel_id, s, e, "backfill_chunk"):
+                    if load.checkpoint_done(conn, source, granularity, kel_id, s, e, "backfill_chunk"):
                         continue
-                    log_id = db.log_start(conn, "backfill", source, granularity, kel_id, s, e, "backfill_chunk")
+                    log_id = load.log_start(conn, "backfill", source, granularity, kel_id, s, e, "backfill_chunk")
                     try:
-                        df = api.fetch_hourly(source, kel_id, float(r.latitude), float(r.longitude), s, e)
+                        df = extract.fetch_hourly(source, kel_id, float(r.latitude), float(r.longitude), s, e)
                         hot_df, cold_df = split_hot_cold(df, spec, cutoff_date)
                         if not hot_df.empty:
-                            db.upsert(conn, spec, hot_df)
+                            load.upsert(conn, spec, hot_df)
                         if not cold_df.empty:
-                            for ym, grp in cold_df.groupby(storage.month_key(cold_df, spec)):
-                                storage.stage_monthly_frame(grp, spec, str(ym))
+                            for ym, grp in cold_df.groupby(load.month_key(cold_df, spec)):
+                                load.stage_monthly_frame(grp, spec, str(ym))
                                 dirty_months.add((source, granularity, str(ym)))
                         awaiting_flush.append((log_id, len(df)))
-                    except api.BudgetExceededError as exc:
-                        db.log_finish(conn, log_id, "skipped", pesan_error=str(exc))
+                    except extract.BudgetExceededError as exc:
+                        load.log_finish(conn, log_id, "skipped", pesan_error=str(exc))
                         logger.warning("Kuota harian/per jam Open-Meteo habis, backfill berhenti. Lanjutkan besok: %s", exc)
                         stopped_by = exc
                         break
-                    except api.RateLimitError as exc:
-                        db.log_finish(conn, log_id, "failed", pesan_error=str(exc))
+                    except extract.RateLimitError as exc:
+                        load.log_finish(conn, log_id, "failed", pesan_error=str(exc))
                         logger.error("API menolak karena batas kuota (HTTP 429), backfill berhenti: %s", exc)
                         stopped_by = exc
                         break
                     except KeyboardInterrupt:
-                        db.log_finish(conn, log_id, "aborted", pesan_error="dihentikan manual sebelum potongan selesai")
+                        load.log_finish(conn, log_id, "aborted", pesan_error="dihentikan manual sebelum potongan selesai")
                         raise
                     except Exception as exc:
-                        db.log_finish(conn, log_id, "failed", pesan_error=str(exc))
+                        load.log_finish(conn, log_id, "failed", pesan_error=str(exc))
                         raise
                     processed += 1
                     logger.info("[backfill] %s/%s kel=%d (%s..%s WIB): total=%d (hot=%d, cold=%d)",
@@ -213,7 +214,7 @@ def main(argv: list[str] | None = None) -> int:
             commit_chunks(final=True)
 
     logger.info("Backfill selesai untuk run ini. Potongan baru diproses: %d", processed)
-    return 1 if isinstance(stopped_by, api.RateLimitError) else 0
+    return 1 if isinstance(stopped_by, extract.RateLimitError) else 0
 
 
 if __name__ == "__main__":

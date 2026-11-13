@@ -1,4 +1,9 @@
-"""Mengubah respons API menjadi DataFrame berkolom bersatuan. Tidak ada akses jaringan di sini."""
+"""
+Transform: mengubah respons JSON API menjadi DataFrame berkolom bersatuan (-999/NaN menjadi NULL, waktu WIB), tanpa akses jaringan.
+
+Alur file: extract.py / load.py → transform.py
+Alur fungsi: nasa_to_frame() / openmeteo_to_frame() → merge_openmeteo_hourly() → drop_future() → drop_all_null() → coalesce_dupes() (dipakai load.py)
+"""
 from datetime import datetime, timezone
 
 import numpy as np
@@ -14,10 +19,12 @@ class SourceFormatError(ValueError):
     pass
 
 
+# Membuat DataFrame kosong dengan kolom kunci dan kolom nilai tabel
 def empty_frame(spec: TableSpec) -> pd.DataFrame:
     return pd.DataFrame(columns=[*spec.key_cols, *spec.value_cols])
 
 
+# Mengubah respons NASA POWER menjadi DataFrame: cek time_standard, -999 menjadi NULL, waktu ke WIB
 def nasa_to_frame(payload: dict, spec: TableSpec, location_id: int) -> pd.DataFrame:
     expected_ts = config.NASA_TIME_STANDARD[spec.granularity]
     header = payload.get("header", {})
@@ -44,6 +51,7 @@ def nasa_to_frame(payload: dict, spec: TableSpec, location_id: int) -> pd.DataFr
     return df.reset_index(drop=True)
 
 
+# Mengubah respons Open-Meteo menjadi DataFrame: cek satuan dan zona waktu, null menjadi NaN, waktu ke WIB
 def openmeteo_to_frame(payload: dict, spec: TableSpec, location_id: int, endpoint: str = "default") -> pd.DataFrame:
     params = spec.params_for(endpoint)
     block = spec.granularity
@@ -73,6 +81,7 @@ def openmeteo_to_frame(payload: dict, spec: TableSpec, location_id: int, endpoin
     return pd.DataFrame(data)
 
 
+# Menempelkan kolom visibility ke data archive Open-Meteo; NULL bila visibility tidak tersedia
 def merge_openmeteo_hourly(archive_df: pd.DataFrame, visibility_df: pd.DataFrame | None) -> pd.DataFrame:
     vis_col = "visibility (m)"
     df = archive_df.copy()
@@ -83,8 +92,8 @@ def merge_openmeteo_hourly(archive_df: pd.DataFrame, visibility_df: pd.DataFrame
     return df[[*OPENMETEO_HOURLY.key_cols, *OPENMETEO_HOURLY.value_cols]]
 
 
+# Membuang jam setelah jam WIB yang sedang berjalan (hourly), atau hari ini dan sesudahnya (daily)
 def drop_future(df: pd.DataFrame, spec: TableSpec, now: datetime | None = None) -> pd.DataFrame:
-    """Hourly: buang jam setelah jam WIB yang sedang berjalan. Daily: buang hari ini (WIB) dan sesudahnya karena belum selesai."""
     if df.empty:
         return df
     now_ts = pd.Timestamp(now or datetime.now(timezone.utc))
@@ -97,13 +106,14 @@ def drop_future(df: pd.DataFrame, spec: TableSpec, now: datetime | None = None) 
     return df[keep].reset_index(drop=True)
 
 
+# Membuang baris yang semua kolom nilainya NULL
 def drop_all_null(df: pd.DataFrame, spec: TableSpec) -> pd.DataFrame:
     cols = [c for c in spec.value_cols if c in df.columns]
     return df.dropna(subset=cols, how="all").reset_index(drop=True) if cols else df.iloc[0:0]
 
 
+# Menggabungkan baris berkunci sama; per kolom, nilai non-NULL terakhir yang menang (semantik COALESCE)
 def coalesce_dupes(df: pd.DataFrame, spec: TableSpec) -> pd.DataFrame:
-    """Gabungkan baris berkunci sama; per kolom, nilai non-NULL terakhir yang menang (semantik COALESCE)."""
     if df.empty or not df.duplicated(list(spec.key_cols)).any():
         return df
     return df.groupby(list(spec.key_cols), as_index=False, sort=False).last()

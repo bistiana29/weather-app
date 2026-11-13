@@ -1,4 +1,9 @@
-"""Konfigurasi pipeline. Semua path dihitung dari lokasi file ini, jadi tidak bergantung pada folder tempat perintah dijalankan."""
+"""
+Pendukung: konfigurasi pipeline, yaitu path, rahasia dari .env, konstanta rentang dan kuota, logging, dan kunci satu job per mesin.
+
+Alur file: dipakai hampir semua file; tidak memanggil file lain
+Alur fungsi: load_dotenv() saat di-import → setup_logging() → acquire_run_lock() (dipanggil di awal setiap job)
+"""
 import logging
 import os
 import sys
@@ -8,6 +13,7 @@ from zoneinfo import ZoneInfo
 
 from dotenv import load_dotenv
 
+# Semua path dihitung dari lokasi file ini, jadi tidak bergantung pada folder tempat perintah dijalankan.
 BASE_DIR = Path(__file__).resolve().parent.parent
 WORK_DIR = BASE_DIR / "_work"
 KELURAHAN_CSV = BASE_DIR / "koordinat_kelurahan_surabaya.csv"
@@ -43,6 +49,7 @@ OPENMETEO_LIMIT_MINUTE = 500
 OPENMETEO_HOURLY_EVERY_N_HOURS = 3
 
 
+# Mengatur format log ke stdout
 def setup_logging() -> None:
     logging.basicConfig(level=logging.INFO, stream=sys.stdout,
                         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
@@ -51,10 +58,10 @@ def setup_logging() -> None:
 _run_lock = None
 
 
+# Mengunci _work/pipeline.lock (fcntl.flock) agar hanya satu job berjalan di mesin ini; job kedua langsung berhenti
 def acquire_run_lock(job: str) -> None:
-    """Hanya satu job pipeline yang menulis data boleh berjalan sekaligus di satu mesin, karena semuanya berbagi
-    _work/ (file pending, salinan Parquet, penghitung kuota Open-Meteo) dan ringkasan_arsip. Kunci dilepas otomatis
-    oleh sistem operasi saat proses berakhir, termasuk bila proses mati mendadak."""
+    # Semua job berbagi _work/ (file pending, salinan Parquet, penghitung kuota) dan ringkasan_arsip.
+    # Kunci dilepas otomatis oleh sistem operasi saat proses berakhir, termasuk bila proses mati mendadak.
     import fcntl
     global _run_lock
     WORK_DIR.mkdir(parents=True, exist_ok=True)

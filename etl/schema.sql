@@ -1,4 +1,4 @@
--- Skema database pipeline. Dijalankan oleh db.prepare() di awal setiap job, jadi semua perintah harus idempoten.
+-- Skema database pipeline. Dijalankan oleh load.prepare() di awal setiap job, jadi semua perintah harus idempoten.
 -- Semua waktu disimpan sebagai timestamptz; zona waktu database, role, dan koneksi pipeline diatur ke Asia/Jakarta,
 -- sehingga hasil query dan view tampil dalam WIB (+07).
 -- Nama kolom nilai harus sama dengan pipeline/params.py.
@@ -252,7 +252,7 @@ LEFT JOIN data d USING (sumber, granularitas)
 LEFT JOIN log l USING (sumber, granularitas)
 ORDER BY k.sumber, k.granularitas;
 
--- Ringkasan per parameter untuk setiap file Parquet bulanan (lapis dingin), diisi oleh pipeline/ringkasan.py.
+-- Ringkasan per parameter untuk setiap file Parquet bulanan (lapis dingin), diisi oleh simpan_ringkasan() di pipeline/load.py.
 -- Disimpan di Postgres agar status data tidak perlu mengunduh semua file Parquet setiap kali dibuka.
 CREATE TABLE IF NOT EXISTS ringkasan_arsip (
     sumber text NOT NULL,
