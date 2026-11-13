@@ -60,7 +60,7 @@ Aturan titik representatif: dipakai **centroid**, lalu diganti **polylabel** (ti
 | 67 | 35.78.26.1002 | Mulyorejo | Manyar Sabrangan |
 | 150 | 35.78.04.1003 | Wonokromo | Ngagel |
 
-Jika titik sebuah kelurahan diganti, data hourly lamanya berasal dari koordinat lain dan harus dibuang seluruhnya, bukan ditimpa dengan COALESCE. Hapus barisnya dari `nasa_hourly`, `openmeteo_hourly`, semua file Parquet bulanan beserta salinannya di `_work/parquet_staging/`, perbarui `ringkasan_arsip`, lalu ubah potongan backfill kelurahan itu di `ingestion_log` menjadi `superseded`. Backfill hanya menganggap status `success` sebagai selesai, jadi potongan tersebut akan diambil ulang. Penggantian 5 titik di atas dilakukan pada 2026-11-13.
+Jika titik sebuah kelurahan diganti, data hourly lamanya berasal dari koordinat lain dan harus dibuang seluruhnya, bukan ditimpa dengan COALESCE. Hapus barisnya dari `nasa_hourly`, `openmeteo_hourly`, semua file Parquet bulanan beserta salinannya di `_work/parquet_staging/` dan `_work/parquet_pending/`, perbarui `ringkasan_arsip`, lalu ubah potongan backfill kelurahan itu di `ingestion_log` menjadi `superseded`. Backfill hanya menganggap status `success` sebagai selesai, jadi potongan tersebut akan diambil ulang. Penggantian 5 titik di atas dilakukan pada 2026-11-13.
 
 ## Penjadwalan
 
@@ -111,23 +111,34 @@ Lihat dulu perkiraannya. `--estimate-only` juga menghitung potongan yang sudah s
 ```bash
 cd ~/Documents/KULIAH/PA/weather-app/etl
 .venv/bin/python -m pipeline.backfill --estimate-only
-setsid -f systemd-inhibit --what=sleep:shutdown --why="backfill" .venv/bin/python -m pipeline.backfill > _work/backfill.log 2>&1
+setsid -f systemd-inhibit --what=sleep:shutdown --why="backfill" .venv/bin/python -m pipeline.backfill >> _work/backfill.log 2>&1
 ```
 
 - **`systemd-inhibit --what=sleep:shutdown`** mencegah laptop sleep atau dimatikan selama backfill berjalan. Menutup lid tetap membuat laptop sleep (aturan default systemd). Jika lid akan ditutup, pakai `--what=sleep:shutdown:handle-lid-switch`.
 - **`setsid -f`** menjalankan backfill lepas dari terminal, sehingga tetap berjalan walaupun terminal atau VS Code ditutup. `nohup` tidak cukup, karena `systemd-inhibit` mengembalikan sinyal HUP ke default.
-- **`> _work/backfill.log 2>&1`** menyimpan semua output ke log. `_work/` tidak masuk Git.
+- **`>> _work/backfill.log 2>&1`** menambahkan semua output ke akhir log, jadi log run sebelumnya tidak tertimpa. Setiap run diawali baris `========== Run backfill mulai ==========` beserta waktu mulainya. `_work/` tidak masuk Git.
 
 Memantau dan menghentikan:
 
 ```bash
 tail -f _work/backfill.log             # progres langsung; Ctrl+C hanya menutup tampilan
 pgrep -af "pipeline.backfill"          # tidak ada output = sudah berhenti
-grep -c "\[backfill\]" _work/backfill.log   # jumlah potongan yang selesai pada run ini
-pkill -INT -f "pipeline.backfill"      # menghentikan dengan aman; kirim sekali, lalu tunggu sampai pgrep kosong
+awk '/Run backfill mulai/{n=0} /\[backfill\]/{n++} END{print n}' _work/backfill.log   # jumlah potongan yang diambil pada run terakhir
+pkill -INT -f "pipeline.backfill"      # menghentikan dengan aman (sama dengan Ctrl+C); kirim sekali, lalu tunggu sampai pgrep kosong
 ```
 
-Backfill aman dihentikan di tengah jalan. Potongan (sumber, tahun WIB, kelurahan) yang sudah sukses tercatat di `ingestion_log` dan dilewati pada run berikutnya. File Parquet yang belum sempat terunggah juga diunggah otomatis di awal run berikutnya. Untuk melanjutkan, jalankan lagi perintah `setsid -f ...` yang sama; log lama akan tertimpa.
+Backfill aman dihentikan di tengah jalan:
+- **Checkpoint**: data potongan (sumber, tahun WIB, kelurahan) ditulis dulu ke file pending di `_work/parquet_pending/`, lalu diunggah setiap 10 potongan dan di akhir setiap tahun. Potongan baru dicatat `success` di `ingestion_log` setelah unggahannya terverifikasi, dan potongan `success` dilewati pada run berikutnya. File pending yang belum terunggah diunggah otomatis di awal run berikutnya.
+- **Dihentikan manual** (`pkill -INT` atau Ctrl+C): potongan yang sedang diambil dicatat `aborted`, lalu potongan yang sudah diambil diunggah dulu sebelum proses berhenti. Sinyal kedua menghentikan proses tanpa menunggu; unggahan yang terpotong dicatat `aborted`, dan potongannya diambil ulang pada run berikutnya.
+- **Status lain di `ingestion_log`**: `failed` (error), `skipped` (kuota lokal habis), dan `superseded` (data potongan dibuang, misalnya karena titik kelurahan diganti). Semuanya diambil ulang.
+- **Satu job sekaligus**: backfill, `ingest` (hourly dan deep_refresh), `compact`, `stasiun`, dan `ringkasan` memegang kunci `_work/pipeline.lock` (`fcntl.flock`). Job kedua di mesin yang sama langsung berhenti dengan pesan `job pipeline lain masih berjalan di mesin ini (...)`. Kunci dilepas otomatis saat proses berakhir. `--estimate-only` tidak memakai kunci. Kunci ini tidak menjangkau GitHub Actions, karena runner GitHub adalah mesin lain; karena itu jadwal tetap harus mati selama backfill.
+
+Untuk melanjutkan, jalankan lagi perintah `setsid -f ...` yang sama.
+
+**Cache Storage**: unduhan dari Supabase Storage lewat cache CDN Cloudflare, yang bisa menyajikan versi lama lebih dari 45 detik setelah file ditimpa, termasuk untuk unduhan dengan service role. Karena itu:
+- verifikasi unggahan memakai metadata `/object/info`, yang tidak lewat cache: `etag` harus sama dengan MD5 isi file dan ukurannya sama. Jika `etag` bukan MD5 polos (format multipart), verifikasi memakai ukuran ditambah unduhan yang isinya harus identik;
+- setiap unduhan dicocokkan dengan `etag` dan diulang sampai cocok;
+- basis penggabungan diambil dari salinan lokal `_work/parquet_staging/` jika MD5-nya sama dengan `etag`, jadi biasanya tidak perlu mengunduh sama sekali.
 
 ### Saat backfill berhenti sendiri
 
@@ -260,7 +271,7 @@ Agar baris di sekitar batas 130 hari tidak terhitung dua kali, baris Postgres ya
 | `pipeline/api.py` | memanggil NASA POWER dan Open-Meteo: retry, jeda, penghitung kuota, berhenti saat HTTP 429 |
 | `pipeline/transform.py` | mengubah JSON API menjadi tabel: -999/NaN ke NULL, waktu ke WIB, buang waktu masa depan |
 | `pipeline/db.py` | koneksi Postgres, menjalankan `schema.sql`, daftar kelurahan, upsert COALESCE, `ingestion_log` |
-| `pipeline/storage.py` | membaca dan menulis Parquet bulanan di Supabase Storage dan `_work/parquet_staging/` |
+| `pipeline/storage.py` | membaca dan menulis Parquet bulanan di Supabase Storage (dengan verifikasi `etag`), `_work/parquet_staging/` (salinan Storage), dan `_work/parquet_pending/` (data belum terunggah) |
 | `pipeline/ingest.py` | job `hourly` dan `deep_refresh` |
 | `pipeline/compact.py` | job pemadatan ke Parquet |
 | `pipeline/backfill.py` | backfill hourly lokal yang bisa dilanjutkan |
@@ -271,7 +282,7 @@ Agar baris di sekitar batas 130 hari tidak terhitung dua kali, baris Postgres ya
 | `koordinat_kelurahan_surabaya.csv` | 153 kelurahan: `kode_kel`, `kecamatan`, `desa`, `latitude`, `longitude`, `metode_titik`; nomor baris = `kelurahan_id`, jadi urutannya tidak boleh diubah |
 | `koordinat_BMKG_surabaya.csv` | 3 stasiun BMKG: `ID_WMO`, `Stasiun`, `Latitude`, `Longitude`, `elevasi` |
 | `requirements.txt` | library Python yang dibutuhkan |
-| `_work/` | staging Parquet, penghitung kuota lokal, dan log backfill (tidak masuk Git) |
+| `_work/` | salinan dan pending Parquet, penghitung kuota lokal, dan log backfill (tidak masuk Git) |
 | `.env` | rahasia koneksi (tidak masuk Git) |
 | `../.github/workflows/` | jadwal GitHub Actions |
 

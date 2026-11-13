@@ -73,6 +73,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--lookback-days", type=int, default=None, help="Default: 7 untuk hourly, 120 untuk deep_refresh")
     p.add_argument("--kelurahan-ids", type=str, default=None, help="Daftar kelurahan_id dipisah koma, mis. 1,2")
     args = p.parse_args(argv)
+    config.acquire_run_lock(args.job)
 
     now = datetime.now(config.WIB)
     lookback = args.lookback_days or DEFAULT_LOOKBACK_DAYS[args.job]

@@ -78,6 +78,7 @@ def compact_table(conn, storage_client: storage.SupabaseStorageClient, spec: Tab
 
 def main() -> int:
     config.setup_logging()
+    config.acquire_run_lock("compact")
     cutoff_date = datetime.now(config.WIB).date() - timedelta(days=config.HOT_DAYS)
     storage_client = storage.SupabaseStorageClient()
     storage_client.ensure_bucket()

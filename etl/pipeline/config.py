@@ -46,3 +46,28 @@ OPENMETEO_HOURLY_EVERY_N_HOURS = 3
 def setup_logging() -> None:
     logging.basicConfig(level=logging.INFO, stream=sys.stdout,
                         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+
+
+_run_lock = None
+
+
+def acquire_run_lock(job: str) -> None:
+    """Hanya satu job pipeline yang menulis data boleh berjalan sekaligus di satu mesin, karena semuanya berbagi
+    _work/ (file pending, salinan Parquet, penghitung kuota Open-Meteo) dan ringkasan_arsip. Kunci dilepas otomatis
+    oleh sistem operasi saat proses berakhir, termasuk bila proses mati mendadak."""
+    import fcntl
+    global _run_lock
+    WORK_DIR.mkdir(parents=True, exist_ok=True)
+    f = open(WORK_DIR / "pipeline.lock", "a+", encoding="utf-8")
+    try:
+        fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        f.seek(0)
+        holder = f.read().strip() or "tidak diketahui"
+        sys.exit(f"Job {job} dibatalkan: job pipeline lain masih berjalan di mesin ini ({holder}). "
+                 f'Cek dengan: pgrep -af "python -m pipeline"')
+    f.seek(0)
+    f.truncate()
+    f.write(f"{job}, pid {os.getpid()}, mulai {datetime.now(WIB):%Y-%m-%d %H:%M:%S} WIB\n")
+    f.flush()
+    _run_lock = f

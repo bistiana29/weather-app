@@ -75,6 +75,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--start-date", type=str, default=config.STASIUN_START.isoformat())
     p.add_argument("--end-date", type=str, default=config.STASIUN_END.isoformat())
     args = p.parse_args(argv)
+    config.acquire_run_lock("stasiun")
 
     start, end = date.fromisoformat(args.start_date), date.fromisoformat(args.end_date)
     stasiun = load_stasiun_csv()

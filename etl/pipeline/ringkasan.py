@@ -40,6 +40,7 @@ def simpan(conn, spec: TableSpec, ym: str, df: pd.DataFrame) -> None:
 
 def main() -> int:
     config.setup_logging()
+    config.acquire_run_lock("ringkasan")
     client = storage.SupabaseStorageClient()
     months = pd.period_range(config.START_DATE, datetime.now(config.WIB).date(), freq="M").strftime("%Y-%m")
     files = 0

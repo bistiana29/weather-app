@@ -1,6 +1,6 @@
 """Backfill lokal data hourly 153 kelurahan, dari 2022-01-01 00:00 WIB sampai config.BACKFILL_END (2026-11-11 23:00 WIB).
-Bisa dihentikan dan dilanjutkan kapan saja: setiap potongan (sumber, tahun WIB, kelurahan) yang sukses dicatat di
-ingestion_log dan dilewati pada run berikutnya.
+Bisa dihentikan dan dilanjutkan kapan saja: setiap potongan (sumber, tahun WIB, kelurahan) dicatat success di
+ingestion_log setelah datanya terunggah dan terverifikasi, lalu dilewati pada run berikutnya.
 
     python -m pipeline.backfill --estimate-only
     python -m pipeline.backfill [--start-date 2022-01-01] [--kelurahan-ids 1,2]
@@ -17,6 +17,8 @@ from . import api, config, db, params, ringkasan, storage
 from .params import TableSpec
 
 logger = logging.getLogger(__name__)
+
+FLUSH_EVERY_CHUNKS = 10
 
 
 def yearly_slices(start: datetime, end: datetime) -> list[tuple[datetime, datetime]]:
@@ -69,39 +71,33 @@ def estimate_backfill(kel_ids: list[int], slices: list[tuple[datetime, datetime]
     return est
 
 
-def unflushed_months(conn) -> set[tuple[str, str, str]]:
-    """File staging yang lebih baru dari unggahan sukses terakhirnya, misalnya karena run sebelumnya
-    terhenti saat mengunggah. Tanpa ini, bulan tersebut tidak pernah diunggah karena checkpoint-nya sudah sukses."""
-    with conn.cursor() as cur:
-        cur.execute("SELECT sumber, granularitas, tujuan, max(selesai_at) FROM ingestion_log "
-                    "WHERE status = 'success' AND tujuan LIKE 'storage:%' GROUP BY 1, 2, 3")
-        flushed = {(s, g, t.removeprefix("storage:")): ts for s, g, t, ts in cur.fetchall()}
-    conn.commit()
-    pending = set()
-    for path in (config.WORK_DIR / "parquet_staging").glob("*/hourly/*/*.parquet"):
-        key = (path.parts[-4], path.parts[-3], path.stem)
-        if key not in flushed or path.stat().st_mtime > flushed[key].timestamp():
-            pending.add(key)
-    return pending
+def unflushed_months() -> set[tuple[str, str, str]]:
+    """File pending yang belum terunggah, misalnya karena run sebelumnya terhenti saat mengunggah."""
+    return {(path.parts[-4], path.parts[-3], path.stem)
+            for path in (config.WORK_DIR / "parquet_pending").glob("*/hourly/*/*.parquet")}
 
 
 def flush_dirty_months(conn, storage_client: storage.SupabaseStorageClient, dirty_months: set[tuple[str, str, str]]) -> None:
-    """Unggah file staging bulan yang berubah ke Supabase Storage."""
+    """Unggah file pending bulan yang berubah ke Supabase Storage. File pending dihapus setelah unggahan terverifikasi."""
     for source, granularity, ym in sorted(dirty_months):
         spec = params.get_spec(source)
-        local_path = storage.local_staging_path(source, granularity, ym)
-        if not local_path.exists():
-            continue
-        log_id = db.log_start(conn, "backfill_flush", source, granularity, None, None, None, f"storage:{ym}")
-        try:
-            staged = storage.parquet_bytes_to_dataframe(local_path.read_bytes(), spec)
-            info = storage_client.upsert_monthly_parquet(spec, ym, staged)
-            ringkasan.simpan(conn, spec, ym, info["frame"])
-            db.log_finish(conn, log_id, "success", jumlah_baris=info["after_rows"])
-        except Exception as exc:
-            db.log_finish(conn, log_id, "failed", pesan_error=str(exc))
-            raise
-    dirty_months.clear()
+        pending_path = storage.local_pending_path(source, granularity, ym)
+        if pending_path.exists():
+            log_id = db.log_start(conn, "backfill_flush", source, granularity, None, None, None, f"storage:{ym}")
+            try:
+                pending = storage.parquet_bytes_to_dataframe(pending_path.read_bytes(), spec)
+                info = storage_client.upsert_monthly_parquet(spec, ym, pending)
+                ringkasan.simpan(conn, spec, ym, info["frame"])
+                db.log_finish(conn, log_id, "success", jumlah_baris=info["after_rows"])
+            except KeyboardInterrupt:
+                db.log_finish(conn, log_id, "aborted", pesan_error="dihentikan manual saat mengunggah; file pending "
+                                                                   "tetap ada dan diunggah ulang pada run berikutnya")
+                raise
+            except Exception as exc:
+                db.log_finish(conn, log_id, "failed", pesan_error=str(exc))
+                raise
+            pending_path.unlink()
+        dirty_months.discard((source, granularity, ym))
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -134,17 +130,36 @@ def main(argv: list[str] | None = None) -> int:
                     est["om_bobot_sisa"] / config.OPENMETEO_LIMIT_HOUR, config.OPENMETEO_LIMIT_HOUR)
         return 0
 
+    config.acquire_run_lock("backfill")
     storage_client = storage.SupabaseStorageClient()
     storage_client.ensure_bucket()
     dirty_months: set[tuple[str, str, str]] = set()
+    awaiting_flush: list[tuple[int, int]] = []
     processed = 0
     stopped_by: Exception | None = None
 
+    def commit_chunks(final: bool = False) -> None:
+        """Unggah data pending, lalu tandai success potongan yang datanya ikut terunggah. Jika unggahan terakhir
+        (final) gagal, potongan itu dicatat failed/aborted sehingga diambil ulang pada run berikutnya."""
+        try:
+            flush_dirty_months(conn, storage_client, dirty_months)
+        except BaseException as exc:
+            if final:
+                status = "aborted" if isinstance(exc, KeyboardInterrupt) else "failed"
+                for log_id, _ in awaiting_flush:
+                    db.log_finish(conn, log_id, status, pesan_error=f"data belum terunggah ke Storage: {exc!r}")
+                awaiting_flush.clear()
+            raise
+        for log_id, n_rows in awaiting_flush:
+            db.log_finish(conn, log_id, "success", jumlah_baris=n_rows)
+        awaiting_flush.clear()
+
+    logger.info("========== Run backfill mulai ==========")
     with db.connect() as conn:
         db.prepare(conn)
-        leftover = unflushed_months(conn)
+        leftover = unflushed_months()
         if leftover:
-            logger.info("Mengunggah %d file staging yang belum terunggah dari run sebelumnya", len(leftover))
+            logger.info("Mengunggah %d file pending yang belum terunggah dari run sebelumnya", len(leftover))
             flush_dirty_months(conn, storage_client, leftover)
         try:
             for source, (s, e) in itertools.product(params.SOURCES, slices):
@@ -164,7 +179,7 @@ def main(argv: list[str] | None = None) -> int:
                             for ym, grp in cold_df.groupby(storage.month_key(cold_df, spec)):
                                 storage.stage_monthly_frame(grp, spec, str(ym))
                                 dirty_months.add((source, granularity, str(ym)))
-                        db.log_finish(conn, log_id, "success", jumlah_baris=len(df))
+                        awaiting_flush.append((log_id, len(df)))
                     except api.BudgetExceededError as exc:
                         db.log_finish(conn, log_id, "skipped", pesan_error=str(exc))
                         logger.warning("Kuota harian/per jam Open-Meteo habis, backfill berhenti. Lanjutkan besok: %s", exc)
@@ -175,6 +190,9 @@ def main(argv: list[str] | None = None) -> int:
                         logger.error("API menolak karena batas kuota (HTTP 429), backfill berhenti: %s", exc)
                         stopped_by = exc
                         break
+                    except KeyboardInterrupt:
+                        db.log_finish(conn, log_id, "aborted", pesan_error="dihentikan manual sebelum potongan selesai")
+                        raise
                     except Exception as exc:
                         db.log_finish(conn, log_id, "failed", pesan_error=str(exc))
                         raise
@@ -182,11 +200,17 @@ def main(argv: list[str] | None = None) -> int:
                     logger.info("[backfill] %s/%s kel=%d (%s..%s WIB): total=%d (hot=%d, cold=%d)",
                                 source, granularity, kel_id, s.strftime("%Y-%m-%d %H:%M"), e.strftime("%Y-%m-%d %H:%M"),
                                 len(df), len(hot_df), len(cold_df))
-                flush_dirty_months(conn, storage_client, dirty_months)
+                    if len(awaiting_flush) >= FLUSH_EVERY_CHUNKS:
+                        commit_chunks()
+                commit_chunks()
                 if stopped_by:
                     break
+        except KeyboardInterrupt:
+            logger.warning("Dihentikan manual; menyelesaikan unggahan %d potongan yang sudah diambil. "
+                           "Kirim SIGINT sekali lagi untuk berhenti tanpa menunggu.", len(awaiting_flush))
+            raise
         finally:
-            flush_dirty_months(conn, storage_client, dirty_months)
+            commit_chunks(final=True)
 
     logger.info("Backfill selesai untuk run ini. Potongan baru diproses: %d", processed)
     return 1 if isinstance(stopped_by, api.RateLimitError) else 0
