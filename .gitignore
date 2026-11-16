@@ -1,6 +1,7 @@
 # environment variables
 .env
 .env.*
+*.local
 
 # Python
 .venv/
@@ -14,17 +15,34 @@ __pycache__/
 
 # node
 node_modules/
+dist/
+dist-ssr/
+
+# logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
 # loaded data
 _work/
 *.parquet
 
 # experiments
-modeling/data
-modeling/notebooks
-modeling/outputs
+modeling/data/
+modeling/notebooks/
+modeling/output/
+frontend/docs/
 
 # settings
 .DS_Store
 .idea/
 .vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
