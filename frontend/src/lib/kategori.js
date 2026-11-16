@@ -28,60 +28,56 @@ export const AMBANG = {
 
 const A = AMBANG
 
+// Label kategori Indonesia adalah nilai data dari API; teks tampilan diambil dari kamus lewat `kunci`
 export const PARAMETER = {
   hujan: {
     slug: 'hujan',
-    label: 'Hujan',
-    judul: 'Curah Hujan',
+    slugUrl: 'rain',
     satuan: 'mm/jam',
     jenisNilai: 'maks',
     kategori: [
       // Label tampilan untuk < 1 mm/jam, bukan bagian Tabel 2.1
-      { label: 'Tidak Hujan', min: -Infinity, rentang: `< ${A.hujanRingan}`, warna: WARNA_DATA.hujan[0] },
-      { label: 'Hujan Ringan', min: A.hujanRingan, rentang: `${A.hujanRingan} – < ${A.hujanSedang}`, warna: WARNA_DATA.hujan[1] },
-      { label: 'Hujan Sedang', min: A.hujanSedang, rentang: `${A.hujanSedang} – < ${A.hujanLebat}`, warna: WARNA_DATA.hujan[2] },
-      { label: 'Hujan Lebat', min: A.hujanLebat, rentang: `${A.hujanLebat} – < ${A.hujanSangatLebat}`, warna: WARNA_DATA.hujan[3] },
-      { label: 'Hujan Sangat Lebat', min: A.hujanSangatLebat, rentang: `${A.hujanSangatLebat} – < ${A.hujanEkstrem}`, warna: WARNA_DATA.hujan[4] },
-      { label: 'Hujan Ekstrem', min: A.hujanEkstrem, rentang: `≥ ${A.hujanEkstrem}`, warna: WARNA_DATA.hujan[5] },
+      { label: 'Tidak Hujan', kunci: 'tidakHujan', min: -Infinity, rentang: { kunci: 'kurang', nilai: { a: A.hujanRingan } }, warna: WARNA_DATA.hujan[0] },
+      { label: 'Hujan Ringan', kunci: 'hujanRingan', min: A.hujanRingan, rentang: { kunci: 'antara', nilai: { a: A.hujanRingan, b: A.hujanSedang } }, warna: WARNA_DATA.hujan[1] },
+      { label: 'Hujan Sedang', kunci: 'hujanSedang', min: A.hujanSedang, rentang: { kunci: 'antara', nilai: { a: A.hujanSedang, b: A.hujanLebat } }, warna: WARNA_DATA.hujan[2] },
+      { label: 'Hujan Lebat', kunci: 'hujanLebat', min: A.hujanLebat, rentang: { kunci: 'antara', nilai: { a: A.hujanLebat, b: A.hujanSangatLebat } }, warna: WARNA_DATA.hujan[3] },
+      { label: 'Hujan Sangat Lebat', kunci: 'hujanSangatLebat', min: A.hujanSangatLebat, rentang: { kunci: 'antara', nilai: { a: A.hujanSangatLebat, b: A.hujanEkstrem } }, warna: WARNA_DATA.hujan[4] },
+      { label: 'Hujan Ekstrem', kunci: 'hujanEkstrem', min: A.hujanEkstrem, rentang: { kunci: 'minimal', nilai: { a: A.hujanEkstrem } }, warna: WARNA_DATA.hujan[5] },
     ],
   },
   suhu: {
     slug: 'suhu',
-    label: 'Suhu',
-    judul: 'Suhu Udara',
+    slugUrl: 'temperature',
     satuan: '°C',
     jenisNilai: 'maks',
     kategori: [
-      { label: TIDAK_EKSTREM, rentang: `< normal + ${A.suhuDiAtasNormal} °C`, warna: WARNA_DATA.netral },
-      { label: 'Suhu Ekstrem', rentang: `≥ normal + ${A.suhuDiAtasNormal} °C`, warna: WARNA_DATA.ekstrem },
+      { label: TIDAK_EKSTREM, kunci: 'tidakEkstrem', rentang: { kunci: 'suhuNormal', nilai: { a: A.suhuDiAtasNormal } }, warna: WARNA_DATA.netral },
+      { label: 'Suhu Ekstrem', kunci: 'suhuEkstrem', rentang: { kunci: 'suhuEkstrem', nilai: { a: A.suhuDiAtasNormal } }, warna: WARNA_DATA.ekstrem },
     ],
   },
   angin: {
     slug: 'angin',
-    label: 'Angin',
-    judul: 'Kecepatan Angin',
+    slugUrl: 'wind',
     satuan: 'km/jam',
     jenisNilai: 'maks',
     kategori: [
-      { label: TIDAK_EKSTREM, rentang: `< ${A.anginKencangKmj} km/jam`, warna: WARNA_DATA.netral },
-      { label: 'Angin Kencang', rentang: `≥ ${A.anginKencangKmj} km/jam (±${A.anginKencangKnot} knot)`, warna: WARNA_DATA.ekstrem },
+      { label: TIDAK_EKSTREM, kunci: 'tidakEkstrem', rentang: { kunci: 'anginNormal', nilai: { a: A.anginKencangKmj } }, warna: WARNA_DATA.netral },
+      { label: 'Angin Kencang', kunci: 'anginKencang', rentang: { kunci: 'anginKencang', nilai: { a: A.anginKencangKmj, knot: A.anginKencangKnot } }, warna: WARNA_DATA.ekstrem },
     ],
   },
   'jarak-pandang': {
     slug: 'jarak-pandang',
-    label: 'Jarak Pandang',
-    judul: 'Jarak Pandang Mendatar',
+    slugUrl: 'visibility',
     satuan: 'm',
     jenisNilai: 'min',
     kategori: [
-      { label: TIDAK_EKSTREM, rentang: `≥ ${A.jarakPandangM} m`, warna: WARNA_DATA.netral },
-      { label: 'Jarak Pandang Mendatar Ekstrem', rentang: `< ${A.jarakPandangM} m`, warna: WARNA_DATA.ekstrem },
+      { label: TIDAK_EKSTREM, kunci: 'tidakEkstrem', rentang: { kunci: 'jarakNormal', nilai: { a: A.jarakPandangM } }, warna: WARNA_DATA.netral },
+      { label: 'Jarak Pandang Mendatar Ekstrem', kunci: 'jarakPandangEkstrem', rentang: { kunci: 'jarakEkstrem', nilai: { a: A.jarakPandangM } }, warna: WARNA_DATA.ekstrem },
     ],
   },
   kelembapan: {
     slug: 'kelembapan',
-    label: 'Kelembapan',
-    judul: 'Kelembapan Udara',
+    slugUrl: 'humidity',
     satuan: '%',
     jenisNilai: 'maks',
     kategori: [],
@@ -95,20 +91,29 @@ export function parameterValid(slug) {
   return Object.hasOwn(PARAMETER, slug)
 }
 
+// Ubah slug URL berbahasa Inggris (mis. "rain") ke slug parameter internal (mis. "hujan")
+export function parameterDariUrl(slugUrl) {
+  return DAFTAR_PARAMETER.find((p) => p.slugUrl === slugUrl)?.slug ?? null
+}
+
+// Alamat peta risiko untuk satu parameter, dengan query opsional (kel, date)
+export function urlPeta(parameter, query = {}) {
+  const cari = new URLSearchParams(Object.entries(query).filter(([, v]) => v != null && v !== ''))
+  const teks = cari.toString()
+  return `/risk-map/${PARAMETER[parameter].slugUrl}${teks ? `?${teks}` : ''}`
+}
+
+// Kunci kamus untuk label kategori dari nilai data API
+export function kunciKategori(parameter, kategori) {
+  return PARAMETER[parameter]?.kategori.find((k) => k.label === kategori)?.kunci ?? null
+}
+
 // Nilai ambang untuk garis di grafik (null jika tidak ada ambang)
 export function ambangParameter(parameter, { normal } = {}) {
   if (parameter === 'hujan') return A.hujanSangatLebat
   if (parameter === 'suhu') return normal != null ? normal + A.suhuDiAtasNormal : null
   if (parameter === 'angin') return A.anginKencangKmj
   if (parameter === 'jarak-pandang') return A.jarakPandangM
-  return null
-}
-
-export function labelAmbang(parameter) {
-  if (parameter === 'hujan') return 'Batas Hujan Sangat Lebat'
-  if (parameter === 'suhu') return 'Batas Suhu Ekstrem'
-  if (parameter === 'angin') return 'Batas Angin Kencang'
-  if (parameter === 'jarak-pandang') return 'Batas Jarak Pandang Ekstrem'
   return null
 }
 
@@ -175,30 +180,12 @@ export function teksKontras(hex) {
   return l > 0.2 ? '#14202E' : '#FFFFFF'
 }
 
-// Format nilai beserta satuan, mis. "16 mm/jam" atau "0,8 km"
-export function formatNilai(parameter, nilai, { denganSatuan = true } = {}) {
-  if (nilai == null) return '–'
-  if (parameter === 'jarak-pandang') {
-    const teks = nilai >= 1000 ? (nilai / 1000).toLocaleString('id-ID', { maximumFractionDigits: 1 }) : Math.round(nilai).toString()
-    const satuan = nilai >= 1000 ? 'km' : 'm'
-    return denganSatuan ? `${teks} ${satuan}` : teks
-  }
-  const desimal = parameter === 'hujan' || parameter === 'suhu' ? 1 : 0
-  const teks = nilai.toLocaleString('id-ID', { maximumFractionDigits: desimal })
-  return denganSatuan ? `${teks} ${PARAMETER[parameter].satuan}` : teks
-}
-
-export function satuanTampil(parameter, nilai) {
-  if (parameter === 'jarak-pandang') return nilai >= 1000 ? 'km' : 'm'
-  return PARAMETER[parameter].satuan
-}
-
 // Jenis kejadian untuk kartu ringkasan
 export const JENIS_KEJADIAN = [
-  { kunci: 'hujan_lebat', parameter: 'hujan', label: 'Hujan Lebat ke atas', labelPendek: 'Hujan Lebat+' },
-  { kunci: 'angin_kencang', parameter: 'angin', label: 'Angin Kencang', labelPendek: 'Angin Kencang' },
-  { kunci: 'suhu_ekstrem', parameter: 'suhu', label: 'Suhu Ekstrem', labelPendek: 'Suhu Ekstrem' },
-  { kunci: 'jarak_pandang_ekstrem', parameter: 'jarak-pandang', label: 'Jarak Pandang Ekstrem', labelPendek: 'Jarak Pandang' },
+  { kunci: 'hujan_lebat', parameter: 'hujan' },
+  { kunci: 'angin_kencang', parameter: 'angin' },
+  { kunci: 'suhu_ekstrem', parameter: 'suhu' },
+  { kunci: 'jarak_pandang_ekstrem', parameter: 'jarak-pandang' },
 ]
 
 // Kejadian yang masuk ringkasan dan pesan peringatan WA (hujan mulai Hujan Lebat)

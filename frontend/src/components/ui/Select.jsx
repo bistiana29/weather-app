@@ -1,10 +1,12 @@
 import { Select as RSelect } from 'radix-ui'
 import { Check, ChevronDown } from 'lucide-react'
 import { useId } from 'react'
+import { useTranslation } from 'react-i18next'
 import '../../styles/components/ui.css'
 
 // Dropdown pilihan tunggal
-export default function Select({ value, onValueChange, options, placeholder = 'Pilih…', label, sembunyikanLabel = false }) {
+export default function Select({ value, onValueChange, options, placeholder, label, sembunyikanLabel = false }) {
+  const { t } = useTranslation()
   const id = useId()
   return (
     <div className="field">
@@ -15,7 +17,7 @@ export default function Select({ value, onValueChange, options, placeholder = 'P
       )}
       <RSelect.Root value={value} onValueChange={onValueChange}>
         <RSelect.Trigger id={id} className="select-trigger">
-          <RSelect.Value placeholder={placeholder} />
+          <RSelect.Value placeholder={placeholder ?? t('umum.pilih')} />
           <RSelect.Icon>
             <ChevronDown size={18} aria-hidden="true" />
           </RSelect.Icon>

@@ -1,62 +1,72 @@
 import { useReducedMotion } from 'motion/react'
+import { useTranslation } from 'react-i18next'
 import { CartesianGrid, ComposedChart, Line, ReferenceArea, ReferenceLine, ResponsiveContainer, Tooltip as RTooltip, XAxis, YAxis } from 'recharts'
-import { formatNilai, labelAmbang } from '../../lib/kategori'
-import { namaHariPendek } from '../../lib/tanggal'
+import { useFormat } from '../../lib/format'
 import { SUMBU_GRAFIK, WARNA } from '../../lib/warna'
 import '../../styles/components/peta.css'
 
-
-function labelWaktu(waktu) {
-  const [tanggal, jam] = waktu.split('T')
-  const teksJam = jam.replace(':', '.')
-  return jam === '00:00' ? `${namaHariPendek(tanggal)} ${teksJam}` : teksJam
+// Label sumbu waktu: nama hari pada pukul 00, selebihnya jam saja
+function buatLabelWaktu(f) {
+  return (waktu) => {
+    const [tanggal, jam] = waktu.split('T')
+    return jam === '00:00' ? `${f.hariPendek(tanggal)} ${f.jam(jam)}` : f.jam(jam)
+  }
 }
 
 // Isi tooltip saat titik grafik disorot
-function IsiTooltip({ active, payload, parameter }) {
+function IsiTooltip({ active, payload, parameter, f, t }) {
   if (!active || !payload?.length) return null
   const titik = payload[0].payload
   const nilai = titik.obs ?? titik.pred
   return (
     <div className="grafik-tooltip">
-      <p className="teks-sekunder">{labelWaktu(titik.waktu)} WIB · {titik.obs != null ? 'Observasi' : 'Prediksi'}</p>
-      <p className="grafik-tooltip-nilai">{formatNilai(parameter, nilai)}</p>
+      <p className="teks-sekunder">
+        {buatLabelWaktu(f)(titik.waktu)} WIB · {t(titik.obs != null ? 'peta.grafik.observasi' : 'peta.grafik.prediksi')}
+      </p>
+      <p className="grafik-tooltip-nilai">{f.nilaiLengkap(parameter, nilai)}</p>
     </div>
   )
 }
 
 // Grafik 24 jam observasi (garis solid) + 24 jam prediksi (garis putus-putus) + garis ambang
 export default function GrafikPrakiraan({ parameter, observasi, prediksi, ambang }) {
+  const { t } = useTranslation()
+  const f = useFormat()
+  const labelWaktu = buatLabelWaktu(f)
   const kurangiGerak = useReducedMotion()
   const data = [
-    ...observasi.map((t, i) => ({
-      waktu: t.waktu,
-      obs: t.nilai,
-      pred: i === observasi.length - 1 ? t.nilai : null,
+    ...observasi.map((titik, i) => ({
+      waktu: titik.waktu,
+      obs: titik.nilai,
+      pred: i === observasi.length - 1 ? titik.nilai : null,
     })),
-    ...prediksi.map((t) => ({ waktu: t.waktu, obs: null, pred: t.nilai })),
+    ...prediksi.map((titik) => ({ waktu: titik.waktu, obs: null, pred: titik.nilai })),
   ]
-  const semuaNilai = [...observasi, ...prediksi].map((t) => t.nilai)
+  const semuaNilai = [...observasi, ...prediksi].map((titik) => titik.nilai)
   const atas = Math.max(...semuaNilai, ambang ?? -Infinity)
   const bawah = parameter === 'suhu' ? Math.floor(Math.min(...semuaNilai) - 1) : 0
   const domain = [bawah, Math.ceil(atas * 1.12)]
-  const ticks = data.filter((t) => Number(t.waktu.slice(11, 13)) % 12 === 0).map((t) => t.waktu)
-  const formatSumbuY = (v) => (parameter === 'jarak-pandang' ? `${v / 1000}` : `${v}`)
-  const satuanSumbu = parameter === 'jarak-pandang' ? 'km' : null
-  const puncak = Math.max(...prediksi.map((t) => t.nilai))
+  const ticks = data.filter((titik) => Number(titik.waktu.slice(11, 13)) % 12 === 0).map((titik) => titik.waktu)
+  const formatSumbuY = (v) => (parameter === 'jarak-pandang' ? f.angka(v / 1000, 1) : f.angka(v, 1))
+  const satuanSumbu = parameter === 'jarak-pandang' ? t('satuan.km') : null
+  const puncak = Math.max(...prediksi.map((titik) => titik.nilai))
 
   return (
     <figure className="grafik">
       <figcaption className="grafik-legenda">
-        <span><i className="garis-observasi" aria-hidden="true" />Observasi</span>
-        <span><i className="garis-prediksi" aria-hidden="true" />Prediksi</span>
-        {ambang != null && <span><i className="garis-ambang" aria-hidden="true" />{labelAmbang(parameter)}</span>}
-        {satuanSumbu && <span className="teks-sekunder">Sumbu Y dalam {satuanSumbu}</span>}
+        <span><i className="garis-observasi" aria-hidden="true" />{t('peta.grafik.observasi')}</span>
+        <span><i className="garis-prediksi" aria-hidden="true" />{t('peta.grafik.prediksi')}</span>
+        {ambang != null && <span><i className="garis-ambang" aria-hidden="true" />{t(`peta.grafik.ambang.${parameter}`)}</span>}
+        {satuanSumbu && <span className="teks-sekunder">{t('peta.grafik.sumbuY', { satuan: satuanSumbu })}</span>}
       </figcaption>
       <div
         className="grafik-area"
         role="img"
-        aria-label={`Grafik ${parameter}: 24 jam observasi dan 24 jam prediksi, puncak prediksi ${formatNilai(parameter, puncak)}${ambang != null ? `, ambang ${formatNilai(parameter, ambang)}` : ''}.`}
+        aria-label={t(ambang != null ? 'peta.grafik.ariaAmbang' : 'peta.grafik.aria', {
+          parameter: f.parameterJudul(parameter),
+          puncak: f.nilaiLengkap(parameter, puncak),
+          ambang: f.nilaiLengkap(parameter, ambang),
+        })}
       >
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={data} margin={{ top: 12, right: 8, bottom: 0, left: -8 }}>
@@ -83,7 +93,7 @@ export default function GrafikPrakiraan({ parameter, observasi, prediksi, ambang
             {ambang != null && (
               <ReferenceLine y={ambang} stroke={WARNA.ambang} strokeDasharray="2 4" strokeWidth={1.5} ifOverflow="extendDomain" />
             )}
-            <RTooltip content={<IsiTooltip parameter={parameter} />} cursor={{ stroke: WARNA.garisKuat, strokeWidth: 1 }} />
+            <RTooltip content={<IsiTooltip parameter={parameter} f={f} t={t} />} cursor={{ stroke: WARNA.garisKuat, strokeWidth: 1 }} />
             <Line
               dataKey="obs"
               type="monotone"

@@ -40,7 +40,7 @@ export function AuthProvider({ children }) {
     return mulaiSesi(await apiMasuk(email, password))
   }
 
-  // Keluar; pesan opsional ditampilkan di halaman Masuk berikutnya
+  // Keluar; kunci pesan opsional ditampilkan di halaman Masuk berikutnya
   function keluar(pesan = '') {
     // Buang data milik pengguna agar tidak terlihat oleh akun berikutnya
     queryClient.removeQueries({ queryKey: ['pengaturan'] })
@@ -59,5 +59,5 @@ export function useAuth() {
 
 // Halaman awal setelah login sesuai role
 export function berandaRole(role) {
-  return role === 'admin' ? '/admin' : '/pengaturan'
+  return role === 'admin' ? '/admin' : '/settings'
 }

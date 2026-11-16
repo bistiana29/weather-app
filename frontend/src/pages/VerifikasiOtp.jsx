@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Trans, useTranslation } from 'react-i18next'
 import { Navigate, useNavigate } from 'react-router'
 import { kirimUlangOtp, verifikasiOtp } from '../api/auth'
 import BantuanMock from '../components/BantuanMock'
@@ -7,6 +8,7 @@ import Button from '../components/ui/Button'
 import OtpInput from '../components/ui/OtpInput'
 import Pesan from '../components/ui/Pesan'
 import { useAuth } from '../lib/auth'
+import { teksGalat } from '../lib/galat'
 import { bacaPendaftaran, hapusPendaftaran } from '../lib/pendaftaran'
 import { samarkanNoWa } from '../lib/validasi'
 import JudulHalaman from '../components/JudulHalaman'
@@ -20,13 +22,14 @@ function formatHitungMundur(detik) {
 
 // Halaman verifikasi nomor WA dengan 6 digit OTP; sukses langsung login ke Pengaturan
 export default function VerifikasiOtp() {
+  const { t } = useTranslation()
   const { mulaiSesi } = useAuth()
   const navigate = useNavigate()
   const [pendaftaran] = useState(bacaPendaftaran)
   const [kode, setKode] = useState('')
   const [sisa, setSisa] = useState(JEDA_KIRIM_ULANG)
-  const [galat, setGalat] = useState('')
-  const [info, setInfo] = useState('')
+  const [galat, setGalat] = useState(null)
+  const [info, setInfo] = useState(false)
   const [memproses, setMemproses] = useState(false)
 
   // Hitung mundur sebelum boleh kirim ulang kode
@@ -36,60 +39,60 @@ export default function VerifikasiOtp() {
     return () => clearTimeout(timer)
   }, [sisa])
 
-  if (!pendaftaran) return <Navigate to="/daftar" replace />
+  if (!pendaftaran) return <Navigate to="/register" replace />
 
   async function verifikasi(e) {
     e.preventDefault()
-    setGalat('')
-    setInfo('')
+    setGalat(null)
+    setInfo(false)
     setMemproses(true)
     try {
       const sesi = await verifikasiOtp(pendaftaran.no_wa, kode, pendaftaran)
       hapusPendaftaran()
       mulaiSesi(sesi)
-      navigate('/pengaturan', { replace: true })
+      navigate('/settings', { replace: true })
     } catch (err) {
-      setGalat(err.message)
+      setGalat(err)
       setKode('')
       setMemproses(false)
     }
   }
 
   async function kirimUlang() {
-    setGalat('')
+    setGalat(null)
     await kirimUlangOtp(pendaftaran.no_wa)
-    setInfo('Kode baru sudah dikirim.')
+    setInfo(true)
     setSisa(JEDA_KIRIM_ULANG)
   }
 
   return (
-    <KartuAuth judul="Verifikasi Nomor WA" subjudul={`Kode 6 digit dikirim lewat WhatsApp ke ${samarkanNoWa(pendaftaran.no_wa)}`}>
-      <JudulHalaman judul="Verifikasi Nomor WA" />
-      {galat && <Pesan nada="galat">{galat}</Pesan>}
-      {info && <Pesan>{info}</Pesan>}
+    <KartuAuth judul={t('auth.otp.judul')} subjudul={t('auth.otp.subjudul', { nomor: samarkanNoWa(pendaftaran.no_wa) })}>
+      <JudulHalaman judul={t('auth.otp.judul')} />
+      {galat && <Pesan nada="galat">{teksGalat(t, galat)}</Pesan>}
+      {info && <Pesan>{t('auth.otp.terkirimUlang')}</Pesan>}
 
       <form className="auth-form auth-otp" onSubmit={verifikasi} noValidate>
         <OtpInput value={kode} onChange={setKode} panjang={PANJANG_OTP} disabled={memproses} />
 
         <p className="teks-sekunder auth-hitung" aria-live="polite">
           {sisa > 0 ? (
-            <>Kirim ulang dalam <strong>{formatHitungMundur(sisa)}</strong></>
+            <Trans i18nKey="auth.otp.hitungMundur" values={{ waktu: formatHitungMundur(sisa) }} components={{ tebal: <strong /> }} />
           ) : (
             <button type="button" className="tautan-teks" onClick={kirimUlang}>
-              Kirim ulang kode
+              {t('auth.otp.kirimUlang')}
             </button>
           )}
         </p>
 
         <Button type="submit" ukuran="besar" disabled={memproses || kode.length < PANJANG_OTP} className="auth-tombol">
-          {memproses ? 'Memverifikasi…' : 'Verifikasi'}
+          {memproses ? t('auth.otp.memverifikasi') : t('auth.otp.tombol')}
         </Button>
       </form>
 
       <p className="auth-ubah">
-        Nomor salah?{' '}
-        <button type="button" className="tautan-teks" onClick={() => navigate('/daftar')}>
-          Ubah nomor
+        {t('auth.otp.nomorSalah')}{' '}
+        <button type="button" className="tautan-teks" onClick={() => navigate('/register')}>
+          {t('auth.otp.ubahNomor')}
         </button>
       </p>
 

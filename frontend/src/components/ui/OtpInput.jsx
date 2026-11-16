@@ -1,8 +1,10 @@
 import { useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import '../../styles/components/ui.css'
 
 // Enam kotak kode OTP dengan pindah fokus otomatis dan dukungan tempel
-export default function OtpInput({ value, onChange, panjang = 6, disabled = false, label = 'Kode OTP' }) {
+export default function OtpInput({ value, onChange, panjang = 6, disabled = false, label }) {
+  const { t } = useTranslation()
   const kotakRef = useRef([])
   const digit = Array.from({ length: panjang }, (_, i) => value[i] ?? '')
 
@@ -41,7 +43,7 @@ export default function OtpInput({ value, onChange, panjang = 6, disabled = fals
 
   return (
     <fieldset className="otp" disabled={disabled}>
-      <legend className="sr-only">{label}</legend>
+      <legend className="sr-only">{label ?? t('auth.otp.kode')}</legend>
       {digit.map((d, i) => (
         <input
           key={i}
@@ -52,7 +54,7 @@ export default function OtpInput({ value, onChange, panjang = 6, disabled = fals
           inputMode="numeric"
           autoComplete={i === 0 ? 'one-time-code' : 'off'}
           maxLength={panjang}
-          aria-label={`Digit ${i + 1}`}
+          aria-label={t('auth.otp.digit', { n: i + 1 })}
           value={d}
           onChange={(e) => ubah(i, e.target.value)}
           onKeyDown={(e) => tanganiTombol(i, e)}

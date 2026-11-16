@@ -64,6 +64,12 @@
   border-bottom: 1px solid rgba(201, 219, 232, 0.7);
 }
 
+.navbar-kanan {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .navbar-nav {
   display: flex;
   align-items: center;
@@ -638,4 +644,43 @@
 .auth-wajib {
   font-size: var(--fs-kecil);
   margin-bottom: -6px;
+}
+
+/* Baris alat di atas konten layout pengguna (pemilih bahasa) */
+.layout-alat {
+  display: flex;
+  justify-content: flex-end;
+  max-width: 1200px;
+  margin-bottom: 8px;
+}
+
+/* Pemilih bahasa di pojok kanan atas halaman autentikasi */
+.halaman-mandiri {
+  position: relative;
+}
+
+.auth-bahasa {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+}
+
+@media (max-width: 767px) {
+  .auth-bahasa {
+    position: static;
+    align-self: flex-end;
+  }
+}
+
+/* Navbar sempit: teks logo boleh dua baris agar tidak bertumpuk dengan pemilih bahasa */
+@media (max-width: 479px) {
+  .navbar .logo {
+    min-width: 0;
+  }
+
+  .navbar .logo-teks {
+    min-width: 0;
+    font-size: 0.8125rem;
+    white-space: normal;
+  }
 }

@@ -15,7 +15,8 @@ import Pesan from '../../components/ui/Pesan'
 import Select from '../../components/ui/Select'
 import Skeleton from '../../components/ui/Skeleton'
 import { VARIAN_GRID, VARIAN_KARTU } from '../../lib/animasi'
-import { DAFTAR_PARAMETER, PARAMETER } from '../../lib/kategori'
+import { useFormat } from '../../lib/format'
+import { DAFTAR_PARAMETER } from '../../lib/kategori'
 import { formatRingkas, formatWaktuWib } from '../../lib/tanggal'
 import { SUMBU_GRAFIK, WARNA } from '../../lib/warna'
 import '../../styles/components/peta.css'
@@ -54,6 +55,7 @@ function GrafikEvaluasi({ data, memuat }) {
 
 // Halaman model: evaluasi, registry versi, promosi/rollback, sumber prioritas, riwayat
 export default function Model() {
+  const f = useFormat()
   const queryClient = useQueryClient()
   const [parameter, setParameter] = useState('hujan')
   const [aksi, setAksi] = useState(null)
@@ -98,12 +100,12 @@ export default function Model() {
                   sembunyikanLabel
                   value={parameter}
                   onValueChange={setParameter}
-                  options={DAFTAR_PARAMETER.map((p) => ({ value: p.slug, label: p.judul }))}
+                  options={DAFTAR_PARAMETER.map((p) => ({ value: p.slug, label: f.parameterJudul(p.slug) }))}
                 />
               </div>
             </div>
             {driftQ.data?.[parameter] && (
-              <Pesan nada="galat">Drift terdeteksi: RMSE model {PARAMETER[parameter].judul.toLowerCase()} melewati batas drift.</Pesan>
+              <Pesan nada="galat">Drift terdeteksi: RMSE model {f.parameterJudul(parameter).toLowerCase()} melewati batas drift.</Pesan>
             )}
             <GrafikEvaluasi data={evaluasiQ.data} memuat={evaluasiQ.isPending} />
           </Card>
@@ -137,7 +139,7 @@ export default function Model() {
                   ) : (
                     registry.map((m) => (
                       <tr key={m.id}>
-                        <td>{PARAMETER[m.parameter].label}</td>
+                        <td>{f.parameterLabel(m.parameter)}</td>
                         <td>{m.jenis_model}</td>
                         <td>{m.versi}</td>
                         <td><BadgeStatus status={m.tahap} /></td>
@@ -190,7 +192,7 @@ export default function Model() {
                   ) : (
                     sumberQ.data.map((s) => (
                       <tr key={s.parameter}>
-                        <td>{PARAMETER[s.parameter].label}</td>
+                        <td>{f.parameterLabel(s.parameter)}</td>
                         <td>{LABEL_SUMBER[s.sumber]}</td>
                         <td><code>{s.kolom_sumber}</code></td>
                         <td>{s.metrik}</td>
@@ -219,7 +221,7 @@ export default function Model() {
                 {riwayatQ.data.map((r) => (
                   <li key={r.id} className="riwayat-item">
                     <p>
-                      <strong>{r.aksi === 'promosi' ? 'Promosi' : 'Rollback'}</strong> {PARAMETER[r.parameter].label}: {r.dari_versi ?? '–'} → {r.ke_versi}
+                      <strong>{r.aksi === 'promosi' ? 'Promosi' : 'Rollback'}</strong> {f.parameterLabel(r.parameter)}: {r.dari_versi ?? '–'} → {r.ke_versi}
                     </p>
                     <p className="teks-sekunder">"{r.alasan}"</p>
                     <p className="teks-sekunder riwayat-meta">{r.admin} · {formatWaktuWib(r.dilakukan_at)}</p>

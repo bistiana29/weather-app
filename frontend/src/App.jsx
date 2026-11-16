@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MotionConfig } from 'motion/react'
+import { useTranslation } from 'react-i18next'
 import { Tooltip } from 'radix-ui'
 import { createBrowserRouter, Navigate, Outlet, RouterProvider } from 'react-router'
 import AdminLayout from './components/layout/AdminLayout'
@@ -28,9 +29,10 @@ const halaman = (modul) => ({ Component: modul.default })
 
 // Wadah halaman autentikasi tanpa navbar
 function HalamanMandiri() {
+  const { t } = useTranslation()
   return (
     <div className="halaman-mandiri">
-      <a href="#konten" className="lewati">Lewati ke konten</a>
+      <a href="#konten" className="lewati">{t('umum.lewatiKonten')}</a>
       <main id="konten" tabIndex={-1}>
         <Outlet />
       </main>
@@ -44,9 +46,9 @@ const router = createBrowserRouter([
     hydrateFallbackElement: <div className="halaman-mandiri" aria-busy="true" />,
     children: [
       { index: true, element: <Landing /> },
-      { path: 'peta-risiko', element: <Navigate to="/peta-risiko/hujan" replace /> },
+      { path: 'risk-map', element: <Navigate to="/risk-map/rain" replace /> },
       {
-        path: 'peta-risiko/:parameter',
+        path: 'risk-map/:parameter',
         lazy: () => import('./pages/PetaRisiko').then(halaman),
       },
       { path: '*', element: <TidakDitemukan /> },
@@ -57,16 +59,16 @@ const router = createBrowserRouter([
     children: [
       { path: 'login', element: <Login /> },
       { path: 'login/dev', element: <LoginAdmin /> },
-      { path: 'daftar', element: <Daftar /> },
-      { path: 'verifikasi-otp', element: <VerifikasiOtp /> },
-      { path: 'lupa-password', element: <LupaPassword /> },
+      { path: 'register', element: <Daftar /> },
+      { path: 'verify-otp', element: <VerifikasiOtp /> },
+      { path: 'forgot-password', element: <LupaPassword /> },
       { path: 'reset-password', element: <ResetPassword /> },
     ],
   },
   {
     element: <ProtectedRoute role="user" />,
     hydrateFallbackElement: <div className="halaman-mandiri" aria-busy="true" />,
-    children: [{ element: <UserLayout />, children: [{ path: 'pengaturan', element: <Pengaturan /> }] }],
+    children: [{ element: <UserLayout />, children: [{ path: 'settings', element: <Pengaturan /> }] }],
   },
   {
     element: <ProtectedRoute role="admin" />,
@@ -79,7 +81,7 @@ const router = createBrowserRouter([
           { index: true, lazy: () => import('./pages/admin/Dashboard').then(halaman) },
           { path: 'data', lazy: () => import('./pages/admin/Data').then(halaman) },
           { path: 'model', lazy: () => import('./pages/admin/Model').then(halaman) },
-          { path: 'notifikasi', lazy: () => import('./pages/admin/Notifikasi').then(halaman) },
+          { path: 'notifications', lazy: () => import('./pages/admin/Notifikasi').then(halaman) },
         ],
       },
     ],

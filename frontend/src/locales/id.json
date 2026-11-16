@@ -1,0 +1,421 @@
+{
+  "umum": {
+    "namaProduk": "Pemetaan Cuaca Ekstrem Surabaya",
+    "metaDeskripsi": "Peta risiko cuaca ekstrem per kelurahan di Kota Surabaya dari hasil prediksi model, dengan peringatan WhatsApp H-1. Bukan peringatan resmi BMKG.",
+    "lewatiKonten": "Lewati ke konten",
+    "disclaimer": "Hasil prediksi model, bukan peringatan resmi BMKG.",
+    "hakCipta": "© 2026 Pemetaan Cuaca Ekstrem Kota Surabaya",
+    "periodeWib": "{{mulai}}–{{selesai}} WIB",
+    "dataContoh": "Data contoh",
+    "batal": "Batal",
+    "simpan": "Simpan",
+    "memproses": "Memproses…",
+    "memuat": "Memuat data…",
+    "cobaLagi": "Coba lagi",
+    "logo": {
+      "label": "Pemetaan Cuaca Ekstrem Surabaya, beranda",
+      "nama": "Pemetaan Cuaca Ekstrem",
+      "sub": "Kota Surabaya"
+    },
+    "bahasa": {
+      "label": "Pilih bahasa",
+      "id": "Bahasa Indonesia",
+      "en": "English"
+    },
+    "nav": {
+      "navigasiUtama": "Navigasi utama",
+      "petaRisiko": "Peta Risiko",
+      "peta": "Peta",
+      "masuk": "Masuk",
+      "daftar": "Daftar",
+      "panelAdmin": "Panel Admin",
+      "admin": "Admin",
+      "pengaturan": "Pengaturan",
+      "keluar": "Keluar"
+    },
+    "sidebar": {
+      "lebarkan": "Lebarkan sidebar",
+      "ciutkan": "Ciutkan sidebar",
+      "ubahLebar": "Ubah lebar sidebar"
+    },
+    "tutupDialog": "Tutup dialog",
+    "pilih": "Pilih…",
+    "cari": {
+      "label": "Cari",
+      "placeholder": "Cari…",
+      "hapus": "Hapus pencarian",
+      "kosong": "Tidak ditemukan"
+    },
+    "tanggal": {
+      "pilih": "Pilih tanggal",
+      "bulanSebelumnya": "Bulan sebelumnya",
+      "bulanBerikutnya": "Bulan berikutnya"
+    },
+    "password": {
+      "tampilkan": "Tampilkan password",
+      "sembunyikan": "Sembunyikan password"
+    },
+    "tidakDitemukan": {
+      "judul": "Halaman tidak ditemukan",
+      "teks": "Alamat yang Anda buka tidak tersedia.",
+      "tombol": "Buka Peta Risiko"
+    }
+  },
+  "auth": {
+    "email": "Email",
+    "emailPlaceholder": "nama@gmail.com",
+    "password": "Password",
+    "ulangiPassword": "Ulangi password",
+    "passwordBantuan": "Minimal {{n}} karakter, huruf dan angka.",
+    "panelAdmin": "Panel Admin",
+    "kembaliBeranda": "Kembali ke Beranda",
+    "kembaliSitusPublik": "Kembali ke situs publik",
+    "login": {
+      "judul": "Masuk",
+      "subjudul": "Kelola peringatan WhatsApp dan kelurahan pantauan Anda.",
+      "lupa": "Lupa password?",
+      "tombol": "Masuk",
+      "belumPunyaAkun": "Belum punya akun?"
+    },
+    "loginAdmin": {
+      "judul": "Masuk Panel Admin",
+      "subjudul": "Khusus pengelola sistem pengambilan data, model, dan notifikasi."
+    },
+    "daftar": {
+      "judul": "Daftar Peringatan Dini",
+      "subjudul": "Dapatkan peringatan cuaca ekstrem H-1 lewat WhatsApp untuk hingga 3 kelurahan.",
+      "semuaWajib": "Semua kolom dan persetujuan wajib diisi.",
+      "nama": "Nama",
+      "noWa": "No. WhatsApp",
+      "noWaBantuan": "Kode OTP akan dikirim ke nomor ini.",
+      "setujuSk": "Saya setuju dengan",
+      "setujuWa": "Saya bersedia menerima pesan peringatan dini lewat WhatsApp",
+      "tombol": "Daftar & Kirim OTP",
+      "sudahPunyaAkun": "Sudah punya akun?",
+      "ketentuan": {
+        "judul": "Syarat & Kebijakan Privasi",
+        "prediksi": "Hasil di situs ini adalah prediksi model, bukan peringatan resmi BMKG.",
+        "data": "Nama, email, dan nomor WhatsApp hanya dipakai untuk akun dan pengiriman peringatan dini.",
+        "jadwal": "Peringatan dikirim pukul 12.00 WIB untuk periode esok hari, untuk maksimal 3 kelurahan pantauan.",
+        "kendali": "Notifikasi bisa dimatikan dan akun bisa dihapus kapan saja dari halaman Pengaturan."
+      }
+    },
+    "otp": {
+      "judul": "Verifikasi Nomor WA",
+      "subjudul": "Kode 6 digit dikirim lewat WhatsApp ke {{nomor}}",
+      "kode": "Kode OTP",
+      "digit": "Digit {{n}}",
+      "hitungMundur": "Kirim ulang dalam <tebal>{{waktu}}</tebal>",
+      "kirimUlang": "Kirim ulang kode",
+      "terkirimUlang": "Kode baru sudah dikirim.",
+      "tombol": "Verifikasi",
+      "memverifikasi": "Memverifikasi…",
+      "nomorSalah": "Nomor salah?",
+      "ubahNomor": "Ubah nomor"
+    },
+    "lupa": {
+      "judul": "Lupa Password",
+      "subjudul": "Masukkan email akun Anda. Kami akan mengirim tautan untuk mengatur password baru.",
+      "ingat": "Ingat password?",
+      "terkirim": "Jika email tersebut terdaftar, tautan reset sudah dikirim. Periksa kotak masuk atau folder spam. Tautan hanya berlaku dalam waktu terbatas.",
+      "emailLain": "Kirim ke email lain",
+      "tombol": "Kirim Tautan Reset",
+      "mengirim": "Mengirim…"
+    },
+    "reset": {
+      "judul": "Atur Password Baru",
+      "subjudul": "Tautan ini berlaku dalam waktu terbatas.",
+      "tidakValidJudul": "Tautan tidak valid",
+      "tidakValidSubjudul": "Tautan reset tidak lengkap atau sudah tidak berlaku.",
+      "mintaBaru": "Minta tautan baru",
+      "passwordBaru": "Password baru",
+      "menyimpan": "Menyimpan…"
+    },
+    "pesan": {
+      "masukAdmin": "Silakan masuk dengan akun admin untuk membuka Panel Admin.",
+      "masukPengguna": "Silakan masuk untuk membuka halaman Pengaturan.",
+      "ditolakAdmin": "Halaman admin hanya untuk akun admin. Anda dialihkan ke Pengaturan.",
+      "ditolakPengguna": "Halaman Pengaturan hanya untuk akun pengguna. Anda dialihkan ke Panel Admin.",
+      "passwordDiubah": "Password berhasil diubah. Silakan masuk dengan password baru.",
+      "akunDihapus": "Akun Anda sudah dihapus."
+    }
+  },
+  "validasi": {
+    "emailTidakValid": "Masukkan email yang valid",
+    "passwordWajib": "Password wajib diisi",
+    "namaWajib": "Nama wajib diisi",
+    "noWa": "Nomor WA diawali 8, contoh 81234567890",
+    "passwordPendek": "Minimal {{n}} karakter",
+    "passwordKombinasi": "Gunakan kombinasi huruf dan angka",
+    "passwordTidakSama": "Password tidak sama",
+    "setujuSk": "Wajib disetujui untuk membuat akun",
+    "setujuWa": "Akun ini hanya dipakai untuk peringatan WhatsApp",
+    "passwordLamaWajib": "Password lama wajib diisi",
+    "passwordHarusBeda": "Password baru harus berbeda"
+  },
+  "galat": {
+    "umum": "Terjadi kesalahan. Silakan coba lagi.",
+    "loginSalah": "Email atau password salah.",
+    "roleDitolak": "Akun ini tidak bisa masuk di sini.",
+    "emailTerdaftar": "Email sudah terdaftar.",
+    "otpSalah": "Kode OTP salah atau sudah kedaluwarsa.",
+    "tokenKedaluwarsa": "Tautan reset sudah kedaluwarsa.",
+    "maksPantauan": "Maksimal 3 kelurahan pantauan.",
+    "passwordLamaSalah": "Password lama salah."
+  },
+  "mock": {
+    "akun": "Mode data contoh. Akun uji: <kode>{{email}}</kode>, password <kode>{{password}}</kode>.",
+    "otp": "Mode data contoh: gunakan kode <kode>{{kode}}</kode>.",
+    "reset": "Mode data contoh: <tautan>buka tautan reset contoh</tautan>."
+  },
+  "kategori": {
+    "tidakHujan": "Tidak Hujan",
+    "hujanRingan": "Hujan Ringan",
+    "hujanSedang": "Hujan Sedang",
+    "hujanLebat": "Hujan Lebat",
+    "hujanSangatLebat": "Hujan Sangat Lebat",
+    "hujanEkstrem": "Hujan Ekstrem",
+    "tidakEkstrem": "Tidak Ekstrem",
+    "suhuEkstrem": "Suhu Ekstrem",
+    "anginKencang": "Angin Kencang",
+    "jarakPandangEkstrem": "Jarak Pandang Mendatar Ekstrem"
+  },
+  "rentang": {
+    "kurang": "< {{a}}",
+    "antara": "{{a}} – < {{b}}",
+    "minimal": "≥ {{a}}",
+    "suhuNormal": "< normal + {{a}} °C",
+    "suhuEkstrem": "≥ normal + {{a}} °C",
+    "anginNormal": "< {{a}} km/jam",
+    "anginKencang": "≥ {{a}} km/jam (±{{knot}} knot)",
+    "jarakNormal": "≥ {{a}} m",
+    "jarakEkstrem": "< {{a}} m"
+  },
+  "parameter": {
+    "hujan": {
+      "label": "Hujan",
+      "judul": "Curah Hujan"
+    },
+    "suhu": {
+      "label": "Suhu",
+      "judul": "Suhu Udara"
+    },
+    "angin": {
+      "label": "Angin",
+      "judul": "Kecepatan Angin"
+    },
+    "jarak-pandang": {
+      "label": "Jarak Pandang",
+      "judul": "Jarak Pandang Mendatar"
+    },
+    "kelembapan": {
+      "label": "Kelembapan",
+      "judul": "Kelembapan Udara"
+    }
+  },
+  "satuan": {
+    "hujan": "mm/jam",
+    "suhu": "°C",
+    "angin": "km/jam",
+    "jarak-pandang": "m",
+    "kelembapan": "%",
+    "km": "km",
+    "m": "m"
+  },
+  "kejadian": {
+    "hujan_lebat": {
+      "label": "Hujan Lebat ke atas",
+      "pendek": "Hujan Lebat+",
+      "kalimat": "hujan lebat ke atas"
+    },
+    "angin_kencang": {
+      "label": "Angin Kencang",
+      "pendek": "Angin Kencang",
+      "kalimat": "angin kencang"
+    },
+    "suhu_ekstrem": {
+      "label": "Suhu Ekstrem",
+      "pendek": "Suhu Ekstrem",
+      "kalimat": "suhu ekstrem"
+    },
+    "jarak_pandang_ekstrem": {
+      "label": "Jarak Pandang Ekstrem",
+      "pendek": "Jarak Pandang",
+      "kalimat": "jarak pandang ekstrem"
+    }
+  },
+  "peta": {
+    "judul": "Peta Risiko",
+    "judulTab": "Peta Risiko {{parameter}}",
+    "prediksiTanggal": "Prediksi {{tanggal}} · 00.00–23.59 WIB",
+    "tanggalPrediksi": "Tanggal prediksi",
+    "tabLabel": "Parameter cuaca",
+    "cariLabel": "Cari kelurahan",
+    "cariPlaceholder": "Cari kelurahan…",
+    "tutupCari": "Tutup pencarian",
+    "gagalBatas": "Batas kelurahan gagal dimuat.",
+    "esokHari": "esok hari",
+    "hariIni": "hari ini",
+    "kel": "Kel. {{nama}}",
+    "kec": "Kec. {{nama}}",
+    "kelSingkat": "kel.",
+    "informasiNilai": "Informasi nilai",
+    "minimum": "Minimum",
+    "puncak": "Puncak",
+    "tanpaPeriode": "Tidak ada periode kejadian",
+    "memuatRisiko": "Memuat data risiko",
+    "petunjukDuaJari": "Gunakan dua jari untuk menggeser peta",
+    "zoom": {
+      "perbesar": "Perbesar",
+      "perbesarPeta": "Perbesar peta",
+      "perkecil": "Perkecil",
+      "perkecilPeta": "Perkecil peta"
+    },
+    "legend": {
+      "tanpaAmbang": "Informasi nilai, tanpa ambang bahaya"
+    },
+    "info": {
+      "tutup": "Tutup info kelurahan",
+      "lihat": "Lihat prakiraan 24 jam"
+    },
+    "sheet": {
+      "label": "Panel prakiraan kelurahan",
+      "ciutkan": "Ciutkan panel prakiraan",
+      "perluas": "Perluas panel prakiraan"
+    },
+    "sorotan": {
+      "judul": "Sorotan {{tanggal}}",
+      "tertinggi": "{{parameter}} tertinggi per kelurahan",
+      "terendah": "{{parameter}} terendah per kelurahan",
+      "ajakan": "Klik kelurahan di peta atau gunakan kolom cari untuk melihat prakiraan 24 jam."
+    },
+    "ringkasan": {
+      "judul": "Ringkasan {{tanggal}}",
+      "memuat": "{{label}}, memuat",
+      "aria": "{{label}}: {{jumlah}} kelurahan. Tampilkan di peta",
+      "dari": "dari {{total}} kelurahan"
+    },
+    "grafik": {
+      "observasi": "Observasi",
+      "prediksi": "Prediksi",
+      "sumbuY": "Sumbu Y dalam {{satuan}}",
+      "aria": "Grafik {{parameter}}: 24 jam observasi dan 24 jam prediksi, puncak prediksi {{puncak}}.",
+      "ariaAmbang": "Grafik {{parameter}}: 24 jam observasi dan 24 jam prediksi, puncak prediksi {{puncak}}, ambang {{ambang}}.",
+      "ambang": {
+        "hujan": "Batas Hujan Sangat Lebat",
+        "suhu": "Batas Suhu Ekstrem",
+        "angin": "Batas Angin Kencang",
+        "jarak-pandang": "Batas Jarak Pandang Ekstrem"
+      }
+    },
+    "panel": {
+      "perJam": "Prediksi per jam",
+      "tutup": "Tutup panel prakiraan",
+      "gagal": "Prakiraan gagal dimuat.",
+      "puncakDari": "Puncak {{parameter}}",
+      "minimumDari": "Minimum {{parameter}}",
+      "normal": "Normal setempat {{nilai}}",
+      "model": "Model aktif <tebal>{{nama}}</tebal> · versi <tebal>{{versi}}</tebal> · dibuat {{tanggal}} {{jam}} WIB"
+    },
+    "peringatan": {
+      "judulTamu": "Mau diingatkan lewat WhatsApp?",
+      "teksTamu": "Buat akun, verifikasi nomor, lalu pilih hingga 3 kelurahan. Peringatan dikirim pukul 12.00 WIB sehari sebelumnya.",
+      "tombolTamu": "Aktifkan Peringatan",
+      "judulJadwal": "Jadwal pembaruan",
+      "teksJadwal": "Prediksi diperbarui setiap hari pukul 12.00 WIB untuk periode esok hari 00.00–23.59 WIB.",
+      "bukaAdmin": "Buka Panel Admin",
+      "aturPantauan": "Atur kelurahan pantauan"
+    }
+  },
+  "landing": {
+    "bentoLabel": "Parameter dan peringatan",
+    "hero": {
+      "judul": "Cek risiko cuaca ekstrem di kelurahan Anda, sehari sebelumnya.",
+      "deskripsi": "Peta risiko hujan lebat, suhu ekstrem, angin kencang, dan jarak pandang rendah untuk {{jumlah}} kelurahan di Surabaya, dari prediksi model yang diperbarui setiap hari pukul 12.00 WIB.",
+      "cariLabel": "Cari kelurahan Anda",
+      "cariPlaceholder": "Cari kelurahan Anda, mis. Ketintang",
+      "bukaPeta": "Buka peta risiko"
+    },
+    "status": {
+      "tanggal": "Prakiraan {{tanggal}}:",
+      "tidakAda": "tidak ada kelurahan dengan kejadian ekstrem.",
+      "item": "<tebal>{{jumlah}}</tebal> kelurahan {{kejadian}}"
+    },
+    "peta": {
+      "judul": "Curah hujan esok hari",
+      "buka": "Buka peta risiko curah hujan",
+      "alt": "Peta kategori curah hujan per kelurahan untuk {{tanggal}}",
+      "legenda": "Legenda curah hujan ({{satuan}})"
+    },
+    "parameter": {
+      "judul": "Lima parameter, dipetakan terpisah",
+      "teks": "Setiap kelurahan dinilai dengan ambang kategori BMKG (Tabel 2.1). Angka menunjukkan jumlah kelurahan berisiko esok hari."
+    },
+    "wa": {
+      "judul": "Peringatan H-1 lewat WhatsApp",
+      "teks": "Pilih hingga 3 kelurahan. Pesan dikirim pukul 12.00 WIB untuk periode esok hari 00.00–23.59 WIB.",
+      "catatanBahasa": "Peringatan WhatsApp saat ini dikirim dalam bahasa Indonesia.",
+      "contohAria": "Contoh pesan peringatan WhatsApp",
+      "aktifkan": "Aktifkan peringatan",
+      "atur": "Atur peringatan"
+    }
+  },
+  "pesanWa": {
+    "judul": "Info Cuaca SBY",
+    "sub": "Peringatan dini untuk {{tanggal}}, 00.00–23.59 WIB",
+    "aman": "Tidak ada kejadian ekstrem.",
+    "lain": "+{{jumlah}} kelurahan lain berisiko cuaca ekstrem.",
+    "tautan": "Lihat peta:"
+  },
+  "pengaturan": {
+    "judul": "Pengaturan Akun & Notifikasi",
+    "subjudul": "Atur peringatan dini WhatsApp dan kelurahan yang ingin Anda pantau.",
+    "gagalMuat": "Pengaturan gagal dimuat.",
+    "tersimpan": "Pengaturan tersimpan.",
+    "notif": {
+      "label": "Peringatan Dini WhatsApp",
+      "deskripsi": "Dikirim pukul 12.00 WIB, sehari sebelumnya, untuk periode 00.00–23.59 WIB."
+    },
+    "pantauan": {
+      "judul": "Kelurahan pantauan",
+      "cariLabel": "Cari kelurahan pantauan",
+      "penuhPlaceholder": "Maksimal {{n}} kelurahan",
+      "penuhCatatan": "Hapus salah satu kelurahan untuk menggantinya.",
+      "terpilih": "Kelurahan pantauan terpilih",
+      "hapus": "Hapus {{nama}} dari pantauan",
+      "kosong": "Belum ada kelurahan. Pilih minimal satu agar peringatan bisa dikirim."
+    },
+    "akun": {
+      "judul": "Info akun",
+      "hanyaBaca": "Data akun hanya bisa dibaca.",
+      "passwordDiubah": "Password berhasil diubah."
+    },
+    "password": {
+      "judul": "Ubah password",
+      "lama": "Password lama",
+      "baru": "Password baru",
+      "ulangi": "Ulangi password baru",
+      "tombol": "Simpan password"
+    },
+    "hapus": {
+      "judul": "Hapus akun",
+      "teks": "Menghapus akun dan menghentikan semua peringatan.",
+      "tombol": "Hapus",
+      "dialogJudul": "Hapus akun?",
+      "dialogTeks": "Akun, nomor WhatsApp, dan kelurahan pantauan akan dihapus permanen. Peringatan WA berhenti dikirim dan tindakan ini tidak bisa dibatalkan.",
+      "kata": "HAPUS",
+      "ketik": "Ketik {{kata}} untuk konfirmasi",
+      "menghapus": "Menghapus…"
+    },
+    "aksi": {
+      "label": "Simpan perubahan",
+      "belumDisimpan": "Ada perubahan yang belum disimpan."
+    },
+    "simulasi": {
+      "judul": "Simulasi Pesan",
+      "catatan": "Pratinjau berdasarkan pilihan saat ini, dikirim pukul 12.00 WIB.",
+      "nonaktif": "Peringatan WA nonaktif. Pesan tidak akan dikirim.",
+      "kosong": "Pilih kelurahan pantauan untuk melihat contoh pesan."
+    }
+  }
+}

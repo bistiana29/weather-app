@@ -1,5 +1,6 @@
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { NavLink } from 'react-router'
 import { MEDIA, useMediaQuery } from '../../lib/useMediaQuery'
 import Tooltip from '../ui/Tooltip'
@@ -53,6 +54,7 @@ function ItemSidebar({ item, ciut }) {
 
 // Sidebar yang bisa ditarik lebarnya, diciutkan jadi rail, dan jadi navigasi bawah di mobile
 export default function Sidebar({ items, itemsBawah = [], kepala, judulMobile, storageKey, nada = 'terang' }) {
+  const { t } = useTranslation()
   const mobile = useMediaQuery(MEDIA.mobile)
   const tablet = useMediaQuery(MEDIA.tablet)
   const [simpanan, setSimpanan] = useState(() => bacaSimpanan(storageKey))
@@ -112,7 +114,7 @@ export default function Sidebar({ items, itemsBawah = [], kepala, judulMobile, s
             })}
           </div>
         </header>
-        <nav className="nav-bawah" aria-label="Navigasi utama">
+        <nav className="nav-bawah" aria-label={t('umum.nav.navigasiUtama')}>
           {items.map((item) => {
             const Ikon = item.ikon
             return (
@@ -130,7 +132,7 @@ export default function Sidebar({ items, itemsBawah = [], kepala, judulMobile, s
   return (
     <aside className={`sidebar nada-${nada} ${ciut ? 'ciut' : ''} ${menarik ? 'menarik' : ''}`} style={{ width: lebar }}>
       <div className="sidebar-kepala">{kepala(ciut)}</div>
-      <nav className="sidebar-nav" aria-label="Navigasi utama">
+      <nav className="sidebar-nav" aria-label={t('umum.nav.navigasiUtama')}>
         <ul>
           {items.map((item) => (
             <ItemSidebar key={item.to} item={item} ciut={ciut} />
@@ -143,7 +145,7 @@ export default function Sidebar({ items, itemsBawah = [], kepala, judulMobile, s
         ))}
         {!tablet && (
           <li>
-            <Tooltip label={ciut ? 'Lebarkan sidebar' : 'Ciutkan sidebar'} side="right" aktif={ciut}>
+            <Tooltip label={t(ciut ? 'umum.sidebar.lebarkan' : 'umum.sidebar.ciutkan')} side="right" aktif={ciut}>
               <button
                 type="button"
                 className="sidebar-item"
@@ -151,7 +153,7 @@ export default function Sidebar({ items, itemsBawah = [], kepala, judulMobile, s
                 onClick={() => setSimpanan((s) => ({ ...s, ciut: !s.ciut }))}
               >
                 {ciut ? <PanelLeftOpen size={20} aria-hidden="true" /> : <PanelLeftClose size={20} aria-hidden="true" />}
-                <span className={ciut ? 'sr-only' : 'sidebar-label'}>{ciut ? 'Lebarkan sidebar' : 'Ciutkan sidebar'}</span>
+                <span className={ciut ? 'sr-only' : 'sidebar-label'}>{t(ciut ? 'umum.sidebar.lebarkan' : 'umum.sidebar.ciutkan')}</span>
               </button>
             </Tooltip>
           </li>
@@ -162,7 +164,7 @@ export default function Sidebar({ items, itemsBawah = [], kepala, judulMobile, s
           role="separator"
           tabIndex={0}
           aria-orientation="vertical"
-          aria-label="Ubah lebar sidebar"
+          aria-label={t('umum.sidebar.ubahLebar')}
           aria-valuemin={LEBAR_MIN}
           aria-valuemax={LEBAR_MAX}
           aria-valuenow={simpanan.lebar}

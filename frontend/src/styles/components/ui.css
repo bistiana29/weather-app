@@ -874,3 +874,56 @@
   gap: 10px;
   margin-top: 4px;
 }
+
+/* Pemilih bahasa ID | EN */
+.pilih-bahasa {
+  display: inline-flex;
+  flex-shrink: 0;
+  padding: 3px;
+  border: 1px solid var(--garis);
+  border-radius: var(--radius-pill);
+  background: var(--permukaan-2);
+  box-shadow: var(--neu-inset);
+}
+
+.pilih-bahasa-tombol {
+  min-width: var(--target-sentuh);
+  min-height: 38px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--teks-sekunder);
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: var(--fs-kecil);
+  letter-spacing: 0.04em;
+  transition: color var(--durasi-cepat) var(--easing), background var(--durasi-cepat) var(--easing);
+}
+
+/* Perluas area sentuh ke 44px tanpa menambah tinggi visual */
+.pilih-bahasa-tombol {
+  position: relative;
+}
+
+.pilih-bahasa-tombol::before {
+  content: '';
+  position: absolute;
+  inset: -3px 0;
+}
+
+.pilih-bahasa-tombol[aria-pressed='true'] {
+  background: var(--putih);
+  color: var(--navy);
+  box-shadow: var(--neu-raised-kecil);
+}
+
+.pilih-bahasa-tombol:hover {
+  color: var(--navy);
+}
+
+/* Label kategori panjang (mis. versi EN) boleh membungkus baris */
+.badge-data {
+  white-space: normal;
+  text-align: left;
+}

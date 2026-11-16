@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { ArrowRight, BellRing, ChevronRight } from 'lucide-react'
 import { motion } from 'motion/react'
 import { useMemo } from 'react'
+import { Trans, useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router'
 import { getKelurahanGeojson, getRingkasan, getRisiko } from '../api/publik'
 import BantuanMock from '../components/BantuanMock'
@@ -14,15 +15,16 @@ import SearchInput from '../components/ui/SearchInput'
 import Skeleton from '../components/ui/Skeleton'
 import { VARIAN_GRID, VARIAN_KARTU } from '../lib/animasi'
 import { useAuth } from '../lib/auth'
-import { DAFTAR_PARAMETER, formatNilai, JENIS_KEJADIAN, masukPeringatan, PARAMETER } from '../lib/kategori'
-import { formatPanjang, hariIniWib, tambahHari } from '../lib/tanggal'
+import { buatFormat, useFormat } from '../lib/format'
+import { DAFTAR_PARAMETER, JENIS_KEJADIAN, masukPeringatan, PARAMETER, urlPeta } from '../lib/kategori'
+import { hariIniWib, tambahHari } from '../lib/tanggal'
 import '../styles/components/pengaturan.css'
 import '../styles/pages/Landing.css'
 
-const titikJam = (jam) => jam.replace(':', '.')
-
 // Kalimat status esok hari dari ringkasan jumlah kelurahan per jenis kejadian
 function StatusEsok({ ringkasan, memuat, besok }) {
+  const { t } = useTranslation()
+  const f = useFormat()
   if (memuat) {
     return (
       <div className="hero-status" aria-hidden="true">
@@ -34,12 +36,16 @@ function StatusEsok({ ringkasan, memuat, besok }) {
   const kejadian = JENIS_KEJADIAN.filter((j) => ringkasan?.[j.kunci] > 0)
   return (
     <p className="hero-status">
-      <span className="hero-status-tanggal">Prakiraan {formatPanjang(besok)}:</span>{' '}
+      <span className="hero-status-tanggal">{t('landing.status.tanggal', { tanggal: f.tanggalPanjang(besok) })}</span>{' '}
       {kejadian.length === 0
-        ? 'tidak ada kelurahan dengan kejadian ekstrem.'
+        ? t('landing.status.tidakAda')
         : kejadian.map((j, i) => (
             <span key={j.kunci}>
-              <strong>{ringkasan[j.kunci]}</strong> kelurahan {j.label.toLowerCase()}
+              <Trans
+                i18nKey="landing.status.item"
+                values={{ jumlah: f.angka(ringkasan[j.kunci]), kejadian: t(`kejadian.${j.kunci}.kalimat`) }}
+                components={{ tebal: <strong /> }}
+              />
               {i < kejadian.length - 1 ? ', ' : '.'}
             </span>
           ))}{' '}
@@ -50,27 +56,29 @@ function StatusEsok({ ringkasan, memuat, besok }) {
 
 // Kartu peta hujan esok hari beserta legenda kategori
 function KartuPetaHero({ besok, geojson, risiko }) {
+  const { t } = useTranslation()
+  const f = useFormat()
   const siap = geojson && risiko
   return (
     <Card className="hero-peta" aria-busy={!siap}>
       <div className="hero-peta-kepala">
-        <h2 className="hero-peta-judul">Curah hujan esok hari</h2>
-        <p className="teks-sekunder">{formatPanjang(besok)}</p>
+        <h2 className="hero-peta-judul">{t('landing.peta.judul')}</h2>
+        <p className="teks-sekunder">{f.tanggalPanjang(besok)}</p>
       </div>
-      <Link to={`/peta-risiko/hujan?tgl=${besok}`} className="hero-peta-gambar" aria-label="Buka peta risiko curah hujan">
+      <Link to={urlPeta('hujan', { date: besok })} className="hero-peta-gambar" aria-label={t('landing.peta.buka')}>
         {siap ? (
-          <PetaMini geojson={geojson} risiko={risiko} parameter="hujan" label={`Peta kategori curah hujan per kelurahan untuk ${formatPanjang(besok)}`} />
+          <PetaMini geojson={geojson} risiko={risiko} parameter="hujan" label={t('landing.peta.alt', { tanggal: f.tanggalPanjang(besok) })} />
         ) : (
           <Skeleton height="100%" radius={16} />
         )}
       </Link>
-      <ul className="hero-legend" aria-label="Legenda curah hujan (mm/jam)">
+      <ul className="hero-legend" aria-label={t('landing.peta.legenda', { satuan: t('satuan.hujan') })}>
         {PARAMETER.hujan.kategori.map((k) => (
           <li key={k.label}>
             <span className="hero-legend-warna" style={{ background: k.warna }} aria-hidden="true" />
             <span>
-              {k.label.replace('Hujan ', '')}
-              <span className="teks-sekunder"> {k.rentang}</span>
+              {f.kategori('hujan', k.label)}
+              <span className="teks-sekunder"> {f.rentang(k.rentang)}</span>
             </span>
           </li>
         ))}
@@ -79,8 +87,11 @@ function KartuPetaHero({ besok, geojson, risiko }) {
   )
 }
 
-// Contoh pesan WA dari kelurahan dengan risiko hujan tertinggi esok hari
+// Contoh pesan WA (selalu berbahasa Indonesia, sama seperti pesan yang dikirim)
 function PratinjauPesan({ besok, risiko, indeks }) {
+  const { t, i18n } = useTranslation()
+  const tId = i18n.getFixedT('id')
+  const fId = buatFormat(tId, 'id')
   const teratas = Object.entries(risiko ?? {}).sort(([, a], [, b]) => b.nilai - a.nilai)[0]
   if (!teratas || !indeks[teratas[0]]) {
     return (
@@ -93,23 +104,23 @@ function PratinjauPesan({ besok, risiko, indeks }) {
   }
   const [kode, data] = teratas
   return (
-    <article className="pesan-wa" aria-label="Contoh pesan peringatan WhatsApp">
-      <p className="pesan-wa-judul">Info Cuaca SBY</p>
-      <p className="pesan-wa-sub">Peringatan dini untuk {formatPanjang(besok)}, 00.00–23.59 WIB</p>
+    <article className="pesan-wa" lang="id" aria-label={t('landing.wa.contohAria')}>
+      <p className="pesan-wa-judul">{tId('pesanWa.judul')}</p>
+      <p className="pesan-wa-sub">{tId('pesanWa.sub', { tanggal: fId.tanggalPanjang(besok) })}</p>
       <div className="pesan-wa-kel">
         <p className="pesan-wa-nama">{indeks[kode].kelurahan}:</p>
         {masukPeringatan('hujan', data.kategori) ? (
           <ul>
             <li>
-              {data.kategori} {formatNilai('hujan', data.nilai)}
-              {data.jam_mulai && `, ${titikJam(data.jam_mulai)}–${titikJam(data.jam_selesai)} WIB`}
+              {fId.kategori('hujan', data.kategori)} {fId.nilaiLengkap('hujan', data.nilai)}
+              {data.jam_mulai && `, ${fId.periode(data.jam_mulai, data.jam_selesai)}`}
             </li>
           </ul>
         ) : (
-          <p className="pesan-wa-aman">Tidak ada kejadian ekstrem.</p>
+          <p className="pesan-wa-aman">{tId('pesanWa.aman')}</p>
         )}
       </div>
-      <p className="pesan-wa-kaki">Hasil prediksi model, bukan peringatan resmi BMKG.</p>
+      <p className="pesan-wa-kaki">{tId('umum.disclaimer')}</p>
       <span className="pesan-wa-jam">12.00</span>
     </article>
   )
@@ -117,6 +128,7 @@ function PratinjauPesan({ besok, risiko, indeks }) {
 
 // Halaman beranda publik: cari kelurahan, status esok hari, parameter, dan peringatan WA
 export default function Landing() {
+  const { t, i18n } = useTranslation()
   const { pengguna } = useAuth()
   const navigate = useNavigate()
   const besok = tambahHari(hariIniWib(), 1)
@@ -131,12 +143,12 @@ export default function Landing() {
   const itemCari = useMemo(
     () =>
       Object.values(indeks)
-        .map((p) => ({ value: p.kode_kel, label: p.kelurahan, keterangan: `Kec. ${p.kecamatan}` }))
+        .map((p) => ({ value: p.kode_kel, label: p.kelurahan, keterangan: t('peta.kec', { nama: p.kecamatan }) }))
         .sort((a, b) => a.label.localeCompare(b.label, 'id')),
-    [indeks],
+    [indeks, t],
   )
   const jumlahPerParameter = Object.fromEntries(JENIS_KEJADIAN.map((j) => [j.parameter, j]))
-  const ajakanWa = !pengguna ? { to: '/daftar', label: 'Aktifkan peringatan' } : pengguna.role === 'user' ? { to: '/pengaturan', label: 'Atur peringatan' } : null
+  const ajakanWa = !pengguna ? { to: '/register', label: t('landing.wa.aktifkan') } : pengguna.role === 'user' ? { to: '/settings', label: t('landing.wa.atur') } : null
 
   return (
     <div className="landing">
@@ -144,11 +156,10 @@ export default function Landing() {
       <section className="hero" aria-labelledby="hero-judul">
         <motion.div className="hero-teks" variants={VARIAN_GRID} initial="awal" animate="tampil">
           <motion.h1 id="hero-judul" variants={VARIAN_KARTU}>
-            Cek risiko cuaca ekstrem di kelurahan Anda, sehari sebelumnya.
+            {t('landing.hero.judul')}
           </motion.h1>
           <motion.p variants={VARIAN_KARTU} className="hero-deskripsi">
-            Peta risiko hujan lebat, suhu ekstrem, angin kencang, dan jarak pandang rendah untuk {itemCari.length || 153} kelurahan
-            di Surabaya, dari prediksi model yang diperbarui setiap hari pukul 12.00 WIB.
+            {t('landing.hero.deskripsi', { jumlah: itemCari.length || 153 })}
           </motion.p>
           <motion.div variants={VARIAN_KARTU}>
             <StatusEsok ringkasan={ringkasanQuery.data} memuat={ringkasanQuery.isPending} besok={besok} />
@@ -156,12 +167,12 @@ export default function Landing() {
           <motion.div variants={VARIAN_KARTU} className="hero-cari">
             <SearchInput
               items={itemCari}
-              onSelect={(item) => navigate(`/peta-risiko/hujan?kel=${item.value}&tgl=${besok}`)}
-              placeholder="Cari kelurahan Anda, mis. Ketintang"
-              label="Cari kelurahan Anda"
+              onSelect={(item) => navigate(urlPeta('hujan', { kel: item.value, date: besok }))}
+              placeholder={t('landing.hero.cariPlaceholder')}
+              label={t('landing.hero.cariLabel')}
             />
-            <Button as={Link} to="/peta-risiko/hujan" ukuran="besar" ikonKanan={ArrowRight}>
-              Buka peta risiko
+            <Button as={Link} to={urlPeta('hujan')} ukuran="besar" ikonKanan={ArrowRight}>
+              {t('landing.hero.bukaPeta')}
             </Button>
           </motion.div>
         </motion.div>
@@ -176,31 +187,32 @@ export default function Landing() {
         </motion.div>
       </section>
 
-      <motion.section className="landing-bento" aria-label="Parameter dan peringatan" variants={VARIAN_GRID} initial="awal" animate="tampil">
+      <motion.section className="landing-bento" aria-label={t('landing.bentoLabel')} variants={VARIAN_GRID} initial="awal" animate="tampil">
         <motion.div variants={VARIAN_KARTU} className="landing-parameter">
           <Card className="landing-kartu">
-            <h2>Lima parameter, dipetakan terpisah</h2>
-            <p className="teks-sekunder">
-              Setiap kelurahan dinilai dengan ambang kategori BMKG (Tabel 2.1). Angka menunjukkan jumlah kelurahan berisiko esok hari.
-            </p>
+            <h2>{t('landing.parameter.judul')}</h2>
+            <p className="teks-sekunder">{t('landing.parameter.teks')}</p>
             <ul className="daftar-parameter">
               {DAFTAR_PARAMETER.map((p) => {
                 const Ikon = IKON_PARAMETER[p.slug]
                 const jenis = jumlahPerParameter[p.slug]
                 return (
                   <li key={p.slug}>
-                    <Link to={`/peta-risiko/${p.slug}?tgl=${besok}`} className="baris-parameter">
+                    <Link to={urlPeta(p.slug, { date: besok })} className="baris-parameter">
                       <Ikon size={20} aria-hidden="true" />
-                      <span className="baris-parameter-nama">{p.judul}</span>
+                      <span className="baris-parameter-nama">{t(`parameter.${p.slug}.judul`)}</span>
                       <span className="baris-parameter-nilai">
                         {!jenis ? (
-                          <span className="teks-sekunder">Informasi nilai</span>
+                          <span className="teks-sekunder">{t('peta.informasiNilai')}</span>
                         ) : ringkasanQuery.isPending ? (
                           <Skeleton width={72} height={18} />
                         ) : (
                           <>
                             <strong>{ringkasanQuery.data?.[jenis.kunci] ?? '–'}</strong>
-                            <span className="teks-sekunder baris-parameter-unit"> kel. {jenis.labelPendek.toLowerCase()}</span>
+                            <span className="teks-sekunder baris-parameter-unit">
+                              {' '}
+                              {t('peta.kelSingkat')} {t(`kejadian.${jenis.kunci}.kalimat`)}
+                            </span>
                           </>
                         )}
                       </span>
@@ -217,11 +229,10 @@ export default function Landing() {
           <Card className="landing-kartu">
             <h2>
               <BellRing size={20} aria-hidden="true" />
-              Peringatan H-1 lewat WhatsApp
+              {t('landing.wa.judul')}
             </h2>
-            <p className="teks-sekunder">
-              Pilih hingga 3 kelurahan. Pesan dikirim pukul 12.00 WIB untuk periode esok hari 00.00–23.59 WIB.
-            </p>
+            <p className="teks-sekunder">{t('landing.wa.teks')}</p>
+            {i18n.language !== 'id' && <p className="teks-sekunder catatan-bahasa-wa">{t('landing.wa.catatanBahasa')}</p>}
             <div className="landing-pesan">
               <PratinjauPesan besok={besok} risiko={risikoQuery.data} indeks={indeks} />
             </div>

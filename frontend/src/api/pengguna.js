@@ -39,7 +39,7 @@ export function getPengaturan() {
 
 export function simpanPengaturan({ notif_wa, kelurahan }) {
   if (kelurahan.length > MAKS_KELURAHAN_PANTAUAN) {
-    return Promise.reject(new Error(`Maksimal ${MAKS_KELURAHAN_PANTAUAN} kelurahan pantauan`))
+    return Promise.reject(Object.assign(new Error('maksPantauan'), { kode: 'maksPantauan' }))
   }
   if (!PAKAI_MOCK) return request('/pengguna/pengaturan', { method: 'PUT', body: { notif_wa, kelurahan } })
   tulisMock({ notif_wa, kelurahan })
@@ -50,7 +50,7 @@ export function ubahPassword(passwordLama, passwordBaru) {
   if (!PAKAI_MOCK) {
     return request('/pengguna/password', { method: 'PUT', body: { password_lama: passwordLama, password_baru: passwordBaru } })
   }
-  if (passwordLama !== AKUN_CONTOH[0].password) return tolakMock('Password lama salah', 400)
+  if (passwordLama !== AKUN_CONTOH[0].password) return tolakMock('passwordLamaSalah', 400)
   return tundaMock({ berhasil: true })
 }
 

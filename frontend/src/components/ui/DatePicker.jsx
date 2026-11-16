@@ -1,10 +1,13 @@
 import { Popover } from 'radix-ui'
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { BULAN, formatAngka, formatPanjang, formatRingkas, hariIniWib, keDate, keIso, tambahHari } from '../../lib/tanggal'
+import { useTranslation } from 'react-i18next'
+import { useFormat } from '../../lib/format'
+import { hariIniWib, keDate, keIso, tambahHari } from '../../lib/tanggal'
 import '../../styles/components/ui.css'
 
-const HEADER_HARI = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min']
+// Satu pekan contoh yang diawali Senin, untuk nama hari di kepala kalender
+const PEKAN_SENIN = ['2024-01-01', '2024-01-02', '2024-01-03', '2024-01-04', '2024-01-05', '2024-01-06', '2024-01-07']
 const LANGKAH_TOMBOL = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 }
 
 // Susun 6 minggu tanggal untuk satu bulan, mulai Senin
@@ -20,7 +23,10 @@ function dalamRentang(iso, min, max) {
 }
 
 // Pemilih tanggal dengan kalender kustom
-export default function DatePicker({ value, onChange, min, max, label = 'Pilih tanggal', ringkas = false }) {
+export default function DatePicker({ value, onChange, min, max, label, ringkas = false }) {
+  const { t } = useTranslation()
+  const f = useFormat()
+  const labelTombol = label ?? t('umum.tanggal.pilih')
   const [terbuka, setTerbuka] = useState(false)
   const [fokus, setFokus] = useState(value)
   const gridRef = useRef(null)
@@ -58,26 +64,26 @@ export default function DatePicker({ value, onChange, min, max, label = 'Pilih t
 
   return (
     <Popover.Root open={terbuka} onOpenChange={bukaTutup}>
-      <Popover.Trigger className={`tanggal-trigger ${ringkas ? 'tanggal-ringkas' : ''}`} aria-label={`${label}: ${formatPanjang(value)}`}>
+      <Popover.Trigger className={`tanggal-trigger ${ringkas ? 'tanggal-ringkas' : ''}`} aria-label={`${labelTombol}: ${f.tanggalPanjang(value)}`}>
         <Calendar size={18} aria-hidden="true" />
-        <span>{ringkas ? formatRingkas(value) : formatAngka(value)}</span>
+        <span>{ringkas ? f.tanggalRingkas(value) : f.tanggalAngka(value)}</span>
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Content className="popover-panel kalender" sideOffset={8} align="end" collisionPadding={16}>
           <div className="kalender-kepala">
-            <button type="button" className="tombol-ikon" aria-label="Bulan sebelumnya" onClick={() => geserBulan(-1)}>
+            <button type="button" className="tombol-ikon" aria-label={t('umum.tanggal.bulanSebelumnya')} onClick={() => geserBulan(-1)}>
               <ChevronLeft size={18} aria-hidden="true" />
             </button>
             <p className="kalender-judul" aria-live="polite">
-              {BULAN[tampil.getMonth()]} {tampil.getFullYear()}
+              {f.bulanTahun(tampil.getFullYear(), tampil.getMonth())}
             </p>
-            <button type="button" className="tombol-ikon" aria-label="Bulan berikutnya" onClick={() => geserBulan(1)}>
+            <button type="button" className="tombol-ikon" aria-label={t('umum.tanggal.bulanBerikutnya')} onClick={() => geserBulan(1)}>
               <ChevronRight size={18} aria-hidden="true" />
             </button>
           </div>
           <div className="kalender-grid" role="grid" ref={gridRef} onKeyDown={tanganiTombol}>
-            {HEADER_HARI.map((h) => (
-              <span key={h} className="kalender-hari" role="columnheader">{h}</span>
+            {PEKAN_SENIN.map((iso) => (
+              <span key={iso} className="kalender-hari" role="columnheader">{f.hariPendek(iso)}</span>
             ))}
             {susunMinggu(tampil.getFullYear(), tampil.getMonth()).map((iso) => {
               const d = keDate(iso)
@@ -98,7 +104,7 @@ export default function DatePicker({ value, onChange, min, max, label = 'Pilih t
                   tabIndex={iso === fokus ? 0 : -1}
                   disabled={!bisa}
                   aria-selected={iso === value}
-                  aria-label={formatPanjang(iso)}
+                  aria-label={f.tanggalPanjang(iso)}
                   onClick={() => pilih(iso)}
                   onFocus={() => setFokus(iso)}
                 >

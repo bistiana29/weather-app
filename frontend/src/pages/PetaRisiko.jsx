@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { BellRing, CalendarClock, Search, X } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router'
 import { getKelurahanGeojson, getPrakiraan, getRingkasan, getRisiko } from '../api/publik'
 import BantuanMock from '../components/BantuanMock'
@@ -20,46 +21,49 @@ import Skeleton from '../components/ui/Skeleton'
 import { Tabs, TabsContent } from '../components/ui/Tabs'
 import { VARIAN_GRID, VARIAN_KARTU } from '../lib/animasi'
 import { useAuth } from '../lib/auth'
-import { PARAMETER, parameterValid } from '../lib/kategori'
-import { formatPanjang, formatRingkas, hariIniWib, isoValid, tambahHari } from '../lib/tanggal'
+import { useFormat } from '../lib/format'
+import { PARAMETER, parameterDariUrl } from '../lib/kategori'
+import { hariIniWib, isoValid, tambahHari } from '../lib/tanggal'
 import { MEDIA, useMediaQuery } from '../lib/useMediaQuery'
 import '../styles/pages/PetaRisiko.css'
 
 const RENTANG_HARI_LALU = 30
 
-function labelTanggal(tgl, hariIni) {
-  if (tgl === tambahHari(hariIni, 1)) return 'esok hari'
-  if (tgl === hariIni) return 'hari ini'
-  return formatRingkas(tgl)
+// Label tanggal relatif ("esok hari", "hari ini") atau tanggal ringkas
+function labelTanggal(tgl, hariIni, t, f) {
+  if (tgl === tambahHari(hariIni, 1)) return t('peta.esokHari')
+  if (tgl === hariIni) return t('peta.hariIni')
+  return f.tanggalRingkas(tgl)
 }
 
 // Kartu ajakan aktifkan peringatan WA (tamu) atau info jadwal pembaruan (sudah login)
 function KartuPeringatan({ pengguna }) {
+  const { t } = useTranslation()
   if (!pengguna) {
     return (
       <Card variant="sorotan" className="kartu-peringatan">
         <div className="kartu-peringatan-teks">
           <h2>
             <BellRing size={22} aria-hidden="true" />
-            Mau diingatkan lewat WhatsApp?
+            {t('peta.peringatan.judulTamu')}
           </h2>
-          <p>Buat akun, verifikasi nomor, lalu pilih hingga 3 kelurahan. Peringatan dikirim pukul 12.00 WIB sehari sebelumnya.</p>
+          <p>{t('peta.peringatan.teksTamu')}</p>
         </div>
-        <Button as={Link} to="/daftar" variant="terang">
-          Aktifkan Peringatan
+        <Button as={Link} to="/register" variant="terang">
+          {t('peta.peringatan.tombolTamu')}
         </Button>
       </Card>
     )
   }
-  const tautan = pengguna.role === 'admin' ? { to: '/admin', label: 'Buka Panel Admin' } : { to: '/pengaturan', label: 'Atur kelurahan pantauan' }
+  const tautan = pengguna.role === 'admin' ? { to: '/admin', label: t('peta.peringatan.bukaAdmin') } : { to: '/settings', label: t('peta.peringatan.aturPantauan') }
   return (
     <Card className="kartu-peringatan">
       <div className="kartu-peringatan-teks">
         <h2>
           <CalendarClock size={22} aria-hidden="true" />
-          Jadwal pembaruan
+          {t('peta.peringatan.judulJadwal')}
         </h2>
-        <p className="teks-sekunder">Prediksi diperbarui setiap hari pukul 12.00 WIB untuk periode esok hari 00.00–23.59 WIB.</p>
+        <p className="teks-sekunder">{t('peta.peringatan.teksJadwal')}</p>
       </div>
       <Button as={Link} to={tautan.to} variant="sekunder">
         {tautan.label}
@@ -70,7 +74,10 @@ function KartuPeringatan({ pengguna }) {
 
 // Halaman Peta Risiko: tab parameter, peta choropleth, ringkasan, dan panel prakiraan
 export default function PetaRisiko() {
-  const { parameter } = useParams()
+  const { t } = useTranslation()
+  const f = useFormat()
+  const { parameter: slugUrl } = useParams()
+  const parameter = parameterDariUrl(slugUrl)
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
   const { pengguna } = useAuth()
@@ -80,10 +87,10 @@ export default function PetaRisiko() {
   const hariIni = hariIniWib()
   const besok = tambahHari(hariIni, 1)
   const tglMin = tambahHari(hariIni, -RENTANG_HARI_LALU)
-  const tglUrl = searchParams.get('tgl')
+  const tglUrl = searchParams.get('date')
   const tgl = isoValid(tglUrl) && tglUrl >= tglMin && tglUrl <= besok ? tglUrl : besok
   const kelUrl = searchParams.get('kel')
-  const parameterOk = parameterValid(parameter)
+  const parameterOk = Boolean(parameter)
 
   const geojsonQuery = useQuery({
     queryKey: ['geojson'],
@@ -99,9 +106,9 @@ export default function PetaRisiko() {
   const itemCari = useMemo(
     () =>
       Object.values(indeksKelurahan)
-        .map((p) => ({ value: p.kode_kel, label: p.kelurahan, keterangan: `Kec. ${p.kecamatan}` }))
+        .map((p) => ({ value: p.kode_kel, label: p.kelurahan, keterangan: t('peta.kec', { nama: p.kecamatan }) }))
         .sort((a, b) => a.label.localeCompare(b.label, 'id')),
-    [indeksKelurahan],
+    [indeksKelurahan, t],
   )
   const kel = indeksKelurahan[kelUrl] ? kelUrl : null
   const kelMenunggu = Boolean(kelUrl) && geojsonQuery.isPending
@@ -127,7 +134,7 @@ export default function PetaRisiko() {
       setSearchParams(
         (lama) => {
           const baru = new URLSearchParams(lama)
-          baru.set('tgl', tgl)
+          baru.set('date', tgl)
           return baru
         },
         { replace: true },
@@ -136,7 +143,7 @@ export default function PetaRisiko() {
   }, [tglUrl, tgl, setSearchParams])
 
   if (!parameterOk) {
-    return <Navigate to={{ pathname: '/peta-risiko/hujan', search: searchParams.toString() }} replace />
+    return <Navigate to={{ pathname: '/risk-map/rain', search: searchParams.toString() }} replace />
   }
 
   function ubahQuery(ubah) {
@@ -152,10 +159,10 @@ export default function PetaRisiko() {
 
   const pilihKelurahan = (kode) => ubahQuery((q) => q.set('kel', kode))
   const tutupPanel = () => ubahQuery((q) => q.delete('kel'))
-  const gantiTanggal = (t) => ubahQuery((q) => q.set('tgl', t))
-  const gantiParameter = (p) => navigate({ pathname: `/peta-risiko/${p}`, search: searchParams.toString() })
+  const gantiTanggal = (tanggal) => ubahQuery((q) => q.set('date', tanggal))
+  const gantiParameter = (p) => navigate({ pathname: `/risk-map/${PARAMETER[p].slugUrl}`, search: searchParams.toString() })
 
-  const label = labelTanggal(tgl, hariIni)
+  const label = labelTanggal(tgl, hariIni, t, f)
   const panelPrakiraan = (kel || kelMenunggu) && (
     <PanelPrakiraan
       properti={indeksKelurahan[kel]}
@@ -184,8 +191,8 @@ export default function PetaRisiko() {
         pilihKelurahan(item.value)
         setCariTerbuka(false)
       }}
-      placeholder="Cari kelurahan…"
-      label="Cari kelurahan"
+      placeholder={t('peta.cariPlaceholder')}
+      label={t('peta.cariLabel')}
       autoFocus={mobile}
       className="peta-cari"
     />
@@ -193,12 +200,12 @@ export default function PetaRisiko() {
 
   return (
     <div className="peta-halaman">
-      <JudulHalaman judul={`Peta Risiko ${PARAMETER[parameter].judul}`} />
+      <JudulHalaman judul={t('peta.judulTab', { parameter: f.parameterJudul(parameter) })} />
       <header className="peta-kepala">
         <div className="peta-judul">
-          <h1>Peta Risiko</h1>
+          <h1>{t('peta.judul')}</h1>
           <p className="teks-sekunder">
-            Prediksi {formatPanjang(tgl)} · 00.00–23.59 WIB
+            {t('peta.prediksiTanggal', { tanggal: f.tanggalPanjang(tgl) })}
             <BantuanMock jenis="lencana" className="badge-mock" />
           </p>
         </div>
@@ -207,7 +214,7 @@ export default function PetaRisiko() {
             <button
               type="button"
               className="tombol-ikon tombol-cari-mobile"
-              aria-label={cariTerbuka ? 'Tutup pencarian' : 'Cari kelurahan'}
+              aria-label={t(cariTerbuka ? 'peta.tutupCari' : 'peta.cariLabel')}
               aria-expanded={cariTerbuka}
               onClick={() => setCariTerbuka((v) => !v)}
             >
@@ -216,7 +223,7 @@ export default function PetaRisiko() {
           ) : (
             kolomCari
           )}
-          <DatePicker value={tgl} onChange={gantiTanggal} min={tglMin} max={besok} label="Tanggal prediksi" ringkas={mobile} />
+          <DatePicker value={tgl} onChange={gantiTanggal} min={tglMin} max={besok} label={t('peta.tanggalPrediksi')} ringkas={mobile} />
         </div>
         {mobile && cariTerbuka && kolomCari}
       </header>
@@ -240,9 +247,9 @@ export default function PetaRisiko() {
                   />
                 ) : geojsonQuery.isError ? (
                   <div className="peta-galat" role="alert">
-                    <p>Batas kelurahan gagal dimuat.</p>
+                    <p>{t('peta.gagalBatas')}</p>
                     <Button variant="sekunder" ukuran="kecil" onClick={() => geojsonQuery.refetch()}>
-                      Coba lagi
+                      {t('umum.cobaLagi')}
                     </Button>
                   </div>
                 ) : (
@@ -288,7 +295,7 @@ export default function PetaRisiko() {
       </Tabs>
 
       {mobile && (
-        <BottomSheet terbuka={Boolean(kel || kelMenunggu)} label="Panel prakiraan kelurahan" onTutup={tutupPanel}>
+        <BottomSheet terbuka={Boolean(kel || kelMenunggu)} label={t('peta.sheet.label')} onTutup={tutupPanel}>
           {panelPrakiraan}
         </BottomSheet>
       )}

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { PANJANG_ALASAN_MIN, ubahTahapModel } from '../../api/admin'
 import { useAuth } from '../../lib/auth'
-import { PARAMETER } from '../../lib/kategori'
+import { useFormat } from '../../lib/format'
 import Button from '../ui/Button'
 import Dialog, { DialogClose } from '../ui/Dialog'
 import Pesan from '../ui/Pesan'
@@ -10,13 +10,14 @@ import '../../styles/components/admin.css'
 
 // Dialog konfirmasi promosi atau rollback model dengan alasan wajib
 export default function DialogAksiModel({ aksi, model, produksi, onTutup, onBerhasil }) {
+  const f = useFormat()
   const { pengguna } = useAuth()
   const [alasan, setAlasan] = useState('')
   const [galat, setGalat] = useState('')
   const [memproses, setMemproses] = useState(false)
   const promosi = aksi === 'promosi'
   const namaModel = model ? `${model.jenis_model} ${model.versi}` : ''
-  const parameter = model ? PARAMETER[model.parameter].judul.toLowerCase() : ''
+  const parameter = model ? f.parameterJudul(model.parameter).toLowerCase() : ''
 
   async function kirim(e) {
     e.preventDefault()

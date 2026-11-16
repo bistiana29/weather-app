@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import FormMasuk from '../components/auth/FormMasuk'
 import JudulHalaman from '../components/JudulHalaman'
@@ -5,17 +6,18 @@ import KartuAuth from '../components/layout/KartuAuth'
 
 // Halaman masuk pengguna umum (akun peringatan WhatsApp)
 export default function Login() {
+  const { t } = useTranslation()
   return (
     <KartuAuth
-      judul="Masuk"
-      subjudul="Kelola peringatan WhatsApp dan kelurahan pantauan Anda."
+      judul={t('auth.login.judul')}
+      subjudul={t('auth.login.subjudul')}
       kaki={
         <p>
-          Belum punya akun? <Link to="/daftar">Daftar</Link>
+          {t('auth.login.belumPunyaAkun')} <Link to="/register">{t('umum.nav.daftar')}</Link>
         </p>
       }
     >
-      <JudulHalaman judul="Masuk" />
+      <JudulHalaman judul={t('auth.login.judul')} />
       <FormMasuk role="user" tampilLupa />
     </KartuAuth>
   )

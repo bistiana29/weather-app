@@ -10,7 +10,8 @@ import { LABEL_SUMBER, LABEL_TAHAP_ALUR } from '../../components/admin/label'
 import Card from '../../components/ui/Card'
 import Skeleton from '../../components/ui/Skeleton'
 import { VARIAN_GRID, VARIAN_KARTU } from '../../lib/animasi'
-import { DAFTAR_PARAMETER, PARAMETER } from '../../lib/kategori'
+import { useFormat } from '../../lib/format'
+import { DAFTAR_PARAMETER } from '../../lib/kategori'
 import { formatPanjang, formatWaktuWib } from '../../lib/tanggal'
 import '../../styles/pages/Admin.css'
 
@@ -28,7 +29,7 @@ function persenTerisi(statusParameter, sumber) {
 }
 
 // Susun daftar hal yang perlu diperhatikan dari data status
-function susunPerhatian({ pengambilan, run, drift }) {
+function susunPerhatian({ pengambilan, run, drift, f }) {
   const daftar = []
   pengambilan?.forEach((s) => {
     const label = LABEL_SUMBER[s.sumber]
@@ -44,10 +45,10 @@ function susunPerhatian({ pengambilan, run, drift }) {
   })
   run?.tahap
     .filter((t) => t.status === 'gagal' || t.status === 'peringatan')
-    .forEach((t) => daftar.push({ teks: `${LABEL_TAHAP_ALUR[t.tahap]}: ${t.pesan}`, ke: t.tahap === 'kirim_wa' ? '/admin/notifikasi' : '/admin/data' }))
+    .forEach((t) => daftar.push({ teks: `${LABEL_TAHAP_ALUR[t.tahap]}: ${t.pesan}`, ke: t.tahap === 'kirim_wa' ? '/admin/notifications' : '/admin/data' }))
   Object.entries(drift ?? {})
     .filter(([, ada]) => ada)
-    .forEach(([p]) => daftar.push({ teks: `Drift RMSE model ${PARAMETER[p].judul.toLowerCase()} melewati batas`, ke: '/admin/model' }))
+    .forEach(([p]) => daftar.push({ teks: `Drift RMSE model ${f.parameterJudul(p).toLowerCase()} melewati batas`, ke: '/admin/model' }))
   return daftar
 }
 
@@ -75,6 +76,7 @@ function KartuAngka({ ikon: Ikon, judul, memuat, children, className = '' }) {
 
 // Ringkasan sistem: status ETL, alur harian, perhatian, dan model produksi
 export default function Dashboard() {
+  const f = useFormat()
   const pengambilanQ = useQuery({ queryKey: ['admin', 'status-pengambilan'], queryFn: getStatusPengambilan })
   const parameterQ = useQuery({ queryKey: ['admin', 'status-data-parameter'], queryFn: getStatusDataParameter })
   const runQ = useQuery({ queryKey: ['admin', 'run-harian'], queryFn: getRunHarian })
@@ -84,7 +86,7 @@ export default function Dashboard() {
 
   const tahap = Object.fromEntries((runQ.data?.tahap ?? []).map((t) => [t.tahap, t]))
   const terkirim = notifQ.data?.filter((n) => n.status === 'terkirim').length ?? 0
-  const perhatian = susunPerhatian({ pengambilan: pengambilanQ.data, run: runQ.data, drift: driftQ.data })
+  const perhatian = susunPerhatian({ pengambilan: pengambilanQ.data, run: runQ.data, drift: driftQ.data, f })
   const memuatPerhatian = pengambilanQ.isPending || runQ.isPending || driftQ.isPending
   const produksi = DAFTAR_PARAMETER.map((p) => registryQ.data?.find((m) => m.parameter === p.slug && m.tahap === 'production'))
 
@@ -130,7 +132,7 @@ export default function Dashboard() {
             <span className="angka-utama">{terkirim}</span>
             <span className="teks-sekunder">dari {notifQ.data?.length ?? 0} terkirim</span>
           </p>
-          <Link to="/admin/notifikasi" className="admin-tautan">Lihat log kiriman</Link>
+          <Link to="/admin/notifications" className="admin-tautan">Lihat log kiriman</Link>
         </KartuAngka>
 
         <motion.section variants={VARIAN_KARTU} className="span-penuh" aria-labelledby="alur-judul">
@@ -203,7 +205,7 @@ export default function Dashboard() {
                   ) : (
                     DAFTAR_PARAMETER.map((p, i) => (
                       <tr key={p.slug}>
-                        <td>{p.label}</td>
+                        <td>{f.parameterLabel(p.slug)}</td>
                         <td>{produksi[i]?.jenis_model ?? '–'}</td>
                         <td>{produksi[i]?.versi ?? '–'}</td>
                         <td>{produksi[i] ? LABEL_SUMBER[produksi[i].sumber_data] : '–'}</td>

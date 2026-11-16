@@ -1,20 +1,26 @@
 import { ChevronLeft, ShieldCheck } from 'lucide-react'
 import { motion } from 'motion/react'
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
+import PemilihBahasa from '../ui/PemilihBahasa'
 import Logo from './Logo'
 import '../../styles/components/layout.css'
 
 // Wadah kartu terpusat untuk halaman autentikasi; varian admin memakai identitas panel admin
 export default function KartuAuth({ judul, subjudul, children, kaki, lebar = 'sempit', varian = 'publik' }) {
+  const { t } = useTranslation()
   const admin = varian === 'admin'
   return (
     <div className={`auth ${admin ? 'auth-admin' : ''}`}>
+      <div className="auth-bahasa">
+        <PemilihBahasa />
+      </div>
       {admin ? (
         <p className="auth-tanda-admin">
           <span className="judul-admin-ikon" aria-hidden="true">
             <ShieldCheck size={20} />
           </span>
-          Panel Admin
+          {t('auth.panelAdmin')}
         </p>
       ) : (
         <Logo />
@@ -33,9 +39,9 @@ export default function KartuAuth({ judul, subjudul, children, kaki, lebar = 'se
         {children}
         {kaki && <div className="auth-kaki">{kaki}</div>}
       </motion.section>
-      <Link to={admin ? '/' : '/peta-risiko/hujan'} className="auth-kembali">
+      <Link to="/" className="auth-kembali">
         <ChevronLeft size={18} aria-hidden="true" />
-        {admin ? 'Kembali ke situs publik' : 'Kembali ke peta (tanpa akun)'}
+        {t(admin ? 'auth.kembaliSitusPublik' : 'auth.kembaliBeranda')}
       </Link>
     </div>
   )

@@ -23,9 +23,9 @@ export function samarkanNoWa(noWa) {
   return `+62 ${digit.slice(0, 3)}-****-**${digit.slice(-2)}`
 }
 
-// Pesan galat password, atau null jika valid
+// Kode galat password (kunci kamus validasi.*), atau null jika valid
 export function cekPassword(password) {
-  if (password.length < PANJANG_PASSWORD_MIN) return `Minimal ${PANJANG_PASSWORD_MIN} karakter`
-  if (!/[A-Za-z]/.test(password) || !/\d/.test(password)) return 'Gunakan kombinasi huruf dan angka'
+  if (password.length < PANJANG_PASSWORD_MIN) return 'passwordPendek'
+  if (!/[A-Za-z]/.test(password) || !/\d/.test(password)) return 'passwordKombinasi'
   return null
 }

@@ -1,24 +1,26 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { hapusAkun } from '../../api/pengguna'
+import { teksGalat } from '../../lib/galat'
 import Button from '../ui/Button'
 import Dialog, { DialogClose } from '../ui/Dialog'
 import Pesan from '../ui/Pesan'
 import TextField from '../ui/TextField'
 import '../../styles/components/pengaturan.css'
 
-const KATA_KONFIRMASI = 'HAPUS'
-
-// Dialog konfirmasi hapus akun permanen (wajib mengetik kata konfirmasi)
+// Dialog konfirmasi hapus akun permanen (wajib mengetik kata konfirmasi sesuai bahasa aktif)
 export default function DialogHapusAkun({ open, onOpenChange, onTerhapus }) {
+  const { t } = useTranslation()
   const [konfirmasi, setKonfirmasi] = useState('')
-  const [galatServer, setGalatServer] = useState('')
+  const [galatServer, setGalatServer] = useState(null)
   const [memproses, setMemproses] = useState(false)
-  const cocok = konfirmasi.trim().toUpperCase() === KATA_KONFIRMASI
+  const kata = t('pengaturan.hapus.kata')
+  const cocok = konfirmasi.trim().toUpperCase() === kata
 
   function ubahTerbuka(buka) {
     if (!buka) {
       setKonfirmasi('')
-      setGalatServer('')
+      setGalatServer(null)
     }
     onOpenChange(buka)
   }
@@ -27,37 +29,32 @@ export default function DialogHapusAkun({ open, onOpenChange, onTerhapus }) {
     e.preventDefault()
     if (!cocok) return
     setMemproses(true)
-    setGalatServer('')
+    setGalatServer(null)
     try {
       await hapusAkun()
       onTerhapus()
     } catch (err) {
-      setGalatServer(err.message)
+      setGalatServer(err)
       setMemproses(false)
     }
   }
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={ubahTerbuka}
-      judul="Hapus akun?"
-      deskripsi="Akun, nomor WhatsApp, dan kelurahan pantauan akan dihapus permanen. Peringatan WA berhenti dikirim dan tindakan ini tidak bisa dibatalkan."
-    >
-      {galatServer && <Pesan nada="galat">{galatServer}</Pesan>}
+    <Dialog open={open} onOpenChange={ubahTerbuka} judul={t('pengaturan.hapus.dialogJudul')} deskripsi={t('pengaturan.hapus.dialogTeks')}>
+      {galatServer && <Pesan nada="galat">{teksGalat(t, galatServer)}</Pesan>}
       <form className="dialog-form" onSubmit={kirim} noValidate>
         <TextField
-          label={`Ketik ${KATA_KONFIRMASI} untuk konfirmasi`}
+          label={t('pengaturan.hapus.ketik', { kata })}
           autoComplete="off"
           value={konfirmasi}
           onChange={(e) => setKonfirmasi(e.target.value)}
         />
         <div className="dialog-aksi">
           <DialogClose asChild>
-            <Button variant="sekunder">Batal</Button>
+            <Button variant="sekunder">{t('umum.batal')}</Button>
           </DialogClose>
           <Button type="submit" variant="bahaya" disabled={!cocok || memproses}>
-            {memproses ? 'Menghapus…' : 'Hapus akun'}
+            {memproses ? t('pengaturan.hapus.menghapus') : t('pengaturan.hapus.judul')}
           </Button>
         </div>
       </form>

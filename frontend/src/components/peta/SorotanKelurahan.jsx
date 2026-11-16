@@ -1,5 +1,7 @@
 import { MousePointerClick } from 'lucide-react'
-import { formatNilai, PARAMETER, warnaKategori } from '../../lib/kategori'
+import { useTranslation } from 'react-i18next'
+import { useFormat } from '../../lib/format'
+import { PARAMETER, warnaKategori } from '../../lib/kategori'
 import Badge from '../ui/Badge'
 import Skeleton from '../ui/Skeleton'
 import '../../styles/components/peta.css'
@@ -8,6 +10,8 @@ const JUMLAH_SOROTAN = 5
 
 // Kelurahan dengan nilai tertinggi (atau terendah untuk jarak pandang) dan ajakan memilih kelurahan
 export default function SorotanKelurahan({ risiko, indeksKelurahan, parameter, memuat, labelTanggal, onPilih }) {
+  const { t } = useTranslation()
+  const f = useFormat()
   const konfig = PARAMETER[parameter]
   const urut = Object.entries(risiko ?? {})
     .sort(([, a], [, b]) => (konfig.jenisNilai === 'min' ? a.nilai - b.nilai : b.nilai - a.nilai))
@@ -16,9 +20,9 @@ export default function SorotanKelurahan({ risiko, indeksKelurahan, parameter, m
   return (
     <div className="sorotan">
       <div>
-        <h2 className="sorotan-judul">Sorotan {labelTanggal}</h2>
+        <h2 className="sorotan-judul">{t('peta.sorotan.judul', { tanggal: labelTanggal })}</h2>
         <p className="teks-sekunder">
-          {konfig.jenisNilai === 'min' ? 'Jarak pandang terendah' : `${konfig.judul} tertinggi`} per kelurahan
+          {t(konfig.jenisNilai === 'min' ? 'peta.sorotan.terendah' : 'peta.sorotan.tertinggi', { parameter: f.parameterJudul(parameter) })}
         </p>
       </div>
 
@@ -36,9 +40,9 @@ export default function SorotanKelurahan({ risiko, indeksKelurahan, parameter, m
               <button type="button" className="sorotan-baris" onClick={() => onPilih(kode)}>
                 <span className="sorotan-nama">
                   {indeksKelurahan[kode]?.kelurahan ?? kode}
-                  <span className="teks-sekunder sorotan-nilai">{formatNilai(parameter, data.nilai)}</span>
+                  <span className="teks-sekunder sorotan-nilai">{f.nilaiLengkap(parameter, data.nilai)}</span>
                 </span>
-                {konfig.skala ? null : <Badge warna={warnaKategori(parameter, data.kategori)}>{data.kategori}</Badge>}
+                {konfig.skala ? null : <Badge warna={warnaKategori(parameter, data.kategori)}>{f.kategori(parameter, data.kategori)}</Badge>}
               </button>
             </li>
           ))}
@@ -46,7 +50,7 @@ export default function SorotanKelurahan({ risiko, indeksKelurahan, parameter, m
 
       <p className="sorotan-ajakan">
         <MousePointerClick size={20} aria-hidden="true" />
-        Klik kelurahan di peta atau gunakan kolom cari untuk melihat prakiraan 24 jam.
+        {t('peta.sorotan.ajakan')}
       </p>
     </div>
   )

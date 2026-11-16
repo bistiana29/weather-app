@@ -1,14 +1,15 @@
 import { Navigate, Outlet, useLocation } from 'react-router'
 import { berandaRole, useAuth } from '../lib/auth'
 
+// Kunci kamus pesan pengalihan; diterjemahkan oleh halaman tujuan
 const PESAN_MASUK = {
-  admin: 'Silakan masuk dengan akun admin untuk membuka Panel Admin.',
-  user: 'Silakan masuk untuk membuka halaman Pengaturan.',
+  admin: 'auth.pesan.masukAdmin',
+  user: 'auth.pesan.masukPengguna',
 }
 
 const PESAN_DITOLAK = {
-  admin: 'Halaman admin hanya untuk akun admin. Anda dialihkan ke Pengaturan.',
-  user: 'Halaman Pengaturan hanya untuk akun pengguna. Anda dialihkan ke Panel Admin.',
+  admin: 'auth.pesan.ditolakAdmin',
+  user: 'auth.pesan.ditolakPengguna',
 }
 
 // Batasi halaman untuk role tertentu; pengalihan selalu membawa pesan penjelasan

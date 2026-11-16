@@ -1,6 +1,7 @@
 import L from 'leaflet'
 import { Hand, Minus, Plus } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { GeoJSON, MapContainer, TileLayer, useMap, useMapEvents } from 'react-leaflet'
 import { MEDIA_HOVER, MEDIA_SENTUH, useMediaQuery } from '../../lib/useMediaQuery'
 import { warnaRisiko } from '../../lib/kategori'
@@ -141,6 +142,7 @@ function KartuInfoPeta({ info, properti, data, parameter, memuat, onTutup, onLih
 
 // Peta choropleth kelurahan dengan basemap terang, legenda, pop-up info, dan tombol zoom
 export default function PetaKelurahan({ geojson, risiko, parameter, tgl, terpilih, onPilih, memuatRisiko }) {
+  const { t } = useTranslation()
   const [map, setMap] = useState(null)
   const [info, setInfo] = useState(null)
   const [petunjuk, setPetunjuk] = useState(false)
@@ -233,25 +235,25 @@ export default function PetaKelurahan({ geojson, risiko, parameter, tgl, terpili
 
       {memuatRisiko && (
         <div className="peta-memuat" role="status">
-          <span className="sr-only">Memuat data risiko</span>
+          <span className="sr-only">{t('peta.memuatRisiko')}</span>
         </div>
       )}
 
       <p className={`peta-petunjuk ${petunjuk ? 'tampil' : ''}`} aria-hidden={!petunjuk}>
         <Hand size={18} aria-hidden="true" />
-        Gunakan dua jari untuk menggeser peta
+        {t('peta.petunjukDuaJari')}
       </p>
 
       <Legend parameter={parameter} memuat={memuatRisiko} />
 
       <div className="peta-zoom">
-        <Tooltip label="Perbesar" side="left">
-          <button type="button" className="peta-zoom-tombol" aria-label="Perbesar peta" onClick={() => map?.zoomIn()}>
+        <Tooltip label={t('peta.zoom.perbesar')} side="left">
+          <button type="button" className="peta-zoom-tombol" aria-label={t('peta.zoom.perbesarPeta')} onClick={() => map?.zoomIn()}>
             <Plus size={20} aria-hidden="true" />
           </button>
         </Tooltip>
-        <Tooltip label="Perkecil" side="left">
-          <button type="button" className="peta-zoom-tombol" aria-label="Perkecil peta" onClick={() => map?.zoomOut()}>
+        <Tooltip label={t('peta.zoom.perkecil')} side="left">
+          <button type="button" className="peta-zoom-tombol" aria-label={t('peta.zoom.perkecilPeta')} onClick={() => map?.zoomOut()}>
             <Minus size={20} aria-hidden="true" />
           </button>
         </Tooltip>

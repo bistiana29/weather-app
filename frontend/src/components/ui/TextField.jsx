@@ -1,9 +1,11 @@
 import { Eye, EyeOff } from 'lucide-react'
 import { useId, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import '../../styles/components/ui.css'
 
 // Kolom isian berlabel dengan pesan bantuan/galat, awalan, dan tombol lihat password
 export default function TextField({ label, galat, bantuan, awalan, type = 'text', baris, className = '', ...props }) {
+  const { t } = useTranslation()
   const id = useId()
   const [lihat, setLihat] = useState(false)
   const sandi = type === 'password'
@@ -29,7 +31,7 @@ export default function TextField({ label, galat, bantuan, awalan, type = 'text'
           <button
             type="button"
             className="input-aksi"
-            aria-label={lihat ? 'Sembunyikan password' : 'Tampilkan password'}
+            aria-label={t(lihat ? 'umum.password.sembunyikan' : 'umum.password.tampilkan')}
             aria-pressed={lihat}
             onClick={() => setLihat((v) => !v)}
           >

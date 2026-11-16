@@ -1,11 +1,13 @@
 import { Search, X } from 'lucide-react'
 import { useId, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import '../../styles/components/ui.css'
 
 const MAKS_HASIL = 8
 
 // Kolom cari dengan daftar saran (combobox yang bisa dioperasikan keyboard)
-export default function SearchInput({ items, onSelect, placeholder = 'Cari…', label = 'Cari', autoFocus = false, disabled = false, className = '' }) {
+export default function SearchInput({ items, onSelect, placeholder, label, autoFocus = false, disabled = false, className = '' }) {
+  const { t } = useTranslation()
   const id = useId()
   const inputRef = useRef(null)
   const [teks, setTeks] = useState('')
@@ -57,7 +59,7 @@ export default function SearchInput({ items, onSelect, placeholder = 'Cari…', 
 
   return (
     <div className={`cari ${disabled ? 'nonaktif' : ''} ${className}`}>
-      <label htmlFor={id} className="sr-only">{label}</label>
+      <label htmlFor={id} className="sr-only">{label ?? t('umum.cari.label')}</label>
       <div className="cari-kotak">
         <Search size={18} aria-hidden="true" className="cari-ikon" />
         <input
@@ -72,7 +74,7 @@ export default function SearchInput({ items, onSelect, placeholder = 'Cari…', 
           aria-controls={`${id}-daftar`}
           aria-autocomplete="list"
           aria-activedescendant={tampilDaftar && hasil[aktif] ? `${id}-opsi-${aktif}` : undefined}
-          placeholder={placeholder}
+          placeholder={placeholder ?? t('umum.cari.placeholder')}
           value={teks}
           onChange={(e) => {
             setTeks(e.target.value)
@@ -84,14 +86,14 @@ export default function SearchInput({ items, onSelect, placeholder = 'Cari…', 
           onKeyDown={tanganiTombol}
         />
         {teks && (
-          <button type="button" className="cari-hapus" aria-label="Hapus pencarian" onClick={() => setTeks('')}>
+          <button type="button" className="cari-hapus" aria-label={t('umum.cari.hapus')} onClick={() => setTeks('')}>
             <X size={16} aria-hidden="true" />
           </button>
         )}
       </div>
       {tampilDaftar && (
         <ul id={`${id}-daftar`} role="listbox" className="popover-panel cari-daftar">
-          {hasil.length === 0 && <li className="cari-kosong">Tidak ditemukan</li>}
+          {hasil.length === 0 && <li className="cari-kosong">{t('umum.cari.kosong')}</li>}
           {hasil.map((item, i) => (
             <li
               key={item.value}

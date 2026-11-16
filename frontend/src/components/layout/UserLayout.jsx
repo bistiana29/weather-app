@@ -1,15 +1,17 @@
 import { LogOut, Map as IkonPeta, Settings } from 'lucide-react'
 import { motion } from 'motion/react'
+import { useTranslation } from 'react-i18next'
 import { Outlet, useLocation, useNavigate } from 'react-router'
 import { useAuth } from '../../lib/auth'
 import Logo from './Logo'
+import PemilihBahasa from '../ui/PemilihBahasa'
 import Pesan from '../ui/Pesan'
 import Sidebar from './Sidebar'
 import '../../styles/components/layout.css'
 
 const ITEMS = [
-  { to: '/peta-risiko/hujan', label: 'Peta Risiko', labelPendek: 'Peta', ikon: IkonPeta },
-  { to: '/pengaturan', label: 'Pengaturan', ikon: Settings },
+  { to: '/risk-map/rain', label: 'umum.nav.petaRisiko', labelPendek: 'umum.nav.peta', ikon: IkonPeta },
+  { to: '/settings', label: 'umum.nav.pengaturan', ikon: Settings },
 ]
 
 function inisial(nama = '') {
@@ -18,13 +20,14 @@ function inisial(nama = '') {
 
 // Layout pengguna dengan sidebar
 export default function UserLayout() {
+  const { t } = useTranslation()
   const { pengguna, keluar } = useAuth()
   const navigate = useNavigate()
   const lokasi = useLocation()
 
   const itemsBawah = [
     {
-      label: 'Keluar',
+      label: t('umum.nav.keluar'),
       ikon: LogOut,
       onClick: () => {
         keluar()
@@ -35,9 +38,9 @@ export default function UserLayout() {
 
   return (
     <div className="layout-sidebar">
-      <a href="#konten" className="lewati">Lewati ke konten</a>
+      <a href="#konten" className="lewati">{t('umum.lewatiKonten')}</a>
       <Sidebar
-        items={ITEMS}
+        items={ITEMS.map((item) => ({ ...item, label: t(item.label), labelPendek: t(item.labelPendek ?? item.label) }))}
         itemsBawah={itemsBawah}
         storageKey="pce-sidebar-pengguna"
         judulMobile={<Logo tampilTeks={false} />}
@@ -60,9 +63,12 @@ export default function UserLayout() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
       >
+        <div className="layout-alat">
+          <PemilihBahasa />
+        </div>
         {lokasi.state?.pesan && (
           <div className="layout-pesan">
-            <Pesan nada="galat">{lokasi.state.pesan}</Pesan>
+            <Pesan nada="galat">{t(lokasi.state.pesan)}</Pesan>
           </div>
         )}
         <Outlet />

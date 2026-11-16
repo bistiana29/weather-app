@@ -9,10 +9,12 @@ export function tundaMock(data, ms = LATENSI_MOCK) {
   return new Promise((resolve) => setTimeout(() => resolve(structuredClone(data)), ms))
 }
 
-export function tolakMock(pesan, status = 400, ms = LATENSI_MOCK) {
+// Tolak dengan kode galat; UI menerjemahkan kode lewat kamus `galat.*`
+export function tolakMock(kode, status = 400, ms = LATENSI_MOCK) {
   return new Promise((_, reject) =>
     setTimeout(() => {
-      const galat = new Error(pesan)
+      const galat = new Error(kode)
+      galat.kode = kode
       galat.status = status
       reject(galat)
     }, ms),
@@ -41,6 +43,7 @@ export async function request(path, { method = 'GET', body } = {}) {
   if (!respons.ok) {
     const data = await respons.json().catch(() => ({}))
     const galat = new Error(data.pesan ?? `Permintaan gagal (${respons.status})`)
+    galat.kode = data.kode ?? null
     galat.status = respons.status
     throw galat
   }

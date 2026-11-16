@@ -701,6 +701,17 @@ button.sorotan-baris:hover {
 .sorotan-nilai {
   font-size: 13px;
   font-weight: 500;
+  white-space: nowrap;
+}
+
+.sorotan-baris .badge {
+  flex-shrink: 1;
+  max-width: 58%;
+  text-align: right;
+}
+
+.sorotan-nama {
+  min-width: 0;
 }
 
 .sorotan-ajakan {

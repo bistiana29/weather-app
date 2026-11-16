@@ -1,7 +1,8 @@
 import { Cpu, RotateCw, X } from 'lucide-react'
 import { useEffect, useRef } from 'react'
-import { formatNilai, PARAMETER, satuanTampil, warnaKategori } from '../../lib/kategori'
-import { formatPanjang } from '../../lib/tanggal'
+import { Trans, useTranslation } from 'react-i18next'
+import { useFormat } from '../../lib/format'
+import { PARAMETER, warnaKategori } from '../../lib/kategori'
 import Badge from '../ui/Badge'
 import Button from '../ui/Button'
 import Skeleton from '../ui/Skeleton'
@@ -9,12 +10,12 @@ import GrafikPrakiraan from './GrafikPrakiraan'
 import { ikonNilai } from './ikonCuaca'
 import '../../styles/components/peta.css'
 
-const titikJam = (jam) => jam.replace(':', '.')
-
 // Deret prakiraan per jam yang bisa digeser horizontal
 function DeretPerJam({ parameter, prediksi, jamMulai, jamSelesai, normal }) {
+  const { t } = useTranslation()
+  const f = useFormat()
   const daftarRef = useRef(null)
-  const nilai = prediksi.map((t) => t.nilai)
+  const nilai = prediksi.map((titik) => titik.nilai)
   const puncak = PARAMETER[parameter].jenisNilai === 'min' ? Math.min(...nilai) : Math.max(...nilai)
   const jamPuncak = prediksi[nilai.indexOf(puncak)].waktu
 
@@ -26,16 +27,16 @@ function DeretPerJam({ parameter, prediksi, jamMulai, jamSelesai, normal }) {
   }, [jamMulai, jamPuncak])
 
   return (
-    <ol className="deret-jam" ref={daftarRef} aria-label="Prediksi per jam">
-      {prediksi.map((t) => {
-        const jam = t.waktu.slice(11, 16)
-        const Ikon = ikonNilai(parameter, t.nilai, Number(jam.slice(0, 2)), { normal })
+    <ol className="deret-jam" ref={daftarRef} aria-label={t('peta.panel.perJam')}>
+      {prediksi.map((titik) => {
+        const jam = titik.waktu.slice(11, 16)
+        const Ikon = ikonNilai(parameter, titik.nilai, Number(jam.slice(0, 2)), { normal })
         const kejadian = jamMulai && jam >= jamMulai && jam < jamSelesai
         return (
-          <li key={t.waktu} className={`deret-jam-item ${kejadian ? 'kejadian' : ''}`} data-puncak={t.waktu === jamPuncak || undefined}>
-            <span className="deret-jam-waktu">{titikJam(jam)}</span>
+          <li key={titik.waktu} className={`deret-jam-item ${kejadian ? 'kejadian' : ''}`} data-puncak={titik.waktu === jamPuncak || undefined}>
+            <span className="deret-jam-waktu">{f.jam(jam)}</span>
             <Ikon size={22} aria-hidden="true" />
-            <span className="deret-jam-nilai">{formatNilai(parameter, t.nilai, { denganSatuan: false })}</span>
+            <span className="deret-jam-nilai">{f.nilai(parameter, titik.nilai)}</span>
           </li>
         )
       })}
@@ -68,6 +69,8 @@ function PanelSkeleton() {
 
 // Panel prakiraan satu kelurahan: kategori, nilai puncak, periode, grafik, info model
 export default function PanelPrakiraan({ properti, parameter, prakiraan, memuat, galat, onMuatUlang, onTutup }) {
+  const { t } = useTranslation()
+  const f = useFormat()
   const konfig = PARAMETER[parameter]
   const adaPeriode = Boolean(prakiraan?.jam_mulai)
 
@@ -76,8 +79,8 @@ export default function PanelPrakiraan({ properti, parameter, prakiraan, memuat,
       <div className="panel-kepala">
         {properti ? (
           <div>
-            <p className="teks-sekunder panel-kecamatan">Kec. {properti.kecamatan}</p>
-            <h2 className="panel-nama">Kel. {properti.kelurahan}</h2>
+            <p className="teks-sekunder panel-kecamatan">{t('peta.kec', { nama: properti.kecamatan })}</p>
+            <h2 className="panel-nama">{t('peta.kel', { nama: properti.kelurahan })}</h2>
           </div>
         ) : (
           <div className="panel-kepala-skeleton" aria-hidden="true">
@@ -85,7 +88,7 @@ export default function PanelPrakiraan({ properti, parameter, prakiraan, memuat,
             <Skeleton width={180} height={26} />
           </div>
         )}
-        <button type="button" className="tombol-ikon" aria-label="Tutup panel prakiraan" onClick={onTutup}>
+        <button type="button" className="tombol-ikon" aria-label={t('peta.panel.tutup')} onClick={onTutup}>
           <X size={20} aria-hidden="true" />
         </button>
       </div>
@@ -94,9 +97,9 @@ export default function PanelPrakiraan({ properti, parameter, prakiraan, memuat,
 
       {galat && !memuat && properti && (
         <div className="panel-galat" role="alert">
-          <p>Prakiraan gagal dimuat.</p>
+          <p>{t('peta.panel.gagal')}</p>
           <Button variant="sekunder" ukuran="kecil" ikon={RotateCw} onClick={onMuatUlang}>
-            Coba lagi
+            {t('umum.cobaLagi')}
           </Button>
         </div>
       )}
@@ -105,26 +108,24 @@ export default function PanelPrakiraan({ properti, parameter, prakiraan, memuat,
         <div className="panel-isi">
           <div className="panel-nilai">
             {konfig.skala ? (
-              <Badge nada="netral">Informasi nilai</Badge>
+              <Badge nada="netral">{t('peta.informasiNilai')}</Badge>
             ) : (
-              <Badge warna={warnaKategori(parameter, prakiraan.kategori)}>{prakiraan.kategori}</Badge>
+              <Badge warna={warnaKategori(parameter, prakiraan.kategori)}>{f.kategori(parameter, prakiraan.kategori)}</Badge>
             )}
             <p className="panel-angka">
-              <span className="angka-utama">{formatNilai(parameter, prakiraan.nilai, { denganSatuan: false })}</span>
-              <span className="panel-satuan">{satuanTampil(parameter, prakiraan.nilai)}</span>
+              <span className="angka-utama">{f.nilai(parameter, prakiraan.nilai)}</span>
+              <span className="panel-satuan">{f.satuan(parameter, prakiraan.nilai)}</span>
             </p>
             <p className="teks-sekunder">
-              {konfig.jenisNilai === 'min' ? 'Minimum' : 'Puncak'} {konfig.judul.toLowerCase()} ·{' '}
+              {t(konfig.jenisNilai === 'min' ? 'peta.panel.minimumDari' : 'peta.panel.puncakDari', { parameter: f.parameterJudul(parameter) })} ·{' '}
               {adaPeriode ? (
-                <strong className="panel-periode">
-                  {titikJam(prakiraan.jam_mulai)}–{titikJam(prakiraan.jam_selesai)} WIB
-                </strong>
+                <strong className="panel-periode">{f.periode(prakiraan.jam_mulai, prakiraan.jam_selesai)}</strong>
               ) : (
-                'tidak ada periode kejadian'
+                t('peta.tanpaPeriode')
               )}
             </p>
             {parameter === 'suhu' && prakiraan.normal != null && (
-              <p className="teks-sekunder">Normal setempat {formatNilai('suhu', prakiraan.normal)}</p>
+              <p className="teks-sekunder">{t('peta.panel.normal', { nilai: f.nilaiLengkap('suhu', prakiraan.normal) })}</p>
             )}
           </div>
 
@@ -146,8 +147,16 @@ export default function PanelPrakiraan({ properti, parameter, prakiraan, memuat,
           <p className="panel-model">
             <Cpu size={16} aria-hidden="true" />
             <span>
-              Model aktif <strong>{prakiraan.model.nama}</strong> · versi <strong>{prakiraan.model.versi}</strong> · dibuat{' '}
-              {formatPanjang(prakiraan.dibuat.slice(0, 10))} {titikJam(prakiraan.dibuat.slice(11, 16))} WIB
+              <Trans
+                i18nKey="peta.panel.model"
+                values={{
+                  nama: prakiraan.model.nama,
+                  versi: prakiraan.model.versi,
+                  tanggal: f.tanggalPanjang(prakiraan.dibuat.slice(0, 10)),
+                  jam: f.jam(prakiraan.dibuat.slice(11, 16)),
+                }}
+                components={{ tebal: <strong /> }}
+              />
             </span>
           </p>
         </div>

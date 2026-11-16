@@ -1,9 +1,11 @@
 import { Dialog as RDialog } from 'radix-ui'
 import { X } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import '../../styles/components/ui.css'
 
 // Dialog modal dengan judul, deskripsi, dan tombol tutup
 export default function Dialog({ open, onOpenChange, trigger, judul, deskripsi, children }) {
+  const { t } = useTranslation()
   return (
     <RDialog.Root open={open} onOpenChange={onOpenChange}>
       {trigger && <RDialog.Trigger asChild>{trigger}</RDialog.Trigger>}
@@ -12,7 +14,7 @@ export default function Dialog({ open, onOpenChange, trigger, judul, deskripsi, 
         <RDialog.Content className="dialog-konten">
           <div className="dialog-kepala">
             <RDialog.Title className="dialog-judul">{judul}</RDialog.Title>
-            <RDialog.Close className="tombol-ikon" aria-label="Tutup dialog">
+            <RDialog.Close className="tombol-ikon" aria-label={t('umum.tutupDialog')}>
               <X size={20} aria-hidden="true" />
             </RDialog.Close>
           </div>

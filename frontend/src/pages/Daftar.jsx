@@ -1,6 +1,8 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link, Navigate, useNavigate } from 'react-router'
 import { daftar } from '../api/auth'
+import JudulHalaman from '../components/JudulHalaman'
 import KartuAuth from '../components/layout/KartuAuth'
 import Button from '../components/ui/Button'
 import Checkbox from '../components/ui/Checkbox'
@@ -8,9 +10,11 @@ import Dialog from '../components/ui/Dialog'
 import Pesan from '../components/ui/Pesan'
 import TextField from '../components/ui/TextField'
 import { berandaRole, useAuth } from '../lib/auth'
+import { teksGalat } from '../lib/galat'
 import { bacaPendaftaran, simpanPendaftaran } from '../lib/pendaftaran'
 import { cekPassword, emailValid, normalisasiNoWa, noWaValid, PANJANG_PASSWORD_MIN } from '../lib/validasi'
-import JudulHalaman from '../components/JudulHalaman'
+
+const POIN_KETENTUAN = ['prediksi', 'data', 'jadwal', 'kendali']
 
 function isianAwal() {
   const tersimpan = bacaPendaftaran()
@@ -25,28 +29,29 @@ function isianAwal() {
   }
 }
 
+// Validasi isian; nilai berupa kunci kamus agar ikut berganti bahasa
 function validasi(isian) {
   const galat = {}
-  if (isian.nama.trim().length < 2) galat.nama = 'Nama wajib diisi'
-  if (!emailValid(isian.email)) galat.email = 'Masukkan email yang valid'
-  if (!noWaValid(normalisasiNoWa(isian.noWa))) galat.noWa = 'Nomor WA diawali 8, contoh 81234567890'
+  if (isian.nama.trim().length < 2) galat.nama = 'validasi.namaWajib'
+  if (!emailValid(isian.email)) galat.email = 'validasi.emailTidakValid'
+  if (!noWaValid(normalisasiNoWa(isian.noWa))) galat.noWa = 'validasi.noWa'
   const galatPassword = cekPassword(isian.password)
-  if (galatPassword) galat.password = galatPassword
-  if (isian.ulangi !== isian.password) galat.ulangi = 'Password tidak sama'
-  if (!isian.setujuSk) galat.setujuSk = 'Wajib disetujui untuk membuat akun'
-  if (!isian.setujuWa) galat.setujuWa = 'Akun ini hanya dipakai untuk peringatan WhatsApp'
+  if (galatPassword) galat.password = `validasi.${galatPassword}`
+  if (isian.ulangi !== isian.password) galat.ulangi = 'validasi.passwordTidakSama'
+  if (!isian.setujuSk) galat.setujuSk = 'validasi.setujuSk'
+  if (!isian.setujuWa) galat.setujuWa = 'validasi.setujuWa'
   return galat
 }
 
 // Ringkasan syarat & kebijakan privasi dalam dialog
 function DialogKetentuan({ open, onOpenChange }) {
+  const { t } = useTranslation()
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} judul="Syarat & Kebijakan Privasi">
+    <Dialog open={open} onOpenChange={onOpenChange} judul={t('auth.daftar.ketentuan.judul')}>
       <ul className="daftar-ketentuan">
-        <li>Hasil di situs ini adalah prediksi model, bukan peringatan resmi BMKG.</li>
-        <li>Nama, email, dan nomor WhatsApp hanya dipakai untuk akun dan pengiriman peringatan dini.</li>
-        <li>Peringatan dikirim pukul 12.00 WIB untuk periode esok hari, untuk maksimal 3 kelurahan pantauan.</li>
-        <li>Notifikasi bisa dimatikan dan akun bisa dihapus kapan saja dari halaman Pengaturan.</li>
+        {POIN_KETENTUAN.map((kunci) => (
+          <li key={kunci}>{t(`auth.daftar.ketentuan.${kunci}`)}</li>
+        ))}
       </ul>
     </Dialog>
   )
@@ -54,11 +59,12 @@ function DialogKetentuan({ open, onOpenChange }) {
 
 // Halaman pendaftaran akun peringatan dini WhatsApp
 export default function Daftar() {
+  const { t } = useTranslation()
   const { pengguna } = useAuth()
   const navigate = useNavigate()
   const [isian, setIsian] = useState(isianAwal)
   const [galat, setGalat] = useState({})
-  const [galatServer, setGalatServer] = useState('')
+  const [galatServer, setGalatServer] = useState(null)
   const [memproses, setMemproses] = useState(false)
   const [ketentuanTerbuka, setKetentuanTerbuka] = useState(false)
 
@@ -66,12 +72,13 @@ export default function Daftar() {
 
   const ubah = (kunci) => (e) => setIsian((v) => ({ ...v, [kunci]: e.target.value }))
   const centang = (kunci) => (nilai) => setIsian((v) => ({ ...v, [kunci]: nilai }))
+  const pesan = (kunci) => galat[kunci] && t(galat[kunci], { n: PANJANG_PASSWORD_MIN })
 
   async function kirim(e) {
     e.preventDefault()
     const hasilValidasi = validasi(isian)
     setGalat(hasilValidasi)
-    setGalatServer('')
+    setGalatServer(null)
     if (Object.keys(hasilValidasi).length) return
     setMemproses(true)
     const data = {
@@ -82,42 +89,42 @@ export default function Daftar() {
     try {
       await daftar({ ...data, password: isian.password, setuju_wa: true })
       simpanPendaftaran(data)
-      navigate('/verifikasi-otp')
+      navigate('/verify-otp')
     } catch (err) {
-      setGalatServer(err.message)
+      setGalatServer(err)
       setMemproses(false)
     }
   }
 
   return (
     <KartuAuth
-      judul="Daftar Peringatan Dini"
-      subjudul="Dapatkan peringatan cuaca ekstrem H-1 lewat WhatsApp untuk hingga 3 kelurahan."
+      judul={t('auth.daftar.judul')}
+      subjudul={t('auth.daftar.subjudul')}
       lebar="lebar"
       kaki={
         <p>
-          Sudah punya akun? <Link to="/login">Masuk</Link>
+          {t('auth.daftar.sudahPunyaAkun')} <Link to="/login">{t('umum.nav.masuk')}</Link>
         </p>
       }
     >
-      <JudulHalaman judul="Daftar Peringatan Dini" />
-      {galatServer && <Pesan nada="galat">{galatServer}</Pesan>}
+      <JudulHalaman judul={t('auth.daftar.judul')} />
+      {galatServer && <Pesan nada="galat">{teksGalat(t, galatServer)}</Pesan>}
 
-      <p className="teks-sekunder auth-wajib">Semua kolom dan persetujuan wajib diisi.</p>
+      <p className="teks-sekunder auth-wajib">{t('auth.daftar.semuaWajib')}</p>
       <form className="auth-form" onSubmit={kirim} noValidate>
-        <TextField label="Nama" required autoComplete="name" value={isian.nama} onChange={ubah('nama')} galat={galat.nama} />
+        <TextField label={t('auth.daftar.nama')} required autoComplete="name" value={isian.nama} onChange={ubah('nama')} galat={pesan('nama')} />
         <TextField
-          label="Email"
+          label={t('auth.email')}
           required
           type="email"
           autoComplete="email"
-          placeholder="nama@email.com"
+          placeholder={t('auth.emailPlaceholder')}
           value={isian.email}
           onChange={ubah('email')}
-          galat={galat.email}
+          galat={pesan('email')}
         />
         <TextField
-          label="No. WhatsApp"
+          label={t('auth.daftar.noWa')}
           required
           type="tel"
           inputMode="numeric"
@@ -127,45 +134,45 @@ export default function Daftar() {
           value={isian.noWa}
           onChange={ubah('noWa')}
           onBlur={() => setIsian((v) => ({ ...v, noWa: normalisasiNoWa(v.noWa) }))}
-          galat={galat.noWa}
-          bantuan="Kode OTP akan dikirim ke nomor ini."
+          galat={pesan('noWa')}
+          bantuan={t('auth.daftar.noWaBantuan')}
         />
         <div className="auth-dua-kolom">
           <TextField
-            label="Password"
+            label={t('auth.password')}
             required
             type="password"
             autoComplete="new-password"
             value={isian.password}
             onChange={ubah('password')}
-            galat={galat.password}
-            bantuan={`Minimal ${PANJANG_PASSWORD_MIN} karakter, huruf dan angka.`}
+            galat={pesan('password')}
+            bantuan={t('auth.passwordBantuan', { n: PANJANG_PASSWORD_MIN })}
           />
           <TextField
-            label="Ulangi password"
+            label={t('auth.ulangiPassword')}
             required
             type="password"
             autoComplete="new-password"
             value={isian.ulangi}
             onChange={ubah('ulangi')}
-            galat={galat.ulangi}
+            galat={pesan('ulangi')}
           />
         </div>
 
         <div className="auth-persetujuan">
-          <Checkbox wajib checked={isian.setujuSk} onCheckedChange={centang('setujuSk')} galat={galat.setujuSk}>
-            Saya setuju dengan{' '}
+          <Checkbox wajib checked={isian.setujuSk} onCheckedChange={centang('setujuSk')} galat={pesan('setujuSk')}>
+            {t('auth.daftar.setujuSk')}{' '}
             <button type="button" className="tautan-teks" onClick={() => setKetentuanTerbuka(true)}>
-              Syarat & Kebijakan Privasi
+              {t('auth.daftar.ketentuan.judul')}
             </button>
           </Checkbox>
-          <Checkbox wajib checked={isian.setujuWa} onCheckedChange={centang('setujuWa')} galat={galat.setujuWa}>
-            Saya bersedia menerima pesan peringatan dini lewat WhatsApp
+          <Checkbox wajib checked={isian.setujuWa} onCheckedChange={centang('setujuWa')} galat={pesan('setujuWa')}>
+            {t('auth.daftar.setujuWa')}
           </Checkbox>
         </div>
 
         <Button type="submit" ukuran="besar" disabled={memproses} className="auth-tombol">
-          {memproses ? 'Memproses…' : 'Daftar & Kirim OTP'}
+          {memproses ? t('umum.memproses') : t('auth.daftar.tombol')}
         </Button>
       </form>
 

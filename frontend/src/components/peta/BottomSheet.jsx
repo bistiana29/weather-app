@@ -1,5 +1,6 @@
 import { animate, AnimatePresence, motion, useDragControls, useMotionValue, useReducedMotion } from 'motion/react'
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import '../../styles/components/peta.css'
 
 const TINGGI_INTIP = 210
@@ -12,6 +13,7 @@ function transisiSheet(kurangiGerak) {
 
 // Isi bottom sheet: posisi intip, terbuka penuh, atau ditarik ke bawah untuk menutup
 function IsiSheet({ label, onTutup, children }) {
+  const { t } = useTranslation()
   const kurangiGerak = useReducedMotion()
   const kontrolTarik = useDragControls()
   const tinggi = Math.round(window.innerHeight * RASIO_TINGGI)
@@ -55,7 +57,7 @@ function IsiSheet({ label, onTutup, children }) {
         <button
           type="button"
           className="sheet-pegangan"
-          aria-label={penuh ? 'Ciutkan panel prakiraan' : 'Perluas panel prakiraan'}
+          aria-label={t(penuh ? 'peta.sheet.ciutkan' : 'peta.sheet.perluas')}
           aria-expanded={penuh}
           onClick={() => setPenuh((v) => !v)}
         >

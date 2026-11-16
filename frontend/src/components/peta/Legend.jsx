@@ -1,5 +1,7 @@
 import { ChevronDown } from 'lucide-react'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { useFormat } from '../../lib/format'
 import { PARAMETER } from '../../lib/kategori'
 import { MEDIA, useMediaQuery } from '../../lib/useMediaQuery'
 import Skeleton from '../ui/Skeleton'
@@ -7,12 +9,14 @@ import '../../styles/components/peta.css'
 
 // Kartu legenda mengambang di pojok peta, isinya mengikuti parameter aktif
 export default function Legend({ parameter, memuat = false }) {
+  const { t } = useTranslation()
+  const f = useFormat()
   const mobile = useMediaQuery(MEDIA.mobile)
   const [terbuka, setTerbuka] = useState(false)
   const konfig = PARAMETER[parameter]
   const judul = (
     <span>
-      {konfig.judul} <span className="legend-satuan">({konfig.satuan})</span>
+      {f.parameterJudul(parameter)} <span className="legend-satuan">({t(`satuan.${parameter}`)})</span>
     </span>
   )
 
@@ -46,7 +50,7 @@ export default function Legend({ parameter, memuat = false }) {
               <span>≤ {konfig.skala.min}%</span>
               <span>{konfig.skala.max}%</span>
             </span>
-            <span className="legend-catatan">Informasi nilai, tanpa ambang bahaya</span>
+            <span className="legend-catatan">{t('peta.legend.tanpaAmbang')}</span>
           </div>
         )}
 
@@ -56,8 +60,8 @@ export default function Legend({ parameter, memuat = false }) {
               <li key={k.label}>
                 <span className="legend-warna" style={{ background: k.warna }} aria-hidden="true" />
                 <span>
-                  {k.label}
-                  <span className="legend-rentang"> · {k.rentang}</span>
+                  {f.kategori(parameter, k.label)}
+                  <span className="legend-rentang"> · {f.rentang(k.rentang)}</span>
                 </span>
               </li>
             ))}
