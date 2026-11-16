@@ -15,13 +15,32 @@
   --teks-sekunder: #4a5d78;
   --garis: #c9dbe8;
   --garis-kuat: #8fa8bf;
+  --grid-grafik: #d7e4ee;
+  --skeleton: #dce9f2;
+  --teks-nonaktif: #9aa7b6;
+
+  /* Turunan palet untuk sorotan dan status */
+  --langit-pucat: #d6f1f8;
+  --sorot-muda: #e3f4fa;
+  --sorot-garis: #bfe6f3;
+  --terang-hover: #e8f6fb;
   --galat: #b3192f;
-  --sukses: #1b365d;
+  --galat-hover: #96142a;
+  --galat-muda: #fbe9ec;
+  --galat-garis: #f1c3cb;
+  --galat-tegas: #d98a98;
+  --peringatan-garis: #f3d27a;
+  --peringatan-tegas: #e9c96a;
+  --kosong: #e4ebf0;
+  --kosong-terang: #f6f9fb;
+  --peta-latar: #eef2f4;
 
   /* Gradasi dari palet brand */
   --gradasi-langit: linear-gradient(180deg, #a0e0ef 0%, #d6f1f8 40%, #eef5fa 100%);
   --gradasi-sorotan: linear-gradient(140deg, #005a9c 0%, #1b365d 100%);
   --gradasi-kartu-nilai: linear-gradient(160deg, #d6f1f8 0%, #ffffff 100%);
+  --gradasi-admin: linear-gradient(160deg, #1b365d 0%, #12284a 100%);
+  --navy-gelap: #12284a;
 
   /* Warna data (terpisah dari brand) */
   --data-0: #f3f4f1;
@@ -33,10 +52,10 @@
   --data-teks-gelap: #14202e;
   --data-batas: #9aa3ae;
 
-  /* Neumorphism */
-  --neu-raised: -6px -6px 14px rgba(255, 255, 255, 0.95), 6px 6px 16px rgba(27, 54, 93, 0.14);
-  --neu-raised-kecil: -3px -3px 8px rgba(255, 255, 255, 0.95), 3px 3px 8px rgba(27, 54, 93, 0.14);
-  --neu-inset: inset 3px 3px 7px rgba(27, 54, 93, 0.13), inset -3px -3px 7px rgba(255, 255, 255, 0.95);
+  /* Neumorphism: timbul untuk kartu dan kontrol, inset untuk wadah di dalam kartu */
+  --neu-raised: -6px -6px 14px rgba(255, 255, 255, 0.95), 6px 6px 16px rgba(27, 54, 93, 0.13);
+  --neu-raised-kecil: -3px -3px 8px rgba(255, 255, 255, 0.95), 3px 3px 8px rgba(27, 54, 93, 0.13);
+  --neu-inset: inset 3px 3px 7px rgba(27, 54, 93, 0.12), inset -3px -3px 7px rgba(255, 255, 255, 0.95);
   --bayangan-mengambang: 0 8px 24px rgba(27, 54, 93, 0.16);
 
   /* Radius dan jarak */
@@ -50,6 +69,14 @@
   /* Tipografi */
   --font-heading: 'Montserrat', system-ui, sans-serif;
   --font-teks: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --fs-display: clamp(2.125rem, 1.5rem + 2vw, 3rem);
+  --fs-judul: 1.75rem;
+  --fs-judul-kartu: 1.125rem;
+  --fs-sub: 1rem;
+  --fs-teks: 0.9375rem;
+  --fs-kecil: 0.8125rem;
+  --fs-mini: 0.75rem;
+  --tracking-judul: -0.02em;
 
   /* Motion */
   --durasi-cepat: 150ms;
@@ -60,4 +87,11 @@
   /* Tinggi elemen tetap */
   --tinggi-navbar: 68px;
   --tinggi-nav-bawah: 64px;
+}
+
+@media (max-width: 767px) {
+  :root {
+    --fs-judul: 1.5rem;
+    --fs-judul-kartu: 1.0625rem;
+  }
 }

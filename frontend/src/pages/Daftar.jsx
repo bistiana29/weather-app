@@ -10,6 +10,7 @@ import TextField from '../components/ui/TextField'
 import { berandaRole, useAuth } from '../lib/auth'
 import { bacaPendaftaran, simpanPendaftaran } from '../lib/pendaftaran'
 import { cekPassword, emailValid, normalisasiNoWa, noWaValid, PANJANG_PASSWORD_MIN } from '../lib/validasi'
+import JudulHalaman from '../components/JudulHalaman'
 
 function isianAwal() {
   const tersimpan = bacaPendaftaran()
@@ -95,16 +96,19 @@ export default function Daftar() {
       lebar="lebar"
       kaki={
         <p>
-          Sudah punya akun? <Link to="/masuk">Masuk</Link>
+          Sudah punya akun? <Link to="/login">Masuk</Link>
         </p>
       }
     >
+      <JudulHalaman judul="Daftar Peringatan Dini" />
       {galatServer && <Pesan nada="galat">{galatServer}</Pesan>}
 
+      <p className="teks-sekunder auth-wajib">Semua kolom dan persetujuan wajib diisi.</p>
       <form className="auth-form" onSubmit={kirim} noValidate>
-        <TextField label="Nama" autoComplete="name" value={isian.nama} onChange={ubah('nama')} galat={galat.nama} />
+        <TextField label="Nama" required autoComplete="name" value={isian.nama} onChange={ubah('nama')} galat={galat.nama} />
         <TextField
           label="Email"
+          required
           type="email"
           autoComplete="email"
           placeholder="nama@email.com"
@@ -114,6 +118,7 @@ export default function Daftar() {
         />
         <TextField
           label="No. WhatsApp"
+          required
           type="tel"
           inputMode="numeric"
           autoComplete="tel-national"
@@ -128,6 +133,7 @@ export default function Daftar() {
         <div className="auth-dua-kolom">
           <TextField
             label="Password"
+            required
             type="password"
             autoComplete="new-password"
             value={isian.password}
@@ -137,6 +143,7 @@ export default function Daftar() {
           />
           <TextField
             label="Ulangi password"
+            required
             type="password"
             autoComplete="new-password"
             value={isian.ulangi}
@@ -146,13 +153,13 @@ export default function Daftar() {
         </div>
 
         <div className="auth-persetujuan">
-          <Checkbox checked={isian.setujuSk} onCheckedChange={centang('setujuSk')} galat={galat.setujuSk}>
+          <Checkbox wajib checked={isian.setujuSk} onCheckedChange={centang('setujuSk')} galat={galat.setujuSk}>
             Saya setuju dengan{' '}
             <button type="button" className="tautan-teks" onClick={() => setKetentuanTerbuka(true)}>
               Syarat & Kebijakan Privasi
             </button>
           </Checkbox>
-          <Checkbox checked={isian.setujuWa} onCheckedChange={centang('setujuWa')} galat={galat.setujuWa}>
+          <Checkbox wajib checked={isian.setujuWa} onCheckedChange={centang('setujuWa')} galat={galat.setujuWa}>
             Saya bersedia menerima pesan peringatan dini lewat WhatsApp
           </Checkbox>
         </div>

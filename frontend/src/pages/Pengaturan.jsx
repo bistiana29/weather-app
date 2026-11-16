@@ -17,6 +17,7 @@ import { VARIAN_GRID, VARIAN_KARTU } from '../lib/animasi'
 import { useAuth } from '../lib/auth'
 import { hariIniWib, tambahHari } from '../lib/tanggal'
 import '../styles/pages/Pengaturan.css'
+import JudulHalaman from '../components/JudulHalaman'
 
 const samaUrutan = (a, b) => a.length === b.length && a.every((v, i) => v === b[i])
 
@@ -93,13 +94,14 @@ export default function Pengaturan() {
     })
   }
 
-  // ProtectedRoute mengalihkan ke /masuk; pesan dibawa lewat konteks auth
+  // ProtectedRoute mengalihkan ke /login; pesan dibawa lewat konteks auth
   function tanganiTerhapus() {
     keluar('Akun Anda sudah dihapus.')
   }
 
   return (
     <div className="pengaturan">
+      <JudulHalaman judul="Pengaturan" />
       <header className="pengaturan-kepala">
         <h1>Pengaturan Akun & Notifikasi</h1>
         <p className="teks-sekunder">Atur peringatan dini WhatsApp dan kelurahan yang ingin Anda pantau.</p>

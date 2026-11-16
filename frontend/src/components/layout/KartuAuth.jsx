@@ -1,14 +1,24 @@
-import { ChevronLeft } from 'lucide-react'
+import { ChevronLeft, ShieldCheck } from 'lucide-react'
 import { motion } from 'motion/react'
 import { Link } from 'react-router'
 import Logo from './Logo'
 import '../../styles/components/layout.css'
 
-// Wadah kartu terpusat untuk halaman autentikasi
-export default function KartuAuth({ judul, subjudul, children, kaki, lebar = 'sempit' }) {
+// Wadah kartu terpusat untuk halaman autentikasi; varian admin memakai identitas panel admin
+export default function KartuAuth({ judul, subjudul, children, kaki, lebar = 'sempit', varian = 'publik' }) {
+  const admin = varian === 'admin'
   return (
-    <div className="auth">
-      <Logo />
+    <div className={`auth ${admin ? 'auth-admin' : ''}`}>
+      {admin ? (
+        <p className="auth-tanda-admin">
+          <span className="judul-admin-ikon" aria-hidden="true">
+            <ShieldCheck size={20} />
+          </span>
+          Panel Admin
+        </p>
+      ) : (
+        <Logo />
+      )}
       <motion.section
         className={`auth-kartu auth-${lebar}`}
         initial={{ opacity: 0, y: 12 }}
@@ -23,9 +33,9 @@ export default function KartuAuth({ judul, subjudul, children, kaki, lebar = 'se
         {children}
         {kaki && <div className="auth-kaki">{kaki}</div>}
       </motion.section>
-      <Link to="/peta-risiko/hujan" className="auth-kembali">
+      <Link to={admin ? '/' : '/peta-risiko/hujan'} className="auth-kembali">
         <ChevronLeft size={18} aria-hidden="true" />
-        Kembali ke peta (tanpa akun)
+        {admin ? 'Kembali ke situs publik' : 'Kembali ke peta (tanpa akun)'}
       </Link>
     </div>
   )

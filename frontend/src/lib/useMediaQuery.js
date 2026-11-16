@@ -6,6 +6,10 @@ export const MEDIA = {
   desktop: '(min-width: 1280px)',
 }
 
+// Perangkat dengan kursor presisi (hover tersedia) dan perangkat sentuh
+export const MEDIA_HOVER = '(hover: hover) and (pointer: fine)'
+export const MEDIA_SENTUH = '(pointer: coarse)'
+
 // Pantau apakah media query cocok dengan lebar layar saat ini
 export function useMediaQuery(query) {
   const langganan = useCallback(

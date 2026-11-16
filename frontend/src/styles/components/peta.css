@@ -17,12 +17,12 @@
   height: 100%;
   width: 100%;
   border-radius: 18px;
-  background: #eef2f4;
+  background: var(--peta-latar);
   font-family: var(--font-teks);
 }
 
 .peta-leaflet .leaflet-control-attribution {
-  font-size: 11px;
+  font-size: var(--fs-mini);
   background: rgba(255, 255, 255, 0.85);
   border-top-left-radius: 8px;
 }
@@ -31,19 +31,124 @@
   color: var(--biru);
 }
 
-.peta-tooltip {
-  padding: 6px 10px;
-  border: 0;
-  border-radius: 10px;
-  background: var(--putih);
-  color: var(--navy);
-  font-family: var(--font-teks);
-  font-size: 13px;
-  box-shadow: var(--bayangan-mengambang);
+/* Pop-up info kelurahan di atas peta */
+.info-peta {
+  position: absolute;
+  z-index: 1001;
+  width: 272px;
+  max-width: calc(100% - 16px);
+  transform: translateX(-50%);
+  animation: info-muncul var(--durasi-cepat) var(--easing);
 }
 
-.peta-tooltip::before {
-  display: none;
+.info-peta-hover {
+  pointer-events: none;
+}
+
+@keyframes info-muncul {
+  from {
+    opacity: 0;
+  }
+}
+
+.info-kelurahan {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 14px 16px 16px;
+  border: 1px solid var(--garis);
+  border-radius: var(--radius-sedang);
+  background: var(--putih);
+  box-shadow: var(--bayangan-mengambang);
+  color: var(--navy);
+  font-family: var(--font-teks);
+  font-size: var(--fs-teks);
+  line-height: 1.4;
+  cursor: auto;
+}
+
+.info-kepala {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
+
+.info-nama {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: var(--fs-sub);
+}
+
+.info-kecamatan {
+  font-size: var(--fs-kecil);
+  color: var(--teks-sekunder);
+}
+
+.info-tutup {
+  margin: -8px -10px 0 0;
+}
+
+.info-nilai {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 2px 6px;
+}
+
+.info-nilai-label {
+  flex-basis: 100%;
+  font-size: var(--fs-mini);
+  font-weight: 600;
+  color: var(--teks-sekunder);
+}
+
+.info-nilai .angka-utama {
+  font-size: 2rem;
+}
+
+.info-satuan {
+  font-family: var(--font-heading);
+  font-weight: 600;
+}
+
+.info-periode {
+  font-size: var(--fs-kecil);
+  font-weight: 600;
+}
+
+.info-memuat {
+  font-size: var(--fs-kecil);
+}
+
+.info-tombol {
+  width: 100%;
+  margin-top: 4px;
+}
+
+/* Petunjuk geser dua jari di layar sentuh */
+.peta-petunjuk {
+  position: absolute;
+  z-index: 820;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 18px;
+  background: rgba(27, 54, 93, 0.6);
+  color: var(--putih);
+  font-weight: 600;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--durasi-sedang) var(--easing);
+}
+
+.peta-petunjuk.tampil {
+  opacity: 1;
 }
 
 /* Lapisan shimmer saat data risiko dimuat */
@@ -105,7 +210,7 @@
 }
 
 .peta-zoom-tombol:hover {
-  background: #e3f4fa;
+  background: var(--sorot-muda);
 }
 
 /* Legenda */
@@ -249,7 +354,7 @@
 }
 
 .panel-nama {
-  font-size: 22px;
+  font-size: 1.375rem;
 }
 
 .panel-isi {
@@ -319,12 +424,15 @@
   color: var(--navy);
 }
 
-/* Deret prakiraan per jam */
+/* Deret prakiraan per jam: wadah inset dengan item datar */
 .deret-jam {
   display: flex;
-  gap: 10px;
+  gap: 4px;
   margin: 0;
-  padding: 6px 6px 12px;
+  padding: 8px;
+  border-radius: 20px;
+  background: var(--permukaan-2);
+  box-shadow: var(--neu-inset);
   list-style: none;
   overflow-x: auto;
   scroll-snap-type: x proximity;
@@ -338,21 +446,19 @@
   gap: 8px;
   flex-shrink: 0;
   width: 64px;
-  padding: 12px 4px;
-  border-radius: 18px;
-  background: var(--permukaan);
-  box-shadow: var(--neu-raised-kecil);
+  padding: 10px 4px;
+  border-radius: 14px;
   color: var(--navy);
   scroll-snap-align: start;
 }
 
 .deret-jam-item.kejadian {
-  background: #e3f4fa;
+  background: var(--putih);
   box-shadow: inset 0 0 0 2px var(--biru);
 }
 
 .deret-jam-waktu {
-  font-size: 12px;
+  font-size: var(--fs-mini);
   font-weight: 600;
   color: var(--teks-sekunder);
 }
@@ -471,7 +577,7 @@
 
 /* Ubin ringkasan kejadian */
 .ringkasan-judul {
-  font-size: 17px;
+  font-size: var(--fs-judul-kartu);
 }
 
 .ubin {
@@ -557,7 +663,7 @@
 }
 
 .sorotan-judul {
-  font-size: 18px;
+  font-size: var(--fs-judul-kartu);
   margin-bottom: 2px;
 }
 

@@ -7,6 +7,7 @@ import Button from '../components/ui/Button'
 import Pesan from '../components/ui/Pesan'
 import TextField from '../components/ui/TextField'
 import { emailValid } from '../lib/validasi'
+import JudulHalaman from '../components/JudulHalaman'
 
 // Halaman minta tautan reset; pesan sukses dibuat samar agar tidak membocorkan email terdaftar
 export default function LupaPassword() {
@@ -41,10 +42,11 @@ export default function LupaPassword() {
       subjudul="Masukkan email akun Anda. Kami akan mengirim tautan untuk mengatur password baru."
       kaki={
         <p>
-          Ingat password? <Link to="/masuk">Masuk</Link>
+          Ingat password? <Link to="/login">Masuk</Link>
         </p>
       }
     >
+      <JudulHalaman judul="Lupa Password" />
       {galatServer && <Pesan nada="galat">{galatServer}</Pesan>}
 
       {terkirim ? (

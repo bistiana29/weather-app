@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router'
-import BantuanMock from '../components/BantuanMock'
-import KartuAuth from '../components/layout/KartuAuth'
-import Button from '../components/ui/Button'
-import Pesan from '../components/ui/Pesan'
-import TextField from '../components/ui/TextField'
-import { berandaRole, useAuth } from '../lib/auth'
-import { emailValid } from '../lib/validasi'
+import { masuk as apiMasuk } from '../../api/auth'
+import { berandaRole, useAuth } from '../../lib/auth'
+import { emailValid } from '../../lib/validasi'
+import BantuanMock from '../BantuanMock'
+import Button from '../ui/Button'
+import Pesan from '../ui/Pesan'
+import TextField from '../ui/TextField'
+
+const PESAN_DITOLAK = 'Akun ini tidak bisa masuk di sini.'
 
 function validasi({ email, password }) {
   const galat = {}
@@ -15,9 +17,9 @@ function validasi({ email, password }) {
   return galat
 }
 
-// Halaman masuk; diarahkan ke halaman sesuai role setelah berhasil
-export default function Masuk() {
-  const { pengguna, pesanKeluar, masuk } = useAuth()
+// Form masuk untuk satu role; akun dengan role lain ditolak sebelum sesi disimpan
+export default function FormMasuk({ role, tampilLupa = false }) {
+  const { pengguna, pesanKeluar, mulaiSesi } = useAuth()
   const navigate = useNavigate()
   const lokasi = useLocation()
   const [isian, setIsian] = useState({ email: '', password: '' })
@@ -25,7 +27,7 @@ export default function Masuk() {
   const [galatServer, setGalatServer] = useState('')
   const [memproses, setMemproses] = useState(false)
 
-  // Pengguna yang sudah login tidak perlu melihat halaman ini
+  // Pengguna yang sudah login langsung diarahkan ke halamannya
   if (pengguna && !memproses) return <Navigate to={berandaRole(pengguna.role)} replace />
 
   const ubah = (kunci) => (e) => setIsian((v) => ({ ...v, [kunci]: e.target.value }))
@@ -38,27 +40,27 @@ export default function Masuk() {
     if (Object.keys(hasilValidasi).length) return
     setMemproses(true)
     try {
-      const akun = await masuk(isian.email, isian.password)
+      const sesi = await apiMasuk(isian.email, isian.password)
+      if (sesi.pengguna.role !== role) {
+        setGalatServer(PESAN_DITOLAK)
+        setMemproses(false)
+        return
+      }
+      mulaiSesi(sesi)
       const dari = lokasi.state?.dari
-      const bolehKembali = dari && (akun.role === 'admin' ? dari.startsWith('/admin') : !dari.startsWith('/admin'))
-      navigate(bolehKembali ? dari : berandaRole(akun.role), { replace: true })
+      const bolehKembali = dari && (role === 'admin' ? dari.startsWith('/admin') : !dari.startsWith('/admin'))
+      navigate(bolehKembali ? dari : berandaRole(role), { replace: true })
     } catch (err) {
       setGalatServer(err.message)
       setMemproses(false)
     }
   }
 
+  const pesanInfo = pesanKeluar || lokasi.state?.pesan
+
   return (
-    <KartuAuth
-      judul="Masuk"
-      subjudul="Pemetaan Cuaca Ekstrem Surabaya"
-      kaki={
-        <p>
-          Belum punya akun? <Link to="/daftar">Daftar</Link>
-        </p>
-      }
-    >
-      {(pesanKeluar || lokasi.state?.pesan) && <Pesan>{pesanKeluar || lokasi.state?.pesan}</Pesan>}
+    <>
+      {pesanInfo && <Pesan>{pesanInfo}</Pesan>}
       {galatServer && <Pesan nada="galat">{galatServer}</Pesan>}
 
       <form className="auth-form" onSubmit={kirim} noValidate>
@@ -79,15 +81,17 @@ export default function Masuk() {
           onChange={ubah('password')}
           galat={galat.password}
         />
-        <Link to="/lupa-password" className="auth-tautan-kanan">
-          Lupa password?
-        </Link>
+        {tampilLupa && (
+          <Link to="/lupa-password" className="auth-tautan-kanan">
+            Lupa password?
+          </Link>
+        )}
         <Button type="submit" ukuran="besar" disabled={memproses} className="auth-tombol">
           {memproses ? 'Memproses…' : 'Masuk'}
         </Button>
       </form>
 
-      <BantuanMock jenis="akun" />
-    </KartuAuth>
+      <BantuanMock jenis={role === 'admin' ? 'akun-admin' : 'akun-user'} />
+    </>
   )
 }

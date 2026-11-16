@@ -3,6 +3,7 @@ import { RotateCw } from 'lucide-react'
 import BantuanMock from '../BantuanMock'
 import Button from '../ui/Button'
 import '../../styles/components/admin.css'
+import JudulHalaman from '../JudulHalaman'
 
 // Judul halaman admin dengan tombol muat ulang semua data admin
 export default function KepalaAdmin({ judul, deskripsi, aksi }) {
@@ -11,6 +12,7 @@ export default function KepalaAdmin({ judul, deskripsi, aksi }) {
 
   return (
     <header className="admin-kepala">
+      <JudulHalaman judul={`${judul} · Panel Admin`} tanpaIndeks />
       <div>
         <h1>{judul}</h1>
         {deskripsi && <p className="teks-sekunder">{deskripsi}</p>}

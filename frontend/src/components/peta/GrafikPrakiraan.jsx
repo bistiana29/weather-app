@@ -2,12 +2,9 @@ import { useReducedMotion } from 'motion/react'
 import { CartesianGrid, ComposedChart, Line, ReferenceArea, ReferenceLine, ResponsiveContainer, Tooltip as RTooltip, XAxis, YAxis } from 'recharts'
 import { formatNilai, labelAmbang } from '../../lib/kategori'
 import { namaHariPendek } from '../../lib/tanggal'
+import { SUMBU_GRAFIK, WARNA } from '../../lib/warna'
 import '../../styles/components/peta.css'
 
-const WARNA_OBSERVASI = '#1B365D'
-const WARNA_PREDIKSI = '#005A9C'
-const WARNA_AMBANG = '#C21F3A'
-const WARNA_SUMBU = '#4A5D78'
 
 function labelWaktu(waktu) {
   const [tanggal, jam] = waktu.split('T')
@@ -63,34 +60,34 @@ export default function GrafikPrakiraan({ parameter, observasi, prediksi, ambang
       >
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={data} margin={{ top: 12, right: 8, bottom: 0, left: -8 }}>
-            <CartesianGrid vertical={false} stroke="#D7E4EE" />
-            <ReferenceArea x1={prediksi[0].waktu} x2={prediksi.at(-1).waktu} fill="#DCEFF7" fillOpacity={0.55} />
+            <CartesianGrid vertical={false} stroke={WARNA.gridGrafik} />
+            <ReferenceArea x1={prediksi[0].waktu} x2={prediksi.at(-1).waktu} fill={WARNA.areaPrediksi} fillOpacity={0.55} />
             <XAxis
               dataKey="waktu"
               ticks={ticks}
               tickFormatter={labelWaktu}
-              tick={{ fontSize: 11, fill: WARNA_SUMBU }}
+              tick={SUMBU_GRAFIK}
               tickLine={false}
-              axisLine={{ stroke: '#C9DBE8' }}
+              axisLine={{ stroke: WARNA.garis }}
               interval={0}
             />
             <YAxis
               domain={domain}
               tickFormatter={formatSumbuY}
-              tick={{ fontSize: 11, fill: WARNA_SUMBU }}
+              tick={SUMBU_GRAFIK}
               tickLine={false}
               axisLine={false}
               width={44}
             />
-            <ReferenceLine x={prediksi[0].waktu} stroke={WARNA_SUMBU} strokeDasharray="3 3" />
+            <ReferenceLine x={prediksi[0].waktu} stroke={WARNA.teksSekunder} strokeDasharray="3 3" />
             {ambang != null && (
-              <ReferenceLine y={ambang} stroke={WARNA_AMBANG} strokeDasharray="2 4" strokeWidth={1.5} ifOverflow="extendDomain" />
+              <ReferenceLine y={ambang} stroke={WARNA.ambang} strokeDasharray="2 4" strokeWidth={1.5} ifOverflow="extendDomain" />
             )}
-            <RTooltip content={<IsiTooltip parameter={parameter} />} cursor={{ stroke: '#8FA8BF', strokeWidth: 1 }} />
+            <RTooltip content={<IsiTooltip parameter={parameter} />} cursor={{ stroke: WARNA.garisKuat, strokeWidth: 1 }} />
             <Line
               dataKey="obs"
               type="monotone"
-              stroke={WARNA_OBSERVASI}
+              stroke={WARNA.navy}
               strokeWidth={2}
               dot={false}
               isAnimationActive={!kurangiGerak}
@@ -99,7 +96,7 @@ export default function GrafikPrakiraan({ parameter, observasi, prediksi, ambang
             <Line
               dataKey="pred"
               type="monotone"
-              stroke={WARNA_PREDIKSI}
+              stroke={WARNA.biru}
               strokeWidth={2.5}
               strokeDasharray="6 4"
               dot={false}

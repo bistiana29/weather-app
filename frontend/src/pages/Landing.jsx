@@ -1,51 +1,65 @@
 import { useQuery } from '@tanstack/react-query'
-import { ArrowRight, BellRing, MapPinned, Layers } from 'lucide-react'
+import { ArrowRight, BellRing, ChevronRight } from 'lucide-react'
 import { motion } from 'motion/react'
-import { Link } from 'react-router'
-import { getKelurahanGeojson, getRisiko } from '../api/publik'
+import { useMemo } from 'react'
+import { Link, useNavigate } from 'react-router'
+import { getKelurahanGeojson, getRingkasan, getRisiko } from '../api/publik'
 import BantuanMock from '../components/BantuanMock'
+import JudulHalaman from '../components/JudulHalaman'
 import { IKON_PARAMETER } from '../components/peta/ikonCuaca'
 import PetaMini from '../components/peta/PetaMini'
-import Badge from '../components/ui/Badge'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
+import SearchInput from '../components/ui/SearchInput'
 import Skeleton from '../components/ui/Skeleton'
 import { VARIAN_GRID, VARIAN_KARTU } from '../lib/animasi'
 import { useAuth } from '../lib/auth'
-import { DAFTAR_PARAMETER, PARAMETER } from '../lib/kategori'
+import { DAFTAR_PARAMETER, formatNilai, JENIS_KEJADIAN, masukPeringatan, PARAMETER } from '../lib/kategori'
 import { formatPanjang, hariIniWib, tambahHari } from '../lib/tanggal'
+import '../styles/components/pengaturan.css'
 import '../styles/pages/Landing.css'
 
-// Tombol ajakan peringatan WA sesuai status login
-function tautanPeringatan(pengguna) {
-  if (!pengguna) return { to: '/daftar', label: 'Aktifkan Peringatan WA' }
-  if (pengguna.role === 'user') return { to: '/pengaturan', label: 'Atur Peringatan WA' }
-  return null
+const titikJam = (jam) => jam.replace(':', '.')
+
+// Kalimat status esok hari dari ringkasan jumlah kelurahan per jenis kejadian
+function StatusEsok({ ringkasan, memuat, besok }) {
+  if (memuat) {
+    return (
+      <div className="hero-status" aria-hidden="true">
+        <Skeleton width="92%" height={18} />
+        <Skeleton width="64%" height={18} />
+      </div>
+    )
+  }
+  const kejadian = JENIS_KEJADIAN.filter((j) => ringkasan?.[j.kunci] > 0)
+  return (
+    <p className="hero-status">
+      <span className="hero-status-tanggal">Prakiraan {formatPanjang(besok)}:</span>{' '}
+      {kejadian.length === 0
+        ? 'tidak ada kelurahan dengan kejadian ekstrem.'
+        : kejadian.map((j, i) => (
+            <span key={j.kunci}>
+              <strong>{ringkasan[j.kunci]}</strong> kelurahan {j.label.toLowerCase()}
+              {i < kejadian.length - 1 ? ', ' : '.'}
+            </span>
+          ))}{' '}
+      <BantuanMock jenis="lencana" />
+    </p>
+  )
 }
 
-// Kartu ilustrasi peta hujan esok hari beserta legenda ringkas
-function KartuPetaHero({ besok }) {
-  const geojsonQuery = useQuery({ queryKey: ['geojson'], queryFn: getKelurahanGeojson, staleTime: Infinity, gcTime: Infinity })
-  const risikoQuery = useQuery({ queryKey: ['risiko', 'hujan', besok], queryFn: () => getRisiko('hujan', besok) })
-  const siap = geojsonQuery.data && risikoQuery.data
-
+// Kartu peta hujan esok hari beserta legenda kategori
+function KartuPetaHero({ besok, geojson, risiko }) {
+  const siap = geojson && risiko
   return (
     <Card className="hero-peta" aria-busy={!siap}>
       <div className="hero-peta-kepala">
-        <div>
-          <p className="hero-peta-judul">Prakiraan curah hujan</p>
-          <p className="teks-sekunder">{formatPanjang(besok)}</p>
-        </div>
-        <BantuanMock jenis="lencana" />
+        <h2 className="hero-peta-judul">Curah hujan esok hari</h2>
+        <p className="teks-sekunder">{formatPanjang(besok)}</p>
       </div>
-      <Link to={`/peta-risiko/hujan?tgl=${besok}`} className="hero-peta-gambar" aria-label="Buka peta risiko hujan">
+      <Link to={`/peta-risiko/hujan?tgl=${besok}`} className="hero-peta-gambar" aria-label="Buka peta risiko curah hujan">
         {siap ? (
-          <PetaMini
-            geojson={geojsonQuery.data}
-            risiko={risikoQuery.data}
-            parameter="hujan"
-            label={`Peta kategori curah hujan per kelurahan untuk ${formatPanjang(besok)}`}
-          />
+          <PetaMini geojson={geojson} risiko={risiko} parameter="hujan" label={`Peta kategori curah hujan per kelurahan untuk ${formatPanjang(besok)}`} />
         ) : (
           <Skeleton height="100%" radius={16} />
         )}
@@ -54,7 +68,10 @@ function KartuPetaHero({ besok }) {
         {PARAMETER.hujan.kategori.map((k) => (
           <li key={k.label}>
             <span className="hero-legend-warna" style={{ background: k.warna }} aria-hidden="true" />
-            {k.label.replace('Hujan ', '')}
+            <span>
+              {k.label.replace('Hujan ', '')}
+              <span className="teks-sekunder"> {k.rentang}</span>
+            </span>
           </li>
         ))}
       </ul>
@@ -62,41 +79,90 @@ function KartuPetaHero({ besok }) {
   )
 }
 
-// Halaman beranda publik
+// Contoh pesan WA dari kelurahan dengan risiko hujan tertinggi esok hari
+function PratinjauPesan({ besok, risiko, indeks }) {
+  const teratas = Object.entries(risiko ?? {}).sort(([, a], [, b]) => b.nilai - a.nilai)[0]
+  if (!teratas || !indeks[teratas[0]]) {
+    return (
+      <div className="pesan-wa" aria-hidden="true">
+        <Skeleton width="50%" height={16} />
+        <Skeleton width="80%" height={14} />
+        <Skeleton width="70%" height={14} style={{ marginTop: 10 }} />
+      </div>
+    )
+  }
+  const [kode, data] = teratas
+  return (
+    <article className="pesan-wa" aria-label="Contoh pesan peringatan WhatsApp">
+      <p className="pesan-wa-judul">Info Cuaca SBY</p>
+      <p className="pesan-wa-sub">Peringatan dini untuk {formatPanjang(besok)}, 00.00–23.59 WIB</p>
+      <div className="pesan-wa-kel">
+        <p className="pesan-wa-nama">{indeks[kode].kelurahan}:</p>
+        {masukPeringatan('hujan', data.kategori) ? (
+          <ul>
+            <li>
+              {data.kategori} {formatNilai('hujan', data.nilai)}
+              {data.jam_mulai && `, ${titikJam(data.jam_mulai)}–${titikJam(data.jam_selesai)} WIB`}
+            </li>
+          </ul>
+        ) : (
+          <p className="pesan-wa-aman">Tidak ada kejadian ekstrem.</p>
+        )}
+      </div>
+      <p className="pesan-wa-kaki">Hasil prediksi model, bukan peringatan resmi BMKG.</p>
+      <span className="pesan-wa-jam">12.00</span>
+    </article>
+  )
+}
+
+// Halaman beranda publik: cari kelurahan, status esok hari, parameter, dan peringatan WA
 export default function Landing() {
   const { pengguna } = useAuth()
+  const navigate = useNavigate()
   const besok = tambahHari(hariIniWib(), 1)
-  const peringatan = tautanPeringatan(pengguna)
   const geojsonQuery = useQuery({ queryKey: ['geojson'], queryFn: getKelurahanGeojson, staleTime: Infinity, gcTime: Infinity })
-  const fitur = geojsonQuery.data?.features
-  const jumlahKecamatan = fitur && new Set(fitur.map((f) => f.properties.kecamatan)).size
+  const risikoQuery = useQuery({ queryKey: ['risiko', 'hujan', besok], queryFn: () => getRisiko('hujan', besok) })
+  const ringkasanQuery = useQuery({ queryKey: ['ringkasan', besok], queryFn: () => getRingkasan(besok) })
+
+  const indeks = useMemo(
+    () => Object.fromEntries((geojsonQuery.data?.features ?? []).map((f) => [f.properties.kode_kel, f.properties])),
+    [geojsonQuery.data],
+  )
+  const itemCari = useMemo(
+    () =>
+      Object.values(indeks)
+        .map((p) => ({ value: p.kode_kel, label: p.kelurahan, keterangan: `Kec. ${p.kecamatan}` }))
+        .sort((a, b) => a.label.localeCompare(b.label, 'id')),
+    [indeks],
+  )
+  const jumlahPerParameter = Object.fromEntries(JENIS_KEJADIAN.map((j) => [j.parameter, j]))
+  const ajakanWa = !pengguna ? { to: '/daftar', label: 'Aktifkan peringatan' } : pengguna.role === 'user' ? { to: '/pengaturan', label: 'Atur peringatan' } : null
 
   return (
     <div className="landing">
-      <section className="hero">
+      <JudulHalaman />
+      <section className="hero" aria-labelledby="hero-judul">
         <motion.div className="hero-teks" variants={VARIAN_GRID} initial="awal" animate="tampil">
-          <motion.div variants={VARIAN_KARTU}>
-            <Badge nada="info" className="hero-lencana">
-              <BellRing size={14} aria-hidden="true" />
-              Sistem Peringatan Dini
-            </Badge>
-          </motion.div>
-          <motion.h1 variants={VARIAN_KARTU}>
-            Pemetaan Cuaca Ekstrem <span>Kota Surabaya</span>
+          <motion.h1 id="hero-judul" variants={VARIAN_KARTU}>
+            Cek risiko cuaca ekstrem di kelurahan Anda, sehari sebelumnya.
           </motion.h1>
           <motion.p variants={VARIAN_KARTU} className="hero-deskripsi">
-            Lihat risiko hujan lebat, suhu ekstrem, angin kencang, dan jarak pandang rendah untuk setiap kelurahan.
-            Prakiraan dibuat setiap hari pukul 12.00 WIB untuk esok hari, dan bisa dikirim ke WhatsApp Anda.
+            Peta risiko hujan lebat, suhu ekstrem, angin kencang, dan jarak pandang rendah untuk {itemCari.length || 153} kelurahan
+            di Surabaya, dari prediksi model yang diperbarui setiap hari pukul 12.00 WIB.
           </motion.p>
-          <motion.div variants={VARIAN_KARTU} className="hero-aksi">
+          <motion.div variants={VARIAN_KARTU}>
+            <StatusEsok ringkasan={ringkasanQuery.data} memuat={ringkasanQuery.isPending} besok={besok} />
+          </motion.div>
+          <motion.div variants={VARIAN_KARTU} className="hero-cari">
+            <SearchInput
+              items={itemCari}
+              onSelect={(item) => navigate(`/peta-risiko/hujan?kel=${item.value}&tgl=${besok}`)}
+              placeholder="Cari kelurahan Anda, mis. Ketintang"
+              label="Cari kelurahan Anda"
+            />
             <Button as={Link} to="/peta-risiko/hujan" ukuran="besar" ikonKanan={ArrowRight}>
-              Lihat Peta Risiko
+              Buka peta risiko
             </Button>
-            {peringatan && (
-              <Button as={Link} to={peringatan.to} variant="sekunder" ukuran="besar" ikon={BellRing}>
-                {peringatan.label}
-              </Button>
-            )}
           </motion.div>
         </motion.div>
 
@@ -106,39 +172,39 @@ export default function Landing() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
         >
-          <KartuPetaHero besok={besok} />
+          <KartuPetaHero besok={besok} geojson={geojsonQuery.data} risiko={risikoQuery.data} />
         </motion.div>
       </section>
 
-      <motion.section className="fitur" aria-label="Fitur utama" variants={VARIAN_GRID} initial="awal" animate="tampil">
-        <motion.div variants={VARIAN_KARTU} className="fitur-kelurahan">
-          <Card className="fitur-kartu">
-            <span className="fitur-ikon" aria-hidden="true"><MapPinned size={22} /></span>
-            <h2>Per kelurahan</h2>
-            <p className="fitur-angka">
-              {fitur ? <span className="angka-utama">{fitur.length}</span> : <Skeleton width={96} height={52} radius={10} />}
-              <span className="teks-sekunder">
-                kelurahan
-                {jumlahKecamatan ? ` di ${jumlahKecamatan} kecamatan` : ''}
-              </span>
+      <motion.section className="landing-bento" aria-label="Parameter dan peringatan" variants={VARIAN_GRID} initial="awal" animate="tampil">
+        <motion.div variants={VARIAN_KARTU} className="landing-parameter">
+          <Card className="landing-kartu">
+            <h2>Lima parameter, dipetakan terpisah</h2>
+            <p className="teks-sekunder">
+              Setiap kelurahan dinilai dengan ambang kategori BMKG (Tabel 2.1). Angka menunjukkan jumlah kelurahan berisiko esok hari.
             </p>
-            <p className="teks-sekunder">Setiap kelurahan punya kategori risiko sendiri, bukan satu angka rata-rata untuk seluruh kota.</p>
-          </Card>
-        </motion.div>
-
-        <motion.div variants={VARIAN_KARTU} className="fitur-parameter">
-          <Card className="fitur-kartu">
-            <span className="fitur-ikon" aria-hidden="true"><Layers size={22} /></span>
-            <h2>Per parameter cuaca</h2>
-            <p className="teks-sekunder">Setiap parameter dipetakan terpisah dengan ambang kategori BMKG.</p>
-            <ul className="fitur-chip">
+            <ul className="daftar-parameter">
               {DAFTAR_PARAMETER.map((p) => {
                 const Ikon = IKON_PARAMETER[p.slug]
+                const jenis = jumlahPerParameter[p.slug]
                 return (
                   <li key={p.slug}>
-                    <Link to={`/peta-risiko/${p.slug}`} className="chip">
-                      <Ikon size={16} aria-hidden="true" />
-                      {p.label}
+                    <Link to={`/peta-risiko/${p.slug}?tgl=${besok}`} className="baris-parameter">
+                      <Ikon size={20} aria-hidden="true" />
+                      <span className="baris-parameter-nama">{p.judul}</span>
+                      <span className="baris-parameter-nilai">
+                        {!jenis ? (
+                          <span className="teks-sekunder">Informasi nilai</span>
+                        ) : ringkasanQuery.isPending ? (
+                          <Skeleton width={72} height={18} />
+                        ) : (
+                          <>
+                            <strong>{ringkasanQuery.data?.[jenis.kunci] ?? '–'}</strong>
+                            <span className="teks-sekunder baris-parameter-unit"> kel. {jenis.labelPendek.toLowerCase()}</span>
+                          </>
+                        )}
+                      </span>
+                      <ChevronRight size={18} aria-hidden="true" className="baris-parameter-panah" />
                     </Link>
                   </li>
                 )
@@ -147,18 +213,21 @@ export default function Landing() {
           </Card>
         </motion.div>
 
-        <motion.div variants={VARIAN_KARTU} className="fitur-wa">
-          <Card variant="sorotan" className="fitur-kartu">
-            <span className="fitur-ikon fitur-ikon-terang" aria-hidden="true"><BellRing size={22} /></span>
-            <h2>Peringatan H-1 via WhatsApp</h2>
-            <p className="fitur-angka">
-              <span className="angka-utama">12.00</span>
-              <span>WIB</span>
+        <motion.div variants={VARIAN_KARTU} className="landing-wa">
+          <Card className="landing-kartu">
+            <h2>
+              <BellRing size={20} aria-hidden="true" />
+              Peringatan H-1 lewat WhatsApp
+            </h2>
+            <p className="teks-sekunder">
+              Pilih hingga 3 kelurahan. Pesan dikirim pukul 12.00 WIB untuk periode esok hari 00.00–23.59 WIB.
             </p>
-            <p className="fitur-wa-teks">Dikirim sehari sebelumnya untuk periode 00.00–23.59, hingga 3 kelurahan pantauan.</p>
-            {peringatan && (
-              <Button as={Link} to={peringatan.to} variant="terang" ukuran="kecil">
-                {pengguna ? 'Atur peringatan' : 'Daftar sekarang'}
+            <div className="landing-pesan">
+              <PratinjauPesan besok={besok} risiko={risikoQuery.data} indeks={indeks} />
+            </div>
+            {ajakanWa && (
+              <Button as={Link} to={ajakanWa.to} className="landing-wa-tombol">
+                {ajakanWa.label}
               </Button>
             )}
           </Card>

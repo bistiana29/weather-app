@@ -10,11 +10,11 @@ export default function BantuanMock({ jenis, className }) {
   if (jenis === 'lencana') {
     return <Badge nada="info" className={className}>Data contoh</Badge>
   }
-  if (jenis === 'akun') {
+  if (jenis === 'akun-user' || jenis === 'akun-admin') {
+    const akun = AKUN_CONTOH.find((a) => a.pengguna.role === (jenis === 'akun-admin' ? 'admin' : 'user'))
     return (
       <Pesan>
-        Mode data contoh. Akun uji: {AKUN_CONTOH.map((a) => `${a.email} (${a.pengguna.role})`).join(', ')}, password{' '}
-        <code>{AKUN_CONTOH[0].password}</code>.
+        Mode data contoh. Akun uji: <code>{akun.email}</code>, password <code>{akun.password}</code>.
       </Pesan>
     )
   }

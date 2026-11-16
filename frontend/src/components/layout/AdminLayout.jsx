@@ -45,6 +45,7 @@ export default function AdminLayout() {
 
   return (
     <div className="layout-sidebar">
+      <a href="#konten" className="lewati">Lewati ke konten</a>
       <Sidebar
         items={ITEMS}
         itemsBawah={itemsBawah}
@@ -55,6 +56,8 @@ export default function AdminLayout() {
       />
       <motion.main
         key={lokasi.pathname}
+        id="konten"
+        tabIndex={-1}
         className="layout-sidebar-main"
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}

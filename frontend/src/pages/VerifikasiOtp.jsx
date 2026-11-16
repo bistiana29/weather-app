@@ -9,6 +9,7 @@ import Pesan from '../components/ui/Pesan'
 import { useAuth } from '../lib/auth'
 import { bacaPendaftaran, hapusPendaftaran } from '../lib/pendaftaran'
 import { samarkanNoWa } from '../lib/validasi'
+import JudulHalaman from '../components/JudulHalaman'
 
 const JEDA_KIRIM_ULANG = 60
 const PANJANG_OTP = 6
@@ -63,6 +64,7 @@ export default function VerifikasiOtp() {
 
   return (
     <KartuAuth judul="Verifikasi Nomor WA" subjudul={`Kode 6 digit dikirim lewat WhatsApp ke ${samarkanNoWa(pendaftaran.no_wa)}`}>
+      <JudulHalaman judul="Verifikasi Nomor WA" />
       {galat && <Pesan nada="galat">{galat}</Pesan>}
       {info && <Pesan>{info}</Pesan>}
 

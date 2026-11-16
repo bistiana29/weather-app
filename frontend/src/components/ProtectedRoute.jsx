@@ -17,7 +17,8 @@ export default function ProtectedRoute({ role, children }) {
   const lokasi = useLocation()
 
   if (!pengguna) {
-    return <Navigate to="/masuk" replace state={{ dari: lokasi.pathname + lokasi.search, pesan: PESAN_MASUK[role] }} />
+    const halamanLogin = role === 'admin' ? '/login/dev' : '/login'
+    return <Navigate to={halamanLogin} replace state={{ dari: lokasi.pathname + lokasi.search, pesan: PESAN_MASUK[role] }} />
   }
   if (role && pengguna.role !== role) {
     return <Navigate to={berandaRole(pengguna.role)} replace state={{ pesan: PESAN_DITOLAK[role] }} />

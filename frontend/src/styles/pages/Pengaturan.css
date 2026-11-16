@@ -6,7 +6,7 @@
 }
 
 .pengaturan-kepala h1 {
-  font-size: 28px;
+  font-size: var(--fs-judul);
   margin-bottom: 4px;
 }
 
@@ -50,7 +50,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 18px;
+  font-size: var(--fs-judul-kartu);
 }
 
 .bagian-skeleton-teks {
@@ -189,9 +189,6 @@
 
 /* Mobile */
 @media (max-width: 767px) {
-  .pengaturan-kepala h1 {
-    font-size: 22px;
-  }
 
   .bagian {
     padding: 18px;

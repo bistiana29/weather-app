@@ -17,6 +17,7 @@ import Skeleton from '../../components/ui/Skeleton'
 import { VARIAN_GRID, VARIAN_KARTU } from '../../lib/animasi'
 import { DAFTAR_PARAMETER, PARAMETER } from '../../lib/kategori'
 import { formatRingkas, formatWaktuWib } from '../../lib/tanggal'
+import { SUMBU_GRAFIK, WARNA } from '../../lib/warna'
 import '../../styles/components/peta.css'
 import '../../styles/pages/Admin.css'
 
@@ -37,12 +38,12 @@ function GrafikEvaluasi({ data, memuat }) {
       <div className="grafik-evaluasi-area" role="img" aria-label={adaNilai ? 'Grafik RMSE 30 hari terakhir' : 'Grafik RMSE 30 hari terakhir, metrik belum tersedia'}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 12, right: 12, bottom: 0, left: -12 }}>
-            <CartesianGrid vertical={false} stroke="#D7E4EE" />
-            <XAxis dataKey="tanggal" tickFormatter={formatRingkas} interval={6} tick={{ fontSize: 11, fill: '#4A5D78' }} tickLine={false} axisLine={{ stroke: '#C9DBE8' }} />
-            <YAxis domain={[0, 1]} tickFormatter={() => METRIK_KOSONG} tick={{ fontSize: 11, fill: '#4A5D78' }} tickLine={false} axisLine={false} width={44} />
-            <Line dataKey="rmse_produksi" stroke="#1B365D" strokeWidth={2} dot={false} isAnimationActive={false} />
-            <Line dataKey="rmse_persistence" stroke="#005A9C" strokeWidth={2} strokeDasharray="6 4" dot={false} isAnimationActive={false} />
-            <Line dataKey="batas_drift" stroke="#C21F3A" strokeWidth={1.5} strokeDasharray="2 4" dot={false} isAnimationActive={false} />
+            <CartesianGrid vertical={false} stroke={WARNA.gridGrafik} />
+            <XAxis dataKey="tanggal" tickFormatter={formatRingkas} interval={6} tick={SUMBU_GRAFIK} tickLine={false} axisLine={{ stroke: WARNA.garis }} />
+            <YAxis domain={[0, 1]} tickFormatter={() => METRIK_KOSONG} tick={SUMBU_GRAFIK} tickLine={false} axisLine={false} width={44} />
+            <Line dataKey="rmse_produksi" stroke={WARNA.navy} strokeWidth={2} dot={false} isAnimationActive={false} />
+            <Line dataKey="rmse_persistence" stroke={WARNA.biru} strokeWidth={2} strokeDasharray="6 4" dot={false} isAnimationActive={false} />
+            <Line dataKey="batas_drift" stroke={WARNA.ambang} strokeWidth={1.5} strokeDasharray="2 4" dot={false} isAnimationActive={false} />
           </LineChart>
         </ResponsiveContainer>
         {!adaNilai && <p className="grafik-evaluasi-kosong">Metrik evaluasi belum tersedia {METRIK_KOSONG}</p>}

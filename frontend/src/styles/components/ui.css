@@ -73,7 +73,7 @@
 }
 
 .btn-bahaya:hover {
-  background: #96142a;
+  background: var(--galat-hover);
 }
 
 .btn-bahaya-lunak {
@@ -84,7 +84,7 @@
 }
 
 .btn-bahaya-lunak:hover {
-  background: #fbe9ec;
+  background: var(--galat-muda);
 }
 
 .btn-terang {
@@ -93,7 +93,7 @@
 }
 
 .btn-terang:hover {
-  background: #e8f6fb;
+  background: var(--terang-hover);
 }
 
 /* Tombol ikon persegi 44px */
@@ -143,7 +143,7 @@
   display: block;
   position: relative;
   overflow: hidden;
-  background: #dce9f2;
+  background: var(--skeleton);
 }
 
 .skeleton::after {
@@ -161,10 +161,16 @@
   }
 }
 
+/* Kurangi gerak: shimmer berhenti, panel dan dialog hanya memudar tanpa bergeser */
 @media (prefers-reduced-motion: reduce) {
   .skeleton::after {
     animation: none;
     display: none;
+  }
+
+  .popover-panel,
+  .dialog-konten {
+    animation-name: pudar;
   }
 }
 
@@ -193,9 +199,9 @@
 }
 
 .badge-sukses {
-  background: #e3f4fa;
+  background: var(--sorot-muda);
   color: var(--navy);
-  border: 1px solid #bfe6f3;
+  border: 1px solid var(--sorot-garis);
 }
 
 .badge-berjalan {
@@ -206,17 +212,17 @@
 .badge-peringatan {
   background: var(--data-1);
   color: var(--data-teks-gelap);
-  border: 1px solid #f3d27a;
+  border: 1px solid var(--peringatan-garis);
 }
 
 .badge-gagal {
-  background: #fbe9ec;
+  background: var(--galat-muda);
   color: var(--galat);
-  border: 1px solid #f1c3cb;
+  border: 1px solid var(--galat-garis);
 }
 
 .badge-info {
-  background: #d6f1f8;
+  background: var(--langit-pucat);
   color: var(--navy);
 }
 
@@ -297,7 +303,7 @@
 }
 
 .select-item[data-highlighted] {
-  background: #e3f4fa;
+  background: var(--sorot-muda);
   color: var(--biru);
 }
 
@@ -498,7 +504,7 @@
 }
 
 .cari-opsi[aria-selected='true'] {
-  background: #e3f4fa;
+  background: var(--sorot-muda);
   color: var(--biru);
 }
 
@@ -575,7 +581,7 @@
 }
 
 .kalender-tanggal:hover:not(:disabled) {
-  background: #e3f4fa;
+  background: var(--sorot-muda);
 }
 
 .kalender-tanggal.luar-bulan {
@@ -592,7 +598,7 @@
 }
 
 .kalender-tanggal:disabled {
-  color: #9aa7b6;
+  color: var(--teks-nonaktif);
   text-decoration: line-through;
   cursor: not-allowed;
 }
@@ -634,8 +640,8 @@
 
 .dialog-judul {
   font-family: var(--font-heading);
-  font-size: 20px;
-  font-weight: 700;
+  font-size: 1.25rem;
+  font-weight: 600;
   color: var(--navy);
   margin: 8px 0 0;
 }
@@ -843,15 +849,15 @@
 }
 
 .pesan-galat {
-  background: #fbe9ec;
+  background: var(--galat-muda);
   color: var(--galat);
-  border: 1px solid #f1c3cb;
+  border: 1px solid var(--galat-garis);
 }
 
 .pesan-info {
-  background: #e3f4fa;
+  background: var(--sorot-muda);
   color: var(--navy);
-  border: 1px solid #bfe6f3;
+  border: 1px solid var(--sorot-garis);
 }
 
 /* Formulir di dalam dialog */

@@ -14,7 +14,7 @@
 }
 
 .peta-judul h1 {
-  font-size: 32px;
+  font-size: var(--fs-judul);
 }
 
 .peta-judul p {
@@ -45,7 +45,7 @@
   display: grid;
   gap: var(--jarak-bento);
   grid-template-columns: repeat(12, minmax(0, 1fr));
-  grid-template-rows: 620px auto;
+  grid-template-rows: minmax(620px, auto) auto;
   grid-template-areas:
     'peta peta peta peta peta peta peta peta panel panel panel panel'
     'suhu suhu jarak jarak wa wa wa wa hujan hujan angin angin';
@@ -87,7 +87,6 @@
 
 .kartu-panel {
   height: 100%;
-  overflow-y: auto;
   padding: 22px;
 }
 
@@ -137,7 +136,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 18px;
+  font-size: var(--fs-judul-kartu);
 }
 
 .kartu-peringatan h2 svg {
@@ -154,11 +153,6 @@
 
 .kartu-peringatan .btn {
   margin-top: auto;
-}
-
-.peta-disclaimer {
-  font-size: 13px;
-  color: var(--teks-sekunder);
 }
 
 /* Tablet */
@@ -217,9 +211,6 @@
     gap: 10px;
   }
 
-  .peta-judul h1 {
-    font-size: 24px;
-  }
 
   .peta-judul p {
     font-size: 13px;

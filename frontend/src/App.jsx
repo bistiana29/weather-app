@@ -10,7 +10,8 @@ import { AuthProvider } from './lib/auth'
 import Daftar from './pages/Daftar'
 import Landing from './pages/Landing'
 import LupaPassword from './pages/LupaPassword'
-import Masuk from './pages/Masuk'
+import Login from './pages/Login'
+import LoginAdmin from './pages/LoginAdmin'
 import Pengaturan from './pages/Pengaturan'
 import ResetPassword from './pages/ResetPassword'
 import TidakDitemukan from './pages/TidakDitemukan'
@@ -29,7 +30,10 @@ const halaman = (modul) => ({ Component: modul.default })
 function HalamanMandiri() {
   return (
     <div className="halaman-mandiri">
-      <Outlet />
+      <a href="#konten" className="lewati">Lewati ke konten</a>
+      <main id="konten" tabIndex={-1}>
+        <Outlet />
+      </main>
     </div>
   )
 }
@@ -51,7 +55,8 @@ const router = createBrowserRouter([
   {
     element: <HalamanMandiri />,
     children: [
-      { path: 'masuk', element: <Masuk /> },
+      { path: 'login', element: <Login /> },
+      { path: 'login/dev', element: <LoginAdmin /> },
       { path: 'daftar', element: <Daftar /> },
       { path: 'verifikasi-otp', element: <VerifikasiOtp /> },
       { path: 'lupa-password', element: <LupaPassword /> },

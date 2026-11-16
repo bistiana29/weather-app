@@ -8,7 +8,7 @@
 }
 
 .admin-kepala h1 {
-  font-size: 28px;
+  font-size: var(--fs-judul);
   margin-bottom: 4px;
 }
 
@@ -21,6 +21,13 @@
 
 .berputar svg {
   animation: putar 1s linear infinite;
+}
+
+/* Kurangi gerak: ikon muat ulang tidak berputar, cukup tombol yang nonaktif */
+@media (prefers-reduced-motion: reduce) {
+  .berputar svg {
+    animation: none;
+  }
 }
 
 @keyframes putar {
@@ -145,16 +152,16 @@ td.heatmap-sel {
 
 .hm-sebagian {
   background: var(--data-1);
-  box-shadow: inset 0 0 0 1px #e9c96a;
+  box-shadow: inset 0 0 0 1px var(--peringatan-tegas);
 }
 
 .hm-kosong {
-  background: #f1c3cb;
-  box-shadow: inset 0 0 0 1px #d98a98;
+  background: var(--galat-garis);
+  box-shadow: inset 0 0 0 1px var(--galat-tegas);
 }
 
 .hm-tanpa {
-  background: repeating-linear-gradient(45deg, #e4ebf0 0 4px, #f6f9fb 4px 8px);
+  background: repeating-linear-gradient(45deg, var(--kosong) 0 4px, var(--kosong-terang) 4px 8px);
   box-shadow: inset 0 0 0 1px var(--garis);
 }
 
@@ -265,9 +272,6 @@ td.heatmap-sel {
 }
 
 @media (max-width: 767px) {
-  .admin-kepala h1 {
-    font-size: 22px;
-  }
 
   .backfill-rentang {
     grid-template-columns: minmax(0, 1fr);

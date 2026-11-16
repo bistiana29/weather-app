@@ -4,7 +4,7 @@ import { useId } from 'react'
 import '../../styles/components/ui.css'
 
 // Kotak centang berlabel dengan pesan galat
-export default function Checkbox({ checked, onCheckedChange, galat, children }) {
+export default function Checkbox({ checked, onCheckedChange, galat, wajib = false, children }) {
   const id = useId()
   return (
     <div className="checkbox-wadah">
@@ -15,6 +15,7 @@ export default function Checkbox({ checked, onCheckedChange, galat, children }) 
           checked={checked}
           onCheckedChange={(v) => onCheckedChange(v === true)}
           aria-invalid={Boolean(galat)}
+          aria-required={wajib || undefined}
           aria-describedby={galat ? `${id}-galat` : undefined}
         >
           <RCheckbox.Indicator>

@@ -61,7 +61,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 17px;
+  font-size: var(--fs-judul-kartu);
 }
 
 .admin-catatan {
@@ -165,8 +165,8 @@
   min-width: 0;
   padding: 14px;
   border-radius: 18px;
-  background: var(--permukaan);
-  box-shadow: var(--neu-raised-kecil);
+  background: var(--permukaan-2);
+  box-shadow: var(--neu-inset);
 }
 
 .alur-nama {

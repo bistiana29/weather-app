@@ -3,6 +3,7 @@
   display: inline-flex;
   align-items: center;
   gap: 10px;
+  min-width: var(--target-sentuh);
   min-height: var(--target-sentuh);
   color: var(--navy);
   text-decoration: none;
@@ -357,7 +358,7 @@
 }
 
 .nada-gelap .sidebar-item {
-  color: #d6f1f8;
+  color: var(--langit-pucat);
 }
 
 .nada-gelap .sidebar-item:hover {
@@ -494,7 +495,7 @@
 }
 
 .auth-kepala h1 {
-  font-size: 26px;
+  font-size: var(--fs-judul);
 }
 
 .auth-form {
@@ -567,11 +568,43 @@
   text-decoration: none;
 }
 
+/* Login admin: identitas panel admin di atas latar navy */
+.auth-tanda-admin {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--target-sentuh);
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 0.875rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--putih);
+}
+
+.auth-admin .auth-kartu {
+  border-color: rgba(160, 224, 239, 0.25);
+  box-shadow: 0 18px 44px rgba(5, 14, 30, 0.45);
+}
+
+.auth-admin .btn-utama {
+  background: var(--navy);
+}
+
+.auth-admin .btn-utama:hover {
+  background: var(--navy-gelap);
+}
+
+.auth-admin .auth-kembali {
+  color: var(--biru-muda);
+}
+
 /* Tombol yang tampil seperti tautan */
+/* Padding vertikal memperbesar area sentuh tanpa mengubah tinggi baris */
 .tautan-teks {
   display: inline;
   min-height: 0;
-  padding: 0;
+  padding: 11px 0;
   border: 0;
   background: none;
   color: var(--biru);
@@ -600,4 +633,9 @@
   .auth-dua-kolom {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+.auth-wajib {
+  font-size: var(--fs-kecil);
+  margin-bottom: -6px;
 }

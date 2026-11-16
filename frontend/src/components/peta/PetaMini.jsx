@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { warnaRisiko } from '../../lib/kategori'
+import { WARNA } from '../../lib/warna'
 import '../../styles/components/peta.css'
 
 const LEBAR = 400
@@ -31,7 +32,7 @@ export default function PetaMini({ geojson, risiko, parameter, label }) {
   return (
     <svg className="peta-mini" viewBox={`-4 -4 ${LEBAR + 8} ${tinggi + 8}`} role="img" aria-label={label}>
       {jalur.map((j) => (
-        <path key={j.kode} d={j.d} fill={warnaRisiko(parameter, risiko?.[j.kode])} stroke="#9AA3AE" strokeWidth="0.5" />
+        <path key={j.kode} d={j.d} fill={warnaRisiko(parameter, risiko?.[j.kode])} stroke={WARNA.batasData} strokeWidth="0.5" />
       ))}
     </svg>
   )

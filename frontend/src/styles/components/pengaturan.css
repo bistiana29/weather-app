@@ -16,7 +16,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 18px;
+  font-size: var(--fs-judul-kartu);
 }
 
 .simulasi-catatan {
@@ -30,7 +30,7 @@
   min-height: 340px;
   padding: 16px;
   border-radius: 20px;
-  background: linear-gradient(180deg, #d6f1f8 0%, #eef5fa 100%);
+  background: linear-gradient(180deg, var(--langit-pucat) 0%, var(--permukaan) 100%);
   box-shadow: var(--neu-inset);
 }
 
@@ -106,6 +106,6 @@
   position: absolute;
   right: 12px;
   bottom: 6px;
-  font-size: 11px;
+  font-size: var(--fs-mini);
   color: var(--teks-sekunder);
 }

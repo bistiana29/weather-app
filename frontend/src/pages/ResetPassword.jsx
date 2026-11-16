@@ -6,6 +6,7 @@ import Button from '../components/ui/Button'
 import Pesan from '../components/ui/Pesan'
 import TextField from '../components/ui/TextField'
 import { cekPassword, PANJANG_PASSWORD_MIN } from '../lib/validasi'
+import JudulHalaman from '../components/JudulHalaman'
 
 // Halaman atur password baru dari tautan email (?token=)
 export default function ResetPassword() {
@@ -20,6 +21,7 @@ export default function ResetPassword() {
   if (!token) {
     return (
       <KartuAuth judul="Tautan tidak valid" subjudul="Tautan reset tidak lengkap atau sudah tidak berlaku.">
+        <JudulHalaman judul="Tautan tidak valid" />
         <Button as={Link} to="/lupa-password" ukuran="besar">
           Minta tautan baru
         </Button>
@@ -41,7 +43,7 @@ export default function ResetPassword() {
     setMemproses(true)
     try {
       await resetPassword(token, isian.password)
-      navigate('/masuk', { replace: true, state: { pesan: 'Password berhasil diubah. Silakan masuk dengan password baru.' } })
+      navigate('/login', { replace: true, state: { pesan: 'Password berhasil diubah. Silakan masuk dengan password baru.' } })
     } catch (err) {
       setGalatServer(err.message)
       setMemproses(false)
@@ -50,6 +52,7 @@ export default function ResetPassword() {
 
   return (
     <KartuAuth judul="Atur Password Baru" subjudul="Tautan ini berlaku dalam waktu terbatas.">
+      <JudulHalaman judul="Atur Password Baru" />
       {galatServer && (
         <Pesan nada="galat">
           {galatServer}. <Link to="/lupa-password">Minta tautan baru</Link>

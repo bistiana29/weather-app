@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router'
 import { getKelurahanGeojson, getPrakiraan, getRingkasan, getRisiko } from '../api/publik'
 import BantuanMock from '../components/BantuanMock'
+import JudulHalaman from '../components/JudulHalaman'
 import BottomSheet from '../components/peta/BottomSheet'
 import PanelPrakiraan from '../components/peta/PanelPrakiraan'
 import PetaKelurahan from '../components/peta/PetaKelurahan'
@@ -19,7 +20,7 @@ import Skeleton from '../components/ui/Skeleton'
 import { Tabs, TabsContent } from '../components/ui/Tabs'
 import { VARIAN_GRID, VARIAN_KARTU } from '../lib/animasi'
 import { useAuth } from '../lib/auth'
-import { parameterValid } from '../lib/kategori'
+import { PARAMETER, parameterValid } from '../lib/kategori'
 import { formatPanjang, formatRingkas, hariIniWib, isoValid, tambahHari } from '../lib/tanggal'
 import { MEDIA, useMediaQuery } from '../lib/useMediaQuery'
 import '../styles/pages/PetaRisiko.css'
@@ -192,6 +193,7 @@ export default function PetaRisiko() {
 
   return (
     <div className="peta-halaman">
+      <JudulHalaman judul={`Peta Risiko ${PARAMETER[parameter].judul}`} />
       <header className="peta-kepala">
         <div className="peta-judul">
           <h1>Peta Risiko</h1>
@@ -284,8 +286,6 @@ export default function PetaRisiko() {
           </motion.div>
         </TabsContent>
       </Tabs>
-
-      <p className="peta-disclaimer">Hasil prediksi model, bukan peringatan resmi BMKG.</p>
 
       {mobile && (
         <BottomSheet terbuka={Boolean(kel || kelMenunggu)} label="Panel prakiraan kelurahan" onTutup={tutupPanel}>

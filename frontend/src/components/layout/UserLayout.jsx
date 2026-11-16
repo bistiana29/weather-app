@@ -35,6 +35,7 @@ export default function UserLayout() {
 
   return (
     <div className="layout-sidebar">
+      <a href="#konten" className="lewati">Lewati ke konten</a>
       <Sidebar
         items={ITEMS}
         itemsBawah={itemsBawah}
@@ -52,6 +53,8 @@ export default function UserLayout() {
       />
       <motion.main
         key={lokasi.pathname}
+        id="konten"
+        tabIndex={-1}
         className="layout-sidebar-main"
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}

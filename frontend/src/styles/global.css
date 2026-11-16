@@ -6,17 +6,25 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  scrollbar-color: var(--garis-kuat) var(--permukaan);
+  accent-color: var(--biru);
 }
 
 body {
   margin: 0;
   min-height: 100vh;
   font-family: var(--font-teks);
-  font-size: 15px;
+  font-size: var(--fs-teks);
   line-height: 1.55;
   color: var(--teks);
   background: var(--permukaan);
+  caret-color: var(--biru);
   -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--biru-muda);
+  color: var(--navy);
 }
 
 h1,
@@ -25,9 +33,15 @@ h3,
 h4 {
   margin: 0;
   font-family: var(--font-heading);
-  font-weight: 700;
+  font-weight: 600;
   color: var(--navy);
-  line-height: 1.2;
+  line-height: 1.25;
+  text-wrap: balance;
+}
+
+h1 {
+  font-weight: 700;
+  letter-spacing: var(--tracking-judul);
 }
 
 p {
@@ -36,6 +50,8 @@ p {
 
 a {
   color: var(--biru);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
 }
 
 button,
@@ -59,6 +75,32 @@ svg {
 :focus-visible {
   outline: 3px solid var(--langit);
   outline-offset: 2px;
+}
+
+/* Tautan lewati navigasi untuk pengguna keyboard */
+.lewati {
+  position: absolute;
+  z-index: 2000;
+  left: 16px;
+  top: -80px;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--target-sentuh);
+  padding: 0 18px;
+  border-radius: var(--radius-pill);
+  background: var(--navy);
+  color: var(--putih);
+  font-weight: 600;
+  text-decoration: none;
+  transition: top var(--durasi-cepat) var(--easing);
+}
+
+.lewati:focus {
+  top: 12px;
+}
+
+main:focus {
+  outline: none;
 }
 
 .sr-only {
@@ -92,15 +134,16 @@ svg {
   -webkit-overflow-scrolling: touch;
 }
 
-/* Hormati preferensi kurangi gerak */
+/* Kurangi gerak: geser, putar, dan shimmer dihentikan; perubahan warna dan pudar tetap ada */
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
   *,
   *::before,
   *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
+    transition-property: color, background-color, border-color, opacity, box-shadow !important;
   }
 }
 
@@ -120,4 +163,9 @@ svg {
   padding: 24px 16px;
   background: var(--gradasi-langit) no-repeat;
   background-color: var(--permukaan);
+}
+
+/* Login admin memakai latar navy agar jelas berbeda dari area publik */
+.halaman-mandiri:has(.auth-admin) {
+  background: var(--gradasi-admin);
 }

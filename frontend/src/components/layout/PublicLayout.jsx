@@ -12,7 +12,7 @@ const KELAS_TAUTAN = ({ isActive }) => `navbar-tautan ${isActive ? 'aktif' : ''}
 function tautanNavigasi(pengguna) {
   const peta = { to: '/peta-risiko/hujan', cocok: '/peta-risiko', label: 'Peta Risiko', labelPendek: 'Peta', ikon: IkonPeta }
   if (!pengguna) {
-    return [peta, { to: '/masuk', label: 'Masuk', ikon: LogIn }, { to: '/daftar', label: 'Daftar', ikon: UserPlus }]
+    return [peta, { to: '/login', label: 'Masuk', ikon: LogIn }, { to: '/daftar', label: 'Daftar', ikon: UserPlus }]
   }
   if (pengguna.role === 'admin') {
     return [peta, { to: '/admin', label: 'Panel Admin', labelPendek: 'Admin', ikon: LayoutDashboard }]
@@ -35,6 +35,7 @@ export default function PublicLayout() {
 
   return (
     <div className="layout-publik">
+      <a href="#konten" className="lewati">Lewati ke konten</a>
       <header className="navbar">
         <Logo />
         <nav className="navbar-nav" aria-label="Navigasi utama">
@@ -63,6 +64,8 @@ export default function PublicLayout() {
 
       <motion.main
         key={segmen}
+        id="konten"
+        tabIndex={-1}
         className="layout-publik-main"
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
