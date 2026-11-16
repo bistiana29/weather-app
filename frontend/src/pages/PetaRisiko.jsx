@@ -223,7 +223,7 @@ export default function PetaRisiko() {
           ) : (
             kolomCari
           )}
-          <DatePicker value={tgl} onChange={gantiTanggal} min={tglMin} max={besok} label={t('peta.tanggalPrediksi')} ringkas={mobile} />
+          <DatePicker value={tgl} onChange={gantiTanggal} min={tglMin} max={besok} label={t('peta.tanggalPrediksi')} />
         </div>
         {mobile && cariTerbuka && kolomCari}
       </header>

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useFormat } from '../../lib/format'
 import { hariIniWib, keDate, keIso, tambahHari } from '../../lib/tanggal'
+import { MEDIA, useMediaQuery } from '../../lib/useMediaQuery'
 import '../../styles/components/ui.css'
 
 // Satu pekan contoh yang diawali Senin, untuk nama hari di kepala kalender
@@ -22,10 +23,11 @@ function dalamRentang(iso, min, max) {
   return (!min || iso >= min) && (!max || iso <= max)
 }
 
-// Pemilih tanggal dengan kalender kustom
-export default function DatePicker({ value, onChange, min, max, label, ringkas = false }) {
+// Pemilih tanggal dengan kalender kustom; nama bulan dipendekkan di layar mobile
+export default function DatePicker({ value, onChange, min, max, label }) {
   const { t } = useTranslation()
   const f = useFormat()
+  const ringkas = useMediaQuery(MEDIA.mobile)
   const labelTombol = label ?? t('umum.tanggal.pilih')
   const [terbuka, setTerbuka] = useState(false)
   const [fokus, setFokus] = useState(value)
@@ -66,7 +68,7 @@ export default function DatePicker({ value, onChange, min, max, label, ringkas =
     <Popover.Root open={terbuka} onOpenChange={bukaTutup}>
       <Popover.Trigger className={`tanggal-trigger ${ringkas ? 'tanggal-ringkas' : ''}`} aria-label={`${labelTombol}: ${f.tanggalPanjang(value)}`}>
         <Calendar size={18} aria-hidden="true" />
-        <span>{ringkas ? f.tanggalRingkas(value) : f.tanggalAngka(value)}</span>
+        <span>{f.tanggalTombol(value, ringkas)}</span>
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Content className="popover-panel kalender" sideOffset={8} align="end" collisionPadding={16}>
