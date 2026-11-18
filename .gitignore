@@ -46,3 +46,7 @@ frontend/docs/
 *.njsproj
 *.sln
 *.sw?
+
+# agents
+.claude/
+.agents/
