@@ -641,7 +641,7 @@
 .tautan-teks {
   display: inline;
   min-height: 0;
-  padding: 11px 0;
+  padding: 12px 0;
   border: 0;
   background: none;
   color: var(--biru);
@@ -741,9 +741,7 @@
 
 .page-header-teks h1 {
   font-size: var(--fs-judul);
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  text-wrap: balance;
 }
 
 .page-header-sub {

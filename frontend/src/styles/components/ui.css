@@ -838,6 +838,11 @@
   cursor: pointer;
 }
 
+/* Tautan di dalam label tidak menambah tinggi baris agar sejajar dengan kotak */
+.checkbox-label .tautan-teks {
+  padding: 0;
+}
+
 /* Kotak pesan di formulir */
 .pesan {
   display: flex;

@@ -15,7 +15,7 @@ web
 HP dan laptop sama penting; tidak ada ukuran layar yang dikorbankan.
 
 ## Product Purpose
-Memetakan risiko cuaca ekstrem per kelurahan (153 kelurahan) di Kota Surabaya, dipisah per parameter (curah hujan, suhu, angin, jarak pandang, kelembapan), dari hasil prediksi model forecasting berbasis data NASA POWER dan Open-Meteo. Informasi bahaya harus terbaca jelas dan cepat. Peringatan WhatsApp dikirim pukul 12.00 WIB untuk periode esok hari 00.00–23.59 WIB.
+Memetakan risiko cuaca ekstrem per kelurahan (153 kelurahan) di Kota Surabaya, dipisah per parameter (curah hujan, suhu, angin, jarak pandang), dari hasil prediksi model forecasting berbasis data NASA POWER dan Open-Meteo. Informasi bahaya harus terbaca jelas dan cepat. Peringatan WhatsApp dikirim pukul 12.00 WIB untuk periode esok hari 00.00–23.59 WIB.
 
 Berhasil berarti warga bisa menemukan kelurahannya dan memahami kategori risikonya dalam beberapa detik, dan peringatan WA membawa mereka langsung ke kelurahan yang tepat.
 
