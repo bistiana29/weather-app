@@ -87,20 +87,28 @@ export const PARAMETER = {
 
 export const DAFTAR_PARAMETER = Object.values(PARAMETER)
 
+// Parameter yang punya kategori Tabel 2.1 dan tampil di Peta Risiko (urutan opsi dan kartu)
+export const PARAMETER_PETA = ['hujan', 'suhu', 'angin', 'jarak-pandang']
+
 export function parameterValid(slug) {
   return Object.hasOwn(PARAMETER, slug)
 }
 
-// Ubah slug URL berbahasa Inggris (mis. "rain") ke slug parameter internal (mis. "hujan")
+// Ubah slug URL berbahasa Inggris (mis. "rain") ke slug parameter peta internal (mis. "hujan")
 export function parameterDariUrl(slugUrl) {
-  return DAFTAR_PARAMETER.find((p) => p.slugUrl === slugUrl)?.slug ?? null
+  return PARAMETER_PETA.find((p) => PARAMETER[p].slugUrl === slugUrl) ?? null
 }
 
-// Alamat peta risiko untuk satu parameter, dengan query opsional (kel, date)
-export function urlPeta(parameter, query = {}) {
-  const cari = new URLSearchParams(Object.entries(query).filter(([, v]) => v != null && v !== ''))
-  const teks = cari.toString()
-  return `/risk-map/${PARAMETER[parameter].slugUrl}${teks ? `?${teks}` : ''}`
+// Alamat Peta Risiko; color dan params berupa slug internal, diubah ke slug URL berbahasa Inggris
+export function urlPeta({ color, params, kel, date } = {}) {
+  const query = {
+    params: params?.map((p) => PARAMETER[p].slugUrl).join(','),
+    color: color && PARAMETER[color].slugUrl,
+    kel,
+    date,
+  }
+  const teks = new URLSearchParams(Object.entries(query).filter(([, v]) => v)).toString()
+  return `/risk-map${teks ? `?${teks}` : ''}`
 }
 
 // Kunci kamus untuk label kategori dari nilai data API
@@ -196,7 +204,20 @@ export function masukPeringatan(parameter, kategori) {
   return apakahEkstrem(parameter, kategori)
 }
 
-// Hitung jumlah kelurahan per jenis kejadian dari data risiko
+// Hitung jumlah kelurahan per jenis kejadian dari data risiko satu parameter
 export function hitungKejadian(parameter, risiko) {
   return Object.values(risiko ?? {}).filter((d) => masukPeringatan(parameter, d.kategori)).length
+}
+
+// Ambil data satu parameter dari respons risiko gabungan: { "<kode_kel>": { nilai, kategori, ... } }
+export function risikoParameter(gabungan, parameter) {
+  if (!gabungan) return null
+  const slug = PARAMETER[parameter].slugUrl
+  return Object.fromEntries(Object.entries(gabungan).map(([kode, data]) => [kode, data[slug]]))
+}
+
+// Jumlah kelurahan per jenis kejadian dari respons risiko gabungan
+export function ringkasanDari(gabungan) {
+  if (!gabungan) return null
+  return Object.fromEntries(JENIS_KEJADIAN.map((j) => [j.kunci, hitungKejadian(j.parameter, risikoParameter(gabungan, j.parameter))]))
 }

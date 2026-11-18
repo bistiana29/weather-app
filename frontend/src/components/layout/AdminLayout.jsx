@@ -5,6 +5,7 @@ import { I18nextProvider } from 'react-i18next'
 import { Outlet, useLocation, useNavigate } from 'react-router'
 import i18n, { i18nAdmin } from '../../i18n'
 import { useAuth } from '../../lib/auth'
+import { KonteksLayout, useStatusSidebar } from '../../lib/sidebar'
 import Pesan from '../ui/Pesan'
 import Sidebar from './Sidebar'
 import '../../styles/components/layout.css'
@@ -31,6 +32,7 @@ function JudulAdmin({ ciut }) {
 // Layout admin dengan sidebar navy; seluruh panel admin berbahasa Indonesia
 export default function AdminLayout() {
   const { keluar } = useAuth()
+  const statusSidebar = useStatusSidebar('pce-sidebar-admin')
   const navigate = useNavigate()
   const lokasi = useLocation()
 
@@ -56,12 +58,13 @@ export default function AdminLayout() {
 
   return (
     <I18nextProvider i18n={i18nAdmin}>
+    <KonteksLayout value={{ sidebar: statusSidebar, tampilBahasa: false }}>
     <div className="layout-sidebar">
       <a href="#konten" className="lewati">Lewati ke konten</a>
       <Sidebar
+        status={statusSidebar}
         items={ITEMS}
         itemsBawah={itemsBawah}
-        storageKey="pce-sidebar-admin"
         nada="gelap"
         judulMobile={<JudulAdmin ciut={false} />}
         kepala={(ciut) => <JudulAdmin ciut={ciut} />}
@@ -83,6 +86,7 @@ export default function AdminLayout() {
         <Outlet />
       </motion.main>
     </div>
+    </KonteksLayout>
     </I18nextProvider>
   )
 }

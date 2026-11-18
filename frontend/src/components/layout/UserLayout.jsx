@@ -3,14 +3,14 @@ import { motion } from 'motion/react'
 import { useTranslation } from 'react-i18next'
 import { Outlet, useLocation, useNavigate } from 'react-router'
 import { useAuth } from '../../lib/auth'
+import { KonteksLayout, useStatusSidebar } from '../../lib/sidebar'
 import Logo from './Logo'
-import PemilihBahasa from '../ui/PemilihBahasa'
 import Pesan from '../ui/Pesan'
 import Sidebar from './Sidebar'
 import '../../styles/components/layout.css'
 
 const ITEMS = [
-  { to: '/risk-map/rain', label: 'umum.nav.petaRisiko', labelPendek: 'umum.nav.peta', ikon: IkonPeta },
+  { to: '/risk-map', label: 'umum.nav.petaRisiko', labelPendek: 'umum.nav.peta', ikon: IkonPeta },
   { to: '/settings', label: 'umum.nav.pengaturan', ikon: Settings },
 ]
 
@@ -21,6 +21,7 @@ function inisial(nama = '') {
 // Layout pengguna dengan sidebar
 export default function UserLayout() {
   const { t } = useTranslation()
+  const statusSidebar = useStatusSidebar('pce-sidebar-pengguna')
   const { pengguna, keluar } = useAuth()
   const navigate = useNavigate()
   const lokasi = useLocation()
@@ -37,12 +38,13 @@ export default function UserLayout() {
   ]
 
   return (
+    <KonteksLayout value={{ sidebar: statusSidebar, tampilBahasa: true }}>
     <div className="layout-sidebar">
       <a href="#konten" className="lewati">{t('umum.lewatiKonten')}</a>
       <Sidebar
+        status={statusSidebar}
         items={ITEMS.map((item) => ({ ...item, label: t(item.label), labelPendek: t(item.labelPendek ?? item.label) }))}
         itemsBawah={itemsBawah}
-        storageKey="pce-sidebar-pengguna"
         judulMobile={<Logo tampilTeks={false} />}
         kepala={(ciut) => (
           <>
@@ -63,9 +65,6 @@ export default function UserLayout() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
       >
-        <div className="layout-alat">
-          <PemilihBahasa />
-        </div>
         {lokasi.state?.pesan && (
           <div className="layout-pesan">
             <Pesan nada="galat">{t(lokasi.state.pesan)}</Pesan>
@@ -74,5 +73,6 @@ export default function UserLayout() {
         <Outlet />
       </motion.main>
     </div>
+    </KonteksLayout>
   )
 }

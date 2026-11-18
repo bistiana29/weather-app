@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MotionConfig } from 'motion/react'
 import { useTranslation } from 'react-i18next'
 import { Tooltip } from 'radix-ui'
-import { createBrowserRouter, Navigate, Outlet, RouterProvider } from 'react-router'
+import { createBrowserRouter, Navigate, Outlet, RouterProvider, useLocation, useParams } from 'react-router'
 import AdminLayout from './components/layout/AdminLayout'
 import PublicLayout from './components/layout/PublicLayout'
 import UserLayout from './components/layout/UserLayout'
@@ -27,6 +27,15 @@ const queryClient = new QueryClient({
 // Muat halaman berat secara terpisah agar bundel awal tetap kecil
 const halaman = (modul) => ({ Component: modul.default })
 
+// Alihkan route lama /risk-map/:parameter ke format query baru (?color=), query lain dipertahankan
+function AlihkanPetaLama() {
+  const { parameter } = useParams()
+  const lokasi = useLocation()
+  const query = new URLSearchParams(lokasi.search)
+  query.set('color', parameter)
+  return <Navigate to={`/risk-map?${query.toString()}`} replace />
+}
+
 // Wadah halaman autentikasi tanpa navbar
 function HalamanMandiri() {
   const { t } = useTranslation()
@@ -46,11 +55,8 @@ const router = createBrowserRouter([
     hydrateFallbackElement: <div className="halaman-mandiri" aria-busy="true" />,
     children: [
       { index: true, element: <Landing /> },
-      { path: 'risk-map', element: <Navigate to="/risk-map/rain" replace /> },
-      {
-        path: 'risk-map/:parameter',
-        lazy: () => import('./pages/PetaRisiko').then(halaman),
-      },
+      { path: 'risk-map', lazy: () => import('./pages/PetaRisiko').then(halaman) },
+      { path: 'risk-map/:parameter', element: <AlihkanPetaLama /> },
       { path: '*', element: <TidakDitemukan /> },
     ],
   },

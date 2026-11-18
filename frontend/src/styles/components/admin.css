@@ -1,24 +1,3 @@
-/* Kepala halaman admin */
-.admin-kepala {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.admin-kepala h1 {
-  font-size: var(--fs-judul);
-  margin-bottom: 4px;
-}
-
-.admin-kepala-aksi {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-}
-
 .berputar svg {
   animation: putar 1s linear infinite;
 }
@@ -161,8 +140,8 @@ td.heatmap-sel {
 }
 
 .hm-tanpa {
-  background: repeating-linear-gradient(45deg, var(--kosong) 0 4px, var(--kosong-terang) 4px 8px);
-  box-shadow: inset 0 0 0 1px var(--garis);
+  background: var(--kosong-terang);
+  border: 1px dashed var(--garis-kuat);
 }
 
 .heatmap-legenda {

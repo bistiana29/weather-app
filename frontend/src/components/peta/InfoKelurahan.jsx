@@ -6,12 +6,12 @@ import Badge from '../ui/Badge'
 import Button from '../ui/Button'
 import '../../styles/components/peta.css'
 
-// Isi pop-up kelurahan: nama, kategori, nilai beserta satuan, dan periode jam kejadian
-export default function InfoKelurahan({ properti, data, parameter, memuat, modeTap, onTutup, onLihat }) {
+// Isi pop-up kelurahan: satu baris per parameter tercentang (pewarna di urutan pertama) dan periode jam pewarna
+export default function InfoKelurahan({ properti, data, urutan, memuat, modeTap, onTutup, onLihat }) {
   const { t } = useTranslation()
   const f = useFormat()
-  const konfig = PARAMETER[parameter]
   const judulId = `info-${properti.kode_kel}`
+  const pewarna = data?.[PARAMETER[urutan[0]].slugUrl]
 
   return (
     <section className="info-kelurahan" role={modeTap ? 'dialog' : 'tooltip'} aria-labelledby={judulId}>
@@ -30,23 +30,24 @@ export default function InfoKelurahan({ properti, data, parameter, memuat, modeT
       {memuat || !data ? (
         <p className="teks-sekunder info-memuat">{t('umum.memuat')}</p>
       ) : (
-        <>
-          {konfig.skala ? (
-            <Badge nada="netral">{t('peta.informasiNilai')}</Badge>
-          ) : (
-            <Badge warna={warnaKategori(parameter, data.kategori)}>{f.kategori(parameter, data.kategori)}</Badge>
-          )}
-          <p className="info-nilai">
-            <span className="info-nilai-label">{t(konfig.jenisNilai === 'min' ? 'peta.minimum' : 'peta.puncak')}</span>
-            <span className="angka-utama">{f.nilai(parameter, data.nilai)}</span>
-            <span className="info-satuan">{f.satuan(parameter, data.nilai)}</span>
-          </p>
-          {!konfig.skala && (
-            <p className="info-periode">
-              {data.jam_mulai ? f.periode(data.jam_mulai, data.jam_selesai) : t('peta.tanpaPeriode')}
-            </p>
-          )}
-        </>
+        <dl className="info-baris">
+          {urutan.map((slug) => {
+            const isi = data[PARAMETER[slug].slugUrl]
+            return (
+              <div key={slug} className="info-param">
+                <dt>{f.parameterLabel(slug)}</dt>
+                <dd className="info-param-isi">
+                  <span className="info-param-nilai">{f.nilaiLengkap(slug, isi?.nilai)}</span>
+                  <Badge warna={warnaKategori(slug, isi?.kategori)}>{f.kategori(slug, isi?.kategori)}</Badge>
+                </dd>
+              </div>
+            )
+          })}
+          <div className="info-param info-waktu">
+            <dt>{t('peta.info.waktu')}</dt>
+            <dd>{pewarna?.jam_mulai ? f.periode(pewarna.jam_mulai, pewarna.jam_selesai) : t('peta.tanpaPeriode')}</dd>
+          </div>
+        </dl>
       )}
 
       {modeTap && (

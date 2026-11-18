@@ -7,11 +7,11 @@ import { MEDIA, useMediaQuery } from '../../lib/useMediaQuery'
 import Skeleton from '../ui/Skeleton'
 import '../../styles/components/peta.css'
 
-// Kartu legenda mengambang di pojok peta, isinya mengikuti parameter aktif
-export default function Legend({ parameter, memuat = false }) {
+// Kartu legenda di pojok peta (bisa dilipat di bawah 1280 px): pilihan "Warnai peta" (parameter tercentang) dan kategori parameter pewarna
+export default function Legend({ parameter, opsi, onWarnai, memuat = false }) {
   const { t } = useTranslation()
   const f = useFormat()
-  const mobile = useMediaQuery(MEDIA.mobile)
+  const lipat = !useMediaQuery(MEDIA.desktop)
   const [terbuka, setTerbuka] = useState(false)
   const konfig = PARAMETER[parameter]
   const judul = (
@@ -21,8 +21,8 @@ export default function Legend({ parameter, memuat = false }) {
   )
 
   return (
-    <div className={`legend ${!mobile || terbuka ? 'terbuka' : ''}`}>
-      {mobile ? (
+    <div className={`legend ${lipat ? 'bisa-lipat' : ''} ${!lipat || terbuka ? 'terbuka' : ''}`}>
+      {lipat ? (
         <button type="button" className="legend-judul" aria-expanded={terbuka} onClick={() => setTerbuka((v) => !v)}>
           {judul}
           <ChevronDown size={16} aria-hidden="true" className="legend-panah" />
@@ -32,29 +32,33 @@ export default function Legend({ parameter, memuat = false }) {
       )}
 
       <div className="legend-isi">
-        {memuat && (
+        {opsi.length > 1 && (
+          <div className="legend-warnai" role="radiogroup" aria-label={t('peta.legend.warnai')}>
+            <span className="legend-warnai-label">{t('peta.legend.warnai')}</span>
+            <div className="legend-warnai-opsi">
+              {opsi.map((slug) => (
+                <button
+                  key={slug}
+                  type="button"
+                  role="radio"
+                  aria-checked={slug === parameter}
+                  className="legend-warnai-tombol"
+                  onClick={() => onWarnai(slug)}
+                >
+                  {f.parameterLabel(slug)}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {memuat ? (
           <div className="legend-daftar" aria-hidden="true">
-            {Array.from({ length: konfig.kategori.length || 2 }, (_, i) => (
-              <Skeleton key={i} height={18} width="80%" />
+            {konfig.kategori.map((k) => (
+              <Skeleton key={k.label} height={18} width="80%" />
             ))}
           </div>
-        )}
-
-        {!memuat && konfig.skala && (
-          <div className="legend-skala">
-            <span
-              className="legend-gradasi"
-              style={{ background: `linear-gradient(90deg, ${konfig.skala.warna[0]}, ${konfig.skala.warna[1]})` }}
-            />
-            <span className="legend-skala-label">
-              <span>≤ {konfig.skala.min}%</span>
-              <span>{konfig.skala.max}%</span>
-            </span>
-            <span className="legend-catatan">{t('peta.legend.tanpaAmbang')}</span>
-          </div>
-        )}
-
-        {!memuat && !konfig.skala && (
+        ) : (
           <ul className="legend-daftar">
             {konfig.kategori.map((k) => (
               <li key={k.label}>

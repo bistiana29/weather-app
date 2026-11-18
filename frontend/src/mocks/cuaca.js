@@ -1,4 +1,4 @@
-import { ambangParameter, batasKejadian, hitungKejadian, JENIS_KEJADIAN, kategoriDari, PARAMETER } from '../lib/kategori'
+import { ambangParameter, batasKejadian, kategoriDari, PARAMETER, PARAMETER_PETA } from '../lib/kategori'
 import { tambahHari } from '../lib/tanggal'
 
 // Data cuaca contoh (fiktif) yang dibangkitkan deterministik dari kode kelurahan + tanggal
@@ -92,10 +92,10 @@ export function buatRisiko(daftarKode, parameter, tgl) {
   return Object.fromEntries(daftarKode.map((kode) => [kode, ringkasSeri(parameter, buatSeri(kode, parameter, tgl))]))
 }
 
-export function buatRingkasan(daftarKode, tgl) {
-  return Object.fromEntries(
-    JENIS_KEJADIAN.map((j) => [j.kunci, hitungKejadian(j.parameter, buatRisiko(daftarKode, j.parameter, tgl))]),
-  )
+// Risiko gabungan per kelurahan: { "<kode_kel>": { rain: {...}, temperature: {...}, wind: {...}, visibility: {...} } }
+export function buatRisikoGabungan(daftarKode, tgl) {
+  const perParameter = PARAMETER_PETA.map((p) => [PARAMETER[p].slugUrl, buatRisiko(daftarKode, p, tgl)])
+  return Object.fromEntries(daftarKode.map((kode) => [kode, Object.fromEntries(perParameter.map(([slug, data]) => [slug, data[kode]]))]))
 }
 
 export function buatPrakiraan(kodeKel, parameter, tgl) {

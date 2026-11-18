@@ -6,14 +6,14 @@ import Skeleton from '../ui/Skeleton'
 import { IKON_PARAMETER } from './ikonCuaca'
 import '../../styles/components/peta.css'
 
-// Ubin jumlah kelurahan per jenis kejadian; klik untuk membuka parameternya di peta
-export default function RingkasanKejadian({ ringkasan, memuat, totalKelurahan, parameterAktif, labelTanggal, onPilihParameter }) {
+// Ubin jumlah kelurahan per jenis kejadian untuk parameter tercentang; klik untuk menjadikannya pewarna peta
+export default function RingkasanKejadian({ ringkasan, memuat, totalKelurahan, params, parameterAktif, labelTanggal, onPilihParameter }) {
   const { t } = useTranslation()
   const judul = t('peta.ringkasan.judul', { tanggal: labelTanggal })
   return (
     <section className="ringkasan" aria-label={judul} aria-busy={memuat}>
       <h2 className="ringkasan-judul">{judul}</h2>
-      {JENIS_KEJADIAN.map((j) => {
+      {JENIS_KEJADIAN.filter((j) => params.includes(j.parameter)).map((j) => {
         const Ikon = IKON_PARAMETER[j.parameter]
         const aktif = j.parameter === parameterAktif
         const jumlah = ringkasan?.[j.kunci]

@@ -246,13 +246,10 @@
   },
   "peta": {
     "judul": "Peta Risiko",
-    "judulTab": "Peta Risiko {{parameter}}",
     "prediksiTanggal": "Prediksi {{tanggal}} · 00.00–23.59 WIB",
     "tanggalPrediksi": "Tanggal prediksi",
-    "tabLabel": "Parameter cuaca",
     "cariLabel": "Cari kelurahan",
     "cariPlaceholder": "Cari kelurahan…",
-    "tutupCari": "Tutup pencarian",
     "gagalBatas": "Batas kelurahan gagal dimuat.",
     "esokHari": "esok hari",
     "hariIni": "hari ini",
@@ -260,8 +257,6 @@
     "kec": "Kec. {{nama}}",
     "kelSingkat": "kel.",
     "informasiNilai": "Informasi nilai",
-    "minimum": "Minimum",
-    "puncak": "Puncak",
     "tanpaPeriode": "Tidak ada periode kejadian",
     "memuatRisiko": "Memuat data risiko",
     "petunjukDuaJari": "Gunakan dua jari untuk menggeser peta",
@@ -272,11 +267,12 @@
       "perkecilPeta": "Perkecil peta"
     },
     "legend": {
-      "tanpaAmbang": "Informasi nilai, tanpa ambang bahaya"
+      "warnai": "Warnai peta"
     },
     "info": {
       "tutup": "Tutup info kelurahan",
-      "lihat": "Lihat prakiraan 24 jam"
+      "lihat": "Lihat prakiraan 24 jam",
+      "waktu": "Waktu"
     },
     "sheet": {
       "label": "Panel prakiraan kelurahan",
@@ -306,25 +302,33 @@
         "suhu": "Batas Suhu Ekstrem",
         "angin": "Batas Angin Kencang",
         "jarak-pandang": "Batas Jarak Pandang Ekstrem"
-      }
+      },
+      "judulDialog": "Grafik 48 jam · {{kelurahan}} · {{parameter}}"
     },
     "panel": {
       "perJam": "Prediksi per jam",
-      "tutup": "Tutup panel prakiraan",
-      "gagal": "Prakiraan gagal dimuat.",
       "puncakDari": "Puncak {{parameter}}",
       "minimumDari": "Minimum {{parameter}}",
-      "normal": "Normal setempat {{nilai}}",
       "model": "Model aktif <tebal>{{nama}}</tebal> · versi <tebal>{{versi}}</tebal> · dibuat {{tanggal}} {{jam}} WIB"
     },
-    "peringatan": {
-      "judulTamu": "Mau diingatkan lewat WhatsApp?",
-      "teksTamu": "Buat akun, verifikasi nomor, lalu pilih hingga 3 kelurahan. Peringatan dikirim pukul 12.00 WIB sehari sebelumnya.",
-      "tombolTamu": "Aktifkan Peringatan",
-      "judulJadwal": "Jadwal pembaruan",
-      "teksJadwal": "Prediksi diperbarui setiap hari pukul 12.00 WIB untuk periode esok hari 00.00–23.59 WIB.",
-      "bukaAdmin": "Buka Panel Admin",
-      "aturPantauan": "Atur kelurahan pantauan"
+    "parameter": {
+      "label": "Parameter",
+      "semua": "Semua",
+      "jumlah": "{{n}} parameter",
+      "aria": "Pilih parameter, saat ini {{label}}"
+    },
+    "fokus": {
+      "tertinggi": "Nilai tertinggi esok hari",
+      "pantauan": "Kelurahan pantauan Anda",
+      "tutup": "Tutup pilihan kelurahan",
+      "lainnya": "Parameter lain",
+      "grafik": "Lihat grafik 48 jam"
+    },
+    "jam": {
+      "judul": "Prakiraan per jam",
+      "sebelumnya": "Jam sebelumnya",
+      "berikutnya": "Jam berikutnya",
+      "ekstrem": "Kejadian ekstrem"
     }
   },
   "landing": {
@@ -417,5 +421,12 @@
       "nonaktif": "Peringatan WA nonaktif. Pesan tidak akan dikirim.",
       "kosong": "Pilih kelurahan pantauan untuk melihat contoh pesan."
     }
+  },
+  "kartuWa": {
+    "judul": "Mau diingatkan lewat WA?",
+    "teks": "Peringatan H-1 pukul 12.00 WIB untuk 3 kelurahan pilihan Anda.",
+    "tombol": "Aktifkan peringatan",
+    "tombolPengguna": "Nyalakan di Pengaturan",
+    "tutup": "Tutup ajakan peringatan WhatsApp"
   }
 }

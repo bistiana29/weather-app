@@ -3,6 +3,7 @@ import { motion } from 'motion/react'
 import { useTranslation } from 'react-i18next'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router'
 import { useAuth } from '../../lib/auth'
+import KartuPeringatanWA from '../KartuPeringatanWA'
 import Button from '../ui/Button'
 import PemilihBahasa from '../ui/PemilihBahasa'
 import Logo from './Logo'
@@ -12,7 +13,7 @@ const KELAS_TAUTAN = ({ isActive }) => `navbar-tautan ${isActive ? 'aktif' : ''}
 
 // Daftar tautan navigasi sesuai status login (label berupa kunci kamus)
 function tautanNavigasi(pengguna) {
-  const peta = { to: '/risk-map/rain', cocok: '/risk-map', label: 'umum.nav.petaRisiko', labelPendek: 'umum.nav.peta', ikon: IkonPeta }
+  const peta = { to: '/risk-map', cocok: '/risk-map', label: 'umum.nav.petaRisiko', labelPendek: 'umum.nav.peta', ikon: IkonPeta }
   if (!pengguna) {
     return [peta, { to: '/login', label: 'umum.nav.masuk', ikon: LogIn }, { to: '/register', label: 'umum.nav.daftar', ikon: UserPlus }]
   }
@@ -84,6 +85,8 @@ export default function PublicLayout() {
         <p>{t('umum.hakCipta')}</p>
         <p>{t('umum.disclaimer')}</p>
       </footer>
+
+      <KartuPeringatanWA />
 
       <nav className="nav-bawah" aria-label={t('umum.nav.navigasiUtama')}>
         {tautan.map((item) => {

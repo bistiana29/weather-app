@@ -4,14 +4,14 @@ import { useTranslation } from 'react-i18next'
 import '../../styles/components/ui.css'
 
 // Dialog modal dengan judul, deskripsi, dan tombol tutup
-export default function Dialog({ open, onOpenChange, trigger, judul, deskripsi, children }) {
+export default function Dialog({ open, onOpenChange, trigger, judul, deskripsi, lebar = false, children }) {
   const { t } = useTranslation()
   return (
     <RDialog.Root open={open} onOpenChange={onOpenChange}>
       {trigger && <RDialog.Trigger asChild>{trigger}</RDialog.Trigger>}
       <RDialog.Portal>
         <RDialog.Overlay className="dialog-overlay" />
-        <RDialog.Content className="dialog-konten">
+        <RDialog.Content className={`dialog-konten ${lebar ? 'dialog-lebar' : ''}`}>
           <div className="dialog-kepala">
             <RDialog.Title className="dialog-judul">{judul}</RDialog.Title>
             <RDialog.Close className="tombol-ikon" aria-label={t('umum.tutupDialog')}>

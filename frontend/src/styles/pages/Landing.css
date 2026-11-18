@@ -39,8 +39,8 @@
   gap: 8px;
   padding: 14px 16px;
   border-radius: var(--radius-sedang);
-  background: var(--permukaan);
-  box-shadow: var(--neu-inset);
+  background: var(--tint);
+  border: 1px solid var(--garis);
   line-height: 1.6;
 }
 
@@ -104,7 +104,7 @@ p.hero-status {
   padding: 12px;
   border-radius: 18px;
   background: var(--putih);
-  box-shadow: var(--neu-inset);
+  border: 1px solid var(--garis);
 }
 
 .hero-legend {
@@ -176,10 +176,9 @@ p.hero-status {
   gap: 12px;
   min-height: 52px;
   padding: 0 14px;
-  border: 1px solid rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--garis);
   border-radius: var(--radius-sedang);
   background: var(--permukaan);
-  box-shadow: var(--neu-raised-kecil);
   color: var(--navy);
   text-decoration: none;
   transition: color var(--durasi-cepat) var(--easing), box-shadow var(--durasi-cepat) var(--easing);
@@ -190,7 +189,7 @@ p.hero-status {
 }
 
 .baris-parameter:active {
-  box-shadow: var(--neu-inset);
+  background: var(--tint);
 }
 
 .baris-parameter-nama {
@@ -220,8 +219,7 @@ p.hero-status {
 .landing-pesan {
   padding: 14px;
   border-radius: var(--radius-sedang);
-  background: linear-gradient(180deg, var(--langit-pucat) 0%, var(--permukaan) 100%);
-  box-shadow: var(--neu-inset);
+  background: var(--langit-pucat);
 }
 
 .landing-wa-tombol {

@@ -166,7 +166,7 @@
   padding: 14px;
   border-radius: 18px;
   background: var(--permukaan-2);
-  box-shadow: var(--neu-inset);
+  border: 1px solid var(--garis);
 }
 
 .alur-nama {
@@ -202,7 +202,7 @@
   padding: 10px 12px;
   border-radius: 12px;
   background: var(--permukaan-2);
-  box-shadow: var(--neu-inset);
+  border: 1px solid var(--garis);
   color: var(--navy);
   text-decoration: none;
   font-size: 14px;
@@ -263,7 +263,8 @@
   gap: 2px;
   padding: 12px 14px;
   border-radius: 14px;
-  box-shadow: var(--neu-inset);
+  background: var(--tint);
+  border: 1px solid var(--garis);
   font-size: 14px;
 }
 
@@ -300,7 +301,8 @@
   gap: 4px;
   padding: 14px 16px;
   border-radius: 16px;
-  box-shadow: var(--neu-inset);
+  background: var(--tint);
+  border: 1px solid var(--garis);
   font-weight: 600;
 }
 

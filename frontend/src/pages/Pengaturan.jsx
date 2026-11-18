@@ -20,6 +20,7 @@ import { teksGalat } from '../lib/galat'
 import { hariIniWib, tambahHari } from '../lib/tanggal'
 import '../styles/pages/Pengaturan.css'
 import JudulHalaman from '../components/JudulHalaman'
+import PageHeader from '../components/layout/PageHeader'
 
 const samaUrutan = (a, b) => a.length === b.length && a.every((v, i) => v === b[i])
 
@@ -105,10 +106,7 @@ export default function Pengaturan() {
   return (
     <div className="pengaturan">
       <JudulHalaman judul={t('umum.nav.pengaturan')} />
-      <header className="pengaturan-kepala">
-        <h1>{t('pengaturan.judul')}</h1>
-        <p className="teks-sekunder">{t('pengaturan.subjudul')}</p>
-      </header>
+      <PageHeader judul={t('pengaturan.judul')} subjudul={t('pengaturan.subjudul')} />
 
       {pengaturanQuery.isError && (
         <Pesan nada="galat">

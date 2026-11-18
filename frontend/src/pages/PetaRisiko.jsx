@@ -1,30 +1,32 @@
 import { useQuery } from '@tanstack/react-query'
-import { BellRing, CalendarClock, Search, X } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router'
-import { getKelurahanGeojson, getPrakiraan, getRingkasan, getRisiko } from '../api/publik'
+import { useSearchParams } from 'react-router'
+import { getPengaturan } from '../api/pengguna'
+import { getKelurahanGeojson, getPrakiraan, getRisiko } from '../api/publik'
 import BantuanMock from '../components/BantuanMock'
 import JudulHalaman from '../components/JudulHalaman'
+import PageHeader from '../components/layout/PageHeader'
 import BottomSheet from '../components/peta/BottomSheet'
-import PanelPrakiraan from '../components/peta/PanelPrakiraan'
+import DeretPerJam from '../components/peta/DeretPerJam'
+import DialogGrafik from '../components/peta/DialogGrafik'
+import KartuFokus from '../components/peta/KartuFokus'
 import PetaKelurahan from '../components/peta/PetaKelurahan'
+import PilihParameter from '../components/peta/PilihParameter'
 import RingkasanKejadian from '../components/peta/RingkasanKejadian'
 import SorotanKelurahan from '../components/peta/SorotanKelurahan'
-import TabParameter from '../components/peta/TabParameter'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
 import DatePicker from '../components/ui/DatePicker'
 import SearchInput from '../components/ui/SearchInput'
 import Skeleton from '../components/ui/Skeleton'
-import { Tabs, TabsContent } from '../components/ui/Tabs'
 import { VARIAN_GRID, VARIAN_KARTU } from '../lib/animasi'
 import { useAuth } from '../lib/auth'
 import { useFormat } from '../lib/format'
-import { PARAMETER, parameterDariUrl } from '../lib/kategori'
+import { PARAMETER, PARAMETER_PETA, parameterDariUrl, ringkasanDari, risikoParameter } from '../lib/kategori'
 import { hariIniWib, isoValid, tambahHari } from '../lib/tanggal'
-import { MEDIA, useMediaQuery } from '../lib/useMediaQuery'
+import { MEDIA, MEDIA_SENTUH, useMediaQuery } from '../lib/useMediaQuery'
 import '../styles/pages/PetaRisiko.css'
 
 const RENTANG_HARI_LALU = 30
@@ -36,71 +38,47 @@ function labelTanggal(tgl, hariIni, t, f) {
   return f.tanggalRingkas(tgl)
 }
 
-// Kartu ajakan aktifkan peringatan WA (tamu) atau info jadwal pembaruan (sudah login)
-function KartuPeringatan({ pengguna }) {
-  const { t } = useTranslation()
-  if (!pengguna) {
-    return (
-      <Card variant="sorotan" className="kartu-peringatan">
-        <div className="kartu-peringatan-teks">
-          <h2>
-            <BellRing size={22} aria-hidden="true" />
-            {t('peta.peringatan.judulTamu')}
-          </h2>
-          <p>{t('peta.peringatan.teksTamu')}</p>
-        </div>
-        <Button as={Link} to="/register" variant="terang">
-          {t('peta.peringatan.tombolTamu')}
-        </Button>
-      </Card>
-    )
-  }
-  const tautan = pengguna.role === 'admin' ? { to: '/admin', label: t('peta.peringatan.bukaAdmin') } : { to: '/settings', label: t('peta.peringatan.aturPantauan') }
-  return (
-    <Card className="kartu-peringatan">
-      <div className="kartu-peringatan-teks">
-        <h2>
-          <CalendarClock size={22} aria-hidden="true" />
-          {t('peta.peringatan.judulJadwal')}
-        </h2>
-        <p className="teks-sekunder">{t('peta.peringatan.teksJadwal')}</p>
-      </div>
-      <Button as={Link} to={tautan.to} variant="sekunder">
-        {tautan.label}
-      </Button>
-    </Card>
-  )
+// Baca daftar parameter dari query "params" (slug URL); kosong atau tidak valid berarti semua
+function bacaParams(teks) {
+  const daftar = (teks ?? '').split(',').map(parameterDariUrl).filter(Boolean)
+  return daftar.length ? PARAMETER_PETA.filter((p) => daftar.includes(p)) : PARAMETER_PETA
 }
 
-// Halaman Peta Risiko: tab parameter, peta choropleth, ringkasan, dan panel prakiraan
+// Kelurahan dengan nilai tertinggi (terendah untuk jarak pandang) menurut satu parameter
+function kelurahanTeratas(risiko, parameter) {
+  const urut = Object.entries(risiko ?? {}).sort(([, a], [, b]) =>
+    PARAMETER[parameter].jenisNilai === 'min' ? a.nilai - b.nilai : b.nilai - a.nilai,
+  )
+  return urut[0]?.[0] ?? null
+}
+
+// Halaman Peta Risiko: peta satu parameter pewarna, kartu fokus, deret per jam, ringkasan, dan sorotan
 export default function PetaRisiko() {
   const { t } = useTranslation()
   const f = useFormat()
-  const { parameter: slugUrl } = useParams()
-  const parameter = parameterDariUrl(slugUrl)
   const [searchParams, setSearchParams] = useSearchParams()
-  const navigate = useNavigate()
   const { pengguna } = useAuth()
   const mobile = useMediaQuery(MEDIA.mobile)
-  const [cariTerbuka, setCariTerbuka] = useState(false)
+  const sentuh = useMediaQuery(MEDIA_SENTUH)
+  const [sheetTerbuka, setSheetTerbuka] = useState(false)
+  const [grafikTerbuka, setGrafikTerbuka] = useState(false)
 
   const hariIni = hariIniWib()
   const besok = tambahHari(hariIni, 1)
   const tglMin = tambahHari(hariIni, -RENTANG_HARI_LALU)
   const tglUrl = searchParams.get('date')
   const tgl = isoValid(tglUrl) && tglUrl >= tglMin && tglUrl <= besok ? tglUrl : besok
+  const params = bacaParams(searchParams.get('params'))
+  const colorUrl = parameterDariUrl(searchParams.get('color'))
+  const color = params.includes(colorUrl) ? colorUrl : params.includes('hujan') ? 'hujan' : params[0]
   const kelUrl = searchParams.get('kel')
-  const parameterOk = Boolean(parameter)
 
-  const geojsonQuery = useQuery({
-    queryKey: ['geojson'],
-    queryFn: getKelurahanGeojson,
-    staleTime: Infinity,
-    gcTime: Infinity,
-  })
+  const geojsonQuery = useQuery({ queryKey: ['geojson'], queryFn: getKelurahanGeojson, staleTime: Infinity, gcTime: Infinity })
+  const risikoQuery = useQuery({ queryKey: ['risiko', tgl], queryFn: () => getRisiko(tgl) })
+  const pengaturanQuery = useQuery({ queryKey: ['pengaturan'], queryFn: getPengaturan, enabled: pengguna?.role === 'user' })
 
   const indeksKelurahan = useMemo(
-    () => Object.fromEntries((geojsonQuery.data?.features ?? []).map((f) => [f.properties.kode_kel, f.properties])),
+    () => Object.fromEntries((geojsonQuery.data?.features ?? []).map((ft) => [ft.properties.kode_kel, ft.properties])),
     [geojsonQuery.data],
   )
   const itemCari = useMemo(
@@ -110,22 +88,20 @@ export default function PetaRisiko() {
         .sort((a, b) => a.label.localeCompare(b.label, 'id')),
     [indeksKelurahan, t],
   )
-  const kel = indeksKelurahan[kelUrl] ? kelUrl : null
-  const kelMenunggu = Boolean(kelUrl) && geojsonQuery.isPending
+  const risikoWarna = useMemo(() => risikoParameter(risikoQuery.data, color), [risikoQuery.data, color])
+  const ringkasan = useMemo(() => ringkasanDari(risikoQuery.data), [risikoQuery.data])
 
-  const risikoQuery = useQuery({
-    queryKey: ['risiko', parameter, tgl],
-    queryFn: () => getRisiko(parameter, tgl),
-    enabled: parameterOk,
-  })
-  const ringkasanQuery = useQuery({
-    queryKey: ['ringkasan', tgl],
-    queryFn: () => getRingkasan(tgl),
-  })
+  // Kelurahan fokus: pilihan di URL, lalu kelurahan pantauan pertama (login), lalu nilai tertinggi pewarna
+  const kelDipilih = indeksKelurahan[kelUrl] ? kelUrl : null
+  const pantauanPertama = pengaturanQuery.data?.kelurahan?.find((k) => indeksKelurahan[k])
+  const kelFokus = kelDipilih ?? pantauanPertama ?? kelurahanTeratas(risikoWarna, color)
+  const alasanFokus = pantauanPertama && !kelDipilih ? 'pantauan' : 'tertinggi'
+  const namaFokus = indeksKelurahan[kelFokus]?.kelurahan
+
   const prakiraanQuery = useQuery({
-    queryKey: ['prakiraan', kel, parameter, tgl],
-    queryFn: () => getPrakiraan(kel, parameter, tgl),
-    enabled: parameterOk && Boolean(kel),
+    queryKey: ['prakiraan', kelFokus, color, tgl],
+    queryFn: () => getPrakiraan(kelFokus, color, tgl),
+    enabled: Boolean(kelFokus),
   })
 
   // Tulis tanggal default ke URL agar tautan selalu lengkap
@@ -142,10 +118,7 @@ export default function PetaRisiko() {
     }
   }, [tglUrl, tgl, setSearchParams])
 
-  if (!parameterOk) {
-    return <Navigate to={{ pathname: '/risk-map/rain', search: searchParams.toString() }} replace />
-  }
-
+  // Ubah query URL tanpa menambah riwayat
   function ubahQuery(ubah) {
     setSearchParams(
       (lama) => {
@@ -158,145 +131,150 @@ export default function PetaRisiko() {
   }
 
   const pilihKelurahan = (kode) => ubahQuery((q) => q.set('kel', kode))
-  const tutupPanel = () => ubahQuery((q) => q.delete('kel'))
+  const tutupFokus = () => ubahQuery((q) => q.delete('kel'))
   const gantiTanggal = (tanggal) => ubahQuery((q) => q.set('date', tanggal))
-  const gantiParameter = (p) => navigate({ pathname: `/risk-map/${PARAMETER[p].slugUrl}`, search: searchParams.toString() })
+  const gantiWarna = (p) => ubahQuery((q) => q.set('color', PARAMETER[p].slugUrl))
+
+  // Centang parameter; jika pewarna dihapus, pewarna pindah ke parameter tercentang pertama
+  function gantiParams(baru) {
+    ubahQuery((q) => {
+      if (baru.length === PARAMETER_PETA.length) q.delete('params')
+      else q.set('params', baru.map((p) => PARAMETER[p].slugUrl).join(','))
+      if (!baru.includes(color)) q.set('color', PARAMETER[baru[0]].slugUrl)
+    })
+  }
+
+  // Layar sentuh: memilih kelurahan dari pop-up membuka bottom sheet berisi deret per jam
+  function pilihDariPeta(kode) {
+    pilihKelurahan(kode)
+    if (sentuh && mobile) setSheetTerbuka(true)
+  }
 
   const label = labelTanggal(tgl, hariIni, t, f)
-  const panelPrakiraan = (kel || kelMenunggu) && (
-    <PanelPrakiraan
-      properti={indeksKelurahan[kel]}
-      parameter={parameter}
-      prakiraan={prakiraanQuery.data}
-      memuat={prakiraanQuery.isPending}
-      galat={prakiraanQuery.isError}
-      onMuatUlang={() => prakiraanQuery.refetch()}
-      onTutup={tutupPanel}
-    />
-  )
-  const sorotan = (
-    <SorotanKelurahan
-      risiko={risikoQuery.data}
-      indeksKelurahan={indeksKelurahan}
-      parameter={parameter}
-      memuat={risikoQuery.isPending || geojsonQuery.isPending}
-      labelTanggal={label}
-      onPilih={pilihKelurahan}
-    />
-  )
-  const kolomCari = (
-    <SearchInput
-      items={itemCari}
-      onSelect={(item) => {
-        pilihKelurahan(item.value)
-        setCariTerbuka(false)
-      }}
-      placeholder={t('peta.cariPlaceholder')}
-      label={t('peta.cariLabel')}
-      autoFocus={mobile}
-      className="peta-cari"
-    />
-  )
+  const memuatData = risikoQuery.isPending || geojsonQuery.isPending
+  const deret = <DeretPerJam namaKelurahan={namaFokus} parameter={color} prakiraan={prakiraanQuery.data} memuat={prakiraanQuery.isPending} />
 
   return (
     <div className="peta-halaman">
-      <JudulHalaman judul={t('peta.judulTab', { parameter: f.parameterJudul(parameter) })} />
-      <header className="peta-kepala">
-        <div className="peta-judul">
-          <h1>{t('peta.judul')}</h1>
-          <p className="teks-sekunder">
-            {t('peta.prediksiTanggal', { tanggal: f.tanggalPanjang(tgl) })}
+      <JudulHalaman judul={t('peta.judul')} />
+      <PageHeader
+        judul={t('peta.judul')}
+        subjudul={
+          <>
+            <span>{t('peta.prediksiTanggal', { tanggal: f.tanggalPanjang(tgl) })}</span>
             <BantuanMock jenis="lencana" className="badge-mock" />
-          </p>
-        </div>
-        <div className="peta-kontrol">
-          {mobile ? (
-            <button
-              type="button"
-              className="tombol-ikon tombol-cari-mobile"
-              aria-label={t(cariTerbuka ? 'peta.tutupCari' : 'peta.cariLabel')}
-              aria-expanded={cariTerbuka}
-              onClick={() => setCariTerbuka((v) => !v)}
-            >
-              {cariTerbuka ? <X size={20} aria-hidden="true" /> : <Search size={20} aria-hidden="true" />}
-            </button>
-          ) : (
-            kolomCari
-          )}
-          <DatePicker value={tgl} onChange={gantiTanggal} min={tglMin} max={besok} label={t('peta.tanggalPrediksi')} />
-        </div>
-        {mobile && cariTerbuka && kolomCari}
-      </header>
+          </>
+        }
+      >
+        <SearchInput
+          items={itemCari}
+          onSelect={(item) => pilihKelurahan(item.value)}
+          placeholder={t('peta.cariPlaceholder')}
+          label={t('peta.cariLabel')}
+          className="peta-cari"
+        />
+        <PilihParameter dipilih={params} onUbah={gantiParams} />
+        <DatePicker value={tgl} onChange={gantiTanggal} min={tglMin} max={besok} label={t('peta.tanggalPrediksi')} />
+      </PageHeader>
 
-      <Tabs value={parameter} onValueChange={gantiParameter}>
-        <TabParameter />
+      <motion.div className="bento" variants={VARIAN_GRID} initial="awal" animate="tampil">
+        <motion.div variants={VARIAN_KARTU} className="bento-peta">
+          <Card className="kartu-peta">
+            {geojsonQuery.data ? (
+              <PetaKelurahan
+                geojson={geojsonQuery.data}
+                risiko={risikoQuery.data}
+                color={color}
+                params={params}
+                tgl={tgl}
+                terpilih={kelFokus}
+                onPilih={pilihDariPeta}
+                onWarnai={gantiWarna}
+                memuatRisiko={risikoQuery.isPending}
+              />
+            ) : geojsonQuery.isError ? (
+              <div className="peta-galat" role="alert">
+                <p>{t('peta.gagalBatas')}</p>
+                <Button variant="sekunder" ukuran="kecil" onClick={() => geojsonQuery.refetch()}>
+                  {t('umum.cobaLagi')}
+                </Button>
+              </div>
+            ) : (
+              <Skeleton className="peta-skeleton" height="100%" radius={20} />
+            )}
+          </Card>
+        </motion.div>
 
-        <TabsContent value={parameter}>
-          <motion.div className="bento" variants={VARIAN_GRID} initial="awal" animate="tampil">
-            <motion.div variants={VARIAN_KARTU} className="bento-peta">
-              <Card className="kartu-peta">
-                {geojsonQuery.data ? (
-                  <PetaKelurahan
-                    geojson={geojsonQuery.data}
-                    risiko={risikoQuery.data}
-                    parameter={parameter}
-                    tgl={tgl}
-                    terpilih={kel}
-                    onPilih={pilihKelurahan}
-                    memuatRisiko={risikoQuery.isPending}
-                  />
-                ) : geojsonQuery.isError ? (
-                  <div className="peta-galat" role="alert">
-                    <p>{t('peta.gagalBatas')}</p>
-                    <Button variant="sekunder" ukuran="kecil" onClick={() => geojsonQuery.refetch()}>
-                      {t('umum.cobaLagi')}
-                    </Button>
-                  </div>
-                ) : (
-                  <Skeleton className="peta-skeleton" height="100%" radius={20} />
-                )}
-              </Card>
-            </motion.div>
+        <motion.div variants={VARIAN_KARTU} className="bento-fokus">
+          <Card className="kartu-fokus">
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={`${kelFokus}-${color}`}
+                initial={{ opacity: 0, x: 16 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 16 }}
+                transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <KartuFokus
+                  properti={indeksKelurahan[kelFokus]}
+                  data={risikoQuery.data?.[kelFokus]}
+                  color={color}
+                  params={params}
+                  alasan={alasanFokus}
+                  dipilih={Boolean(kelDipilih)}
+                  memuat={memuatData}
+                  onTutup={tutupFokus}
+                  onGrafik={() => setGrafikTerbuka(true)}
+                />
+              </motion.div>
+            </AnimatePresence>
+          </Card>
+        </motion.div>
 
-            <motion.div variants={VARIAN_KARTU} className="bento-panel">
-              <Card className="kartu-panel">
-                {mobile ? (
-                  sorotan
-                ) : (
-                  <AnimatePresence mode="wait" initial={false}>
-                    <motion.div
-                      key={kel || kelMenunggu ? 'panel' : 'sorotan'}
-                      initial={{ opacity: 0, x: 24 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 24 }}
-                      transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-                    >
-                      {panelPrakiraan || sorotan}
-                    </motion.div>
-                  </AnimatePresence>
-                )}
-              </Card>
-            </motion.div>
-
-            <RingkasanKejadian
-              ringkasan={ringkasanQuery.data}
-              memuat={ringkasanQuery.isPending}
-              totalKelurahan={itemCari.length}
-              parameterAktif={parameter}
-              labelTanggal={label}
-              onPilihParameter={gantiParameter}
-            />
-
-            <motion.div variants={VARIAN_KARTU} className="bento-peringatan">
-              <KartuPeringatan pengguna={pengguna} />
-            </motion.div>
+        {!mobile && (
+          <motion.div variants={VARIAN_KARTU} className="bento-jam">
+            <Card className="kartu-jam">{deret}</Card>
           </motion.div>
-        </TabsContent>
-      </Tabs>
+        )}
+
+        <motion.div variants={VARIAN_KARTU} className="bento-ringkasan">
+          <RingkasanKejadian
+            ringkasan={ringkasan}
+            memuat={risikoQuery.isPending}
+            totalKelurahan={itemCari.length}
+            params={params}
+            parameterAktif={color}
+            labelTanggal={label}
+            onPilihParameter={gantiWarna}
+          />
+        </motion.div>
+
+        <motion.div variants={VARIAN_KARTU} className="bento-sorotan">
+          <Card className="kartu-sorotan-daftar">
+            <SorotanKelurahan
+              risiko={risikoWarna}
+              indeksKelurahan={indeksKelurahan}
+              parameter={color}
+              memuat={memuatData}
+              labelTanggal={label}
+              onPilih={pilihKelurahan}
+            />
+          </Card>
+        </motion.div>
+      </motion.div>
+
+      <DialogGrafik
+        open={grafikTerbuka}
+        onOpenChange={setGrafikTerbuka}
+        namaKelurahan={namaFokus}
+        parameter={color}
+        prakiraan={prakiraanQuery.data}
+        memuat={prakiraanQuery.isPending}
+      />
 
       {mobile && (
-        <BottomSheet terbuka={Boolean(kel || kelMenunggu)} label={t('peta.sheet.label')} onTutup={tutupPanel}>
-          {panelPrakiraan}
+        <BottomSheet terbuka={sheetTerbuka} label={t('peta.sheet.label')} onTutup={() => setSheetTerbuka(false)}>
+          {deret}
         </BottomSheet>
       )}
     </div>

@@ -1,75 +1,66 @@
 .peta-halaman {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-}
-
-/* Kepala halaman: judul, cari, tanggal */
-.peta-kepala {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.peta-judul h1 {
-  font-size: var(--fs-judul);
-}
-
-.peta-judul p {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  margin-top: 4px;
 }
 
 .badge-mock {
-  font-size: 12px;
+  font-size: var(--fs-mini);
   padding: 2px 10px;
 }
 
-.peta-kontrol {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
 .peta-cari {
-  width: 360px;
+  width: 320px;
 }
 
-/* Grid bento */
+/* Grid bento desktop: peta terbesar, kartu fokus di kanan, deret per jam, lalu ringkasan dan sorotan */
 .bento {
   display: grid;
   gap: var(--jarak-bento);
   grid-template-columns: repeat(12, minmax(0, 1fr));
-  grid-template-rows: minmax(620px, auto) auto;
+  grid-template-rows: minmax(600px, auto) auto auto;
   grid-template-areas:
-    'peta peta peta peta peta peta peta peta panel panel panel panel'
-    'suhu suhu jarak jarak wa wa wa wa hujan hujan angin angin';
+    'peta peta peta peta peta peta peta peta fokus fokus fokus fokus'
+    'jam jam jam jam jam jam jam jam jam jam jam jam'
+    'ringkasan ringkasan ringkasan ringkasan ringkasan ringkasan ringkasan ringkasan sorotan sorotan sorotan sorotan';
+}
+
+.bento > * {
+  min-width: 0;
 }
 
 .bento-peta {
   grid-area: peta;
-  min-width: 0;
 }
 
-.bento-panel {
-  grid-area: panel;
-  min-width: 0;
-  min-height: 0;
+.bento-fokus {
+  grid-area: fokus;
 }
 
-.bento-peringatan {
-  grid-area: wa;
-  min-width: 0;
+.bento-jam {
+  grid-area: jam;
+}
+
+.bento-ringkasan {
+  grid-area: ringkasan;
+}
+
+.bento-sorotan {
+  grid-area: sorotan;
 }
 
 .kartu-peta {
   height: 100%;
   padding: 8px;
+}
+
+.kartu-fokus,
+.kartu-sorotan-daftar {
+  height: 100%;
+  padding: 22px;
+}
+
+.kartu-jam {
+  padding: 18px 22px;
 }
 
 .peta-skeleton {
@@ -85,166 +76,55 @@
   height: 100%;
 }
 
-.kartu-panel {
-  height: 100%;
-  padding: 22px;
-}
-
-/* Ringkasan menyatu ke grid bento di desktop */
+/* Ringkasan: judul lalu ubin 2 kolom untuk parameter tercentang */
 .ringkasan {
-  display: contents;
-}
-
-.ringkasan-judul {
-  display: none;
-}
-
-.ubin-hujan_lebat {
-  grid-area: hujan;
-}
-
-.ubin-angin_kencang {
-  grid-area: angin;
-}
-
-.ubin-suhu_ekstrem {
-  grid-area: suhu;
-}
-
-.ubin-jarak_pandang_ekstrem {
-  grid-area: jarak;
-}
-
-/* Kartu peringatan WA */
-.kartu-peringatan {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
   gap: 14px;
   height: 100%;
 }
 
-.kartu-peringatan-teks {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  flex: 1;
-  min-width: 0;
+.ringkasan-judul {
+  grid-column: 1 / -1;
 }
 
-.kartu-peringatan h2 {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: var(--fs-judul-kartu);
-}
-
-.kartu-peringatan h2 svg {
-  flex-shrink: 0;
-}
-
-.kartu-peringatan p {
-  font-size: 14px;
-}
-
-.kartu-sorotan.kartu-peringatan p {
-  color: rgba(255, 255, 255, 0.92);
-}
-
-.kartu-peringatan .btn {
-  margin-top: auto;
-}
-
-/* Tablet */
+/* Tablet: peta penuh lebar, kartu fokus dan deret per jam di bawahnya */
 @media (min-width: 768px) and (max-width: 1279px) {
   .bento {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: 480px auto auto;
+    grid-template-rows: 480px auto auto auto;
     grid-template-areas:
       'peta peta'
-      'panel ringkasan'
-      'wa wa';
-  }
-
-  .kartu-panel {
-    height: auto;
-    min-height: 100%;
-    overflow: visible;
+      'fokus fokus'
+      'jam jam'
+      'ringkasan sorotan';
   }
 
   .peta-cari {
-    width: 280px;
+    width: 260px;
   }
 }
 
-/* Tablet dan mobile: ringkasan jadi blok 2x2 */
-@media (max-width: 1279px) {
-  .ringkasan {
-    grid-area: ringkasan;
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    align-content: start;
-    gap: 14px;
-  }
-
-  .ringkasan-judul {
-    display: block;
-    grid-column: 1 / -1;
-  }
-
-  .ubin-hujan_lebat,
-  .ubin-angin_kencang,
-  .ubin-suhu_ekstrem,
-  .ubin-jarak_pandang_ekstrem {
-    grid-area: auto;
-  }
-}
-
-/* Mobile */
+/* Mobile: kartu fokus di atas peta, deret per jam di bottom sheet */
 @media (max-width: 767px) {
-  .peta-halaman {
-    gap: 12px;
-  }
-
-  .peta-kepala {
-    align-items: center;
-    gap: 10px;
-  }
-
-
-  .peta-judul p {
-    font-size: 13px;
-  }
-
-  .peta-kontrol {
-    gap: 6px;
-  }
-
-  .tombol-cari-mobile {
-    border: 1px solid var(--garis-kuat);
-    border-radius: 50%;
-    box-shadow: var(--neu-inset);
+  .bento {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto max(340px, 56vh) auto auto;
+    grid-template-areas:
+      'fokus'
+      'peta'
+      'ringkasan'
+      'sorotan';
+    gap: 16px;
   }
 
   .peta-cari {
     width: 100%;
-    flex-basis: 100%;
   }
 
-  .bento {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: max(340px, 56vh) auto auto auto;
-    grid-template-areas:
-      'peta'
-      'ringkasan'
-      'panel'
-      'wa';
-    gap: 16px;
-  }
-
-  .kartu-panel {
-    height: auto;
-    overflow: visible;
+  .kartu-fokus,
+  .kartu-sorotan-daftar {
     padding: 18px;
   }
 
@@ -259,4 +139,9 @@
   .ubin-angka {
     font-size: 34px;
   }
+}
+
+/* Isi kartu fokus mengisi tinggi kartu agar tombol grafik berada di bawah */
+.kartu-fokus > div {
+  height: 100%;
 }

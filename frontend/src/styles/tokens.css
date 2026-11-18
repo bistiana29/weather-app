@@ -7,10 +7,11 @@
   --biru-muda: #a0e0ef;
   --putih: #ffffff;
 
-  /* Permukaan dan teks */
-  --permukaan: #eef5fa;
+  /* Permukaan dan teks: latar halaman tint, kartu putih, wadah di dalam kartu tint datar */
+  --latar: #eef5fa;
+  --permukaan: #ffffff;
+  --tint: #f2f8fb;
   --permukaan-2: #e4f1f8;
-  --permukaan-kartu: #f4f9fc;
   --teks: #1b365d;
   --teks-sekunder: #4a5d78;
   --garis: #c9dbe8;
@@ -35,11 +36,6 @@
   --kosong-terang: #f6f9fb;
   --peta-latar: #eef2f4;
 
-  /* Gradasi dari palet brand */
-  --gradasi-langit: linear-gradient(180deg, #a0e0ef 0%, #d6f1f8 40%, #eef5fa 100%);
-  --gradasi-sorotan: linear-gradient(140deg, #005a9c 0%, #1b365d 100%);
-  --gradasi-kartu-nilai: linear-gradient(160deg, #d6f1f8 0%, #ffffff 100%);
-  --gradasi-admin: linear-gradient(160deg, #1b365d 0%, #12284a 100%);
   --navy-gelap: #12284a;
 
   /* Warna data (terpisah dari brand) */
@@ -52,11 +48,11 @@
   --data-teks-gelap: #14202e;
   --data-batas: #9aa3ae;
 
-  /* Neumorphism: timbul untuk kartu dan kontrol, inset untuk wadah di dalam kartu */
-  --neu-raised: -6px -6px 14px rgba(255, 255, 255, 0.95), 6px 6px 16px rgba(27, 54, 93, 0.13);
-  --neu-raised-kecil: -3px -3px 8px rgba(255, 255, 255, 0.95), 3px 3px 8px rgba(27, 54, 93, 0.13);
-  --neu-inset: inset 3px 3px 7px rgba(27, 54, 93, 0.12), inset -3px -3px 7px rgba(255, 255, 255, 0.95);
-  --bayangan-mengambang: 0 8px 24px rgba(27, 54, 93, 0.16);
+  /* Soft elevation: hanya bayangan gelap lembut bernuansa navy (kartu, kartu besar, elemen mengambang) */
+  --shadow-1: 0 2px 8px rgba(27, 54, 93, 0.06);
+  --shadow-2: 0 8px 24px rgba(27, 54, 93, 0.08);
+  --shadow-3: 0 16px 40px rgba(27, 54, 93, 0.12);
+  --inset-halus: inset 0 1px 2px rgba(27, 54, 93, 0.06);
 
   /* Radius dan jarak */
   --radius-kartu: 24px;

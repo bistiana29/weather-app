@@ -30,8 +30,8 @@
   min-height: 340px;
   padding: 16px;
   border-radius: 20px;
-  background: linear-gradient(180deg, var(--langit-pucat) 0%, var(--permukaan) 100%);
-  box-shadow: var(--neu-inset);
+  background: var(--langit-pucat);
+  border: 1px solid var(--sorot-garis);
 }
 
 .simulasi-kosong {

@@ -1,10 +1,10 @@
-import { useQueries } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { BellOff, MapPinned, MessageSquareText } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { getRisiko } from '../../api/publik'
 import { buatFormat } from '../../lib/format'
-import { JENIS_KEJADIAN, masukPeringatan, urlPeta } from '../../lib/kategori'
+import { JENIS_KEJADIAN, masukPeringatan, risikoParameter, urlPeta } from '../../lib/kategori'
 import BantuanMock from '../BantuanMock'
 import Skeleton from '../ui/Skeleton'
 import '../../styles/components/pengaturan.css'
@@ -49,15 +49,13 @@ export default function SimulasiPesan({ memuatPengaturan, aktif, pantauan, indek
   const { t, i18n } = useTranslation()
   const tId = i18n.getFixedT('id')
   const fId = buatFormat(tId, 'id')
-  const hasil = useQueries({
-    queries: PARAMETER_PERINGATAN.map((p) => ({ queryKey: ['risiko', p, tgl], queryFn: () => getRisiko(p, tgl) })),
-  })
-  const memuat = memuatPengaturan || hasil.some((q) => q.isPending) || !Object.keys(indeksKelurahan).length
-  const risikoPerParameter = Object.fromEntries(PARAMETER_PERINGATAN.map((p, i) => [p, hasil[i].data ?? {}]))
+  const risikoQuery = useQuery({ queryKey: ['risiko', tgl], queryFn: () => getRisiko(tgl) })
+  const memuat = memuatPengaturan || risikoQuery.isPending || !Object.keys(indeksKelurahan).length
+  const risikoPerParameter = Object.fromEntries(PARAMETER_PERINGATAN.map((p) => [p, risikoParameter(risikoQuery.data, p) ?? {}]))
   const pesan = memuat ? null : susunPesan(pantauan, risikoPerParameter, indeksKelurahan)
   const kejadianPertama = pesan?.kelurahan.find((k) => k.kejadian.length)
   const tautan = pantauan.length
-    ? urlPeta(kejadianPertama?.kejadian[0].parameter ?? 'hujan', { kel: kejadianPertama?.kode ?? pantauan[0], date: tgl })
+    ? urlPeta({ color: kejadianPertama?.kejadian[0].parameter ?? 'hujan', kel: kejadianPertama?.kode ?? pantauan[0], date: tgl })
     : null
 
   return (

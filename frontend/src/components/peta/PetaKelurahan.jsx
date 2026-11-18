@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { GeoJSON, MapContainer, TileLayer, useMap, useMapEvents } from 'react-leaflet'
 import { MEDIA_HOVER, MEDIA_SENTUH, useMediaQuery } from '../../lib/useMediaQuery'
-import { warnaRisiko } from '../../lib/kategori'
+import { risikoParameter, warnaRisiko } from '../../lib/kategori'
 import { WARNA } from '../../lib/warna'
 import Tooltip from '../ui/Tooltip'
 import InfoKelurahan from './InfoKelurahan'
@@ -88,7 +88,7 @@ function LapisanKelurahan({ geojson, risiko, parameter, terpilih, sorot, bisaHov
 }
 
 // Kartu info kelurahan yang mengikuti posisi titik di peta saat digeser atau di-zoom
-function KartuInfoPeta({ info, properti, data, parameter, memuat, onTutup, onLihat }) {
+function KartuInfoPeta({ info, properti, data, urutan, memuat, onTutup, onLihat }) {
   const map = useMap()
   const kartuRef = useRef(null)
   const [tinggi, setTinggi] = useState(TINGGI_INFO_AWAL)
@@ -130,7 +130,7 @@ function KartuInfoPeta({ info, properti, data, parameter, memuat, onTutup, onLih
       <InfoKelurahan
         properti={properti}
         data={data}
-        parameter={parameter}
+        urutan={urutan}
         memuat={memuat}
         modeTap={info.mode === 'tap'}
         onTutup={onTutup}
@@ -140,8 +140,8 @@ function KartuInfoPeta({ info, properti, data, parameter, memuat, onTutup, onLih
   )
 }
 
-// Peta choropleth kelurahan dengan basemap terang, legenda, pop-up info, dan tombol zoom
-export default function PetaKelurahan({ geojson, risiko, parameter, tgl, terpilih, onPilih, memuatRisiko }) {
+// Peta choropleth kelurahan (satu parameter pewarna) dengan basemap terang, legenda, pop-up info, dan tombol zoom
+export default function PetaKelurahan({ geojson, risiko, color, params, tgl, terpilih, onPilih, onWarnai, memuatRisiko }) {
   const { t } = useTranslation()
   const [map, setMap] = useState(null)
   const [info, setInfo] = useState(null)
@@ -153,6 +153,8 @@ export default function PetaKelurahan({ geojson, risiko, parameter, tgl, terpili
   const batasAwal = useMemo(() => L.geoJSON(geojson).getBounds(), [geojson])
   const properti = useMemo(() => Object.fromEntries(geojson.features.map((f) => [f.properties.kode_kel, f.properties])), [geojson])
   const tutupInfo = useCallback(() => setInfo(null), [])
+  const risikoWarna = useMemo(() => risikoParameter(risiko, color), [risiko, color])
+  const urutan = [color, ...params.filter((p) => p !== color)]
 
   // Di layar sentuh, geser peta hanya dengan dua jari agar satu jari tetap menggulir halaman
   useEffect(() => {
@@ -212,10 +214,10 @@ export default function PetaKelurahan({ geojson, risiko, parameter, tgl, terpili
           maxNativeZoom={16}
         />
         <LapisanKelurahan
-          key={`${parameter}-${tgl}-${risiko ? 'data' : 'memuat'}`}
+          key={`${color}-${tgl}-${risiko ? 'data' : 'memuat'}`}
           geojson={geojson}
-          risiko={risiko}
-          parameter={parameter}
+          risiko={risikoWarna}
+          parameter={color}
           terpilih={terpilih}
           sorot={info?.mode === 'tap' ? info.kode : null}
           bisaHover={bisaHover}
@@ -226,7 +228,7 @@ export default function PetaKelurahan({ geojson, risiko, parameter, tgl, terpili
           info={info}
           properti={info ? properti[info.kode] : null}
           data={info ? risiko?.[info.kode] : null}
-          parameter={parameter}
+          urutan={urutan}
           memuat={memuatRisiko}
           onTutup={tutupInfo}
           onLihat={lihatPrakiraan}
@@ -244,7 +246,7 @@ export default function PetaKelurahan({ geojson, risiko, parameter, tgl, terpili
         {t('peta.petunjukDuaJari')}
       </p>
 
-      <Legend parameter={parameter} memuat={memuatRisiko} />
+      <Legend parameter={color} opsi={params} onWarnai={onWarnai} memuat={memuatRisiko} />
 
       <div className="peta-zoom">
         <Tooltip label={t('peta.zoom.perbesar')} side="left">

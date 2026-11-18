@@ -6,7 +6,7 @@
 
 html {
   -webkit-text-size-adjust: 100%;
-  scrollbar-color: var(--garis-kuat) var(--permukaan);
+  scrollbar-color: var(--garis-kuat) var(--latar);
   accent-color: var(--biru);
 }
 
@@ -17,7 +17,7 @@ body {
   font-size: var(--fs-teks);
   line-height: 1.55;
   color: var(--teks);
-  background: var(--permukaan);
+  background: var(--latar);
   caret-color: var(--biru);
   -webkit-font-smoothing: antialiased;
 }
@@ -161,11 +161,10 @@ main:focus {
 .halaman-mandiri {
   min-height: 100vh;
   padding: 24px 16px;
-  background: var(--gradasi-langit) no-repeat;
-  background-color: var(--permukaan);
+  background: var(--latar);
 }
 
 /* Login admin memakai latar navy agar jelas berbeda dari area publik */
 .halaman-mandiri:has(.auth-admin) {
-  background: var(--gradasi-admin);
+  background: var(--navy);
 }

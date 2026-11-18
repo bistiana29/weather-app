@@ -5,11 +5,6 @@
   max-width: 1200px;
 }
 
-.pengaturan-kepala h1 {
-  font-size: var(--fs-judul);
-  margin-bottom: 4px;
-}
-
 /* Grid dua kolom: pengaturan di kiri, simulasi di kanan */
 .pengaturan-grid {
   display: grid;
@@ -63,7 +58,7 @@
 .pantauan-hitung {
   padding: 4px 12px;
   border-radius: var(--radius-pill);
-  box-shadow: var(--neu-inset);
+  background: var(--tint);
   font-family: var(--font-heading);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -89,9 +84,8 @@
   min-height: var(--target-sentuh);
   padding-left: 16px;
   border-radius: var(--radius-pill);
-  background: var(--permukaan);
-  box-shadow: var(--neu-raised-kecil);
-  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: var(--tint);
+  border: 1px solid var(--garis);
   font-weight: 600;
 }
 
@@ -154,7 +148,7 @@
   gap: 10px;
   padding: 12px 14px;
   border-radius: var(--radius-sedang);
-  box-shadow: var(--neu-inset);
+  background: var(--tint);
 }
 
 .pengaturan-aksi.mengambang {
@@ -162,7 +156,7 @@
   bottom: 16px;
   z-index: 10;
   background: rgba(238, 245, 250, 0.96);
-  box-shadow: var(--bayangan-mengambang);
+  box-shadow: var(--shadow-3);
 }
 
 .pengaturan-aksi-status {

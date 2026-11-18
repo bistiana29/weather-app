@@ -1,4 +1,4 @@
-import { buatPrakiraan, buatRingkasan, buatRisiko } from '../mocks/cuaca'
+import { buatPrakiraan, buatRisikoGabungan } from '../mocks/cuaca'
 import { PAKAI_MOCK, request, tundaMock } from './client'
 
 let janjiGeojson = null
@@ -20,20 +20,14 @@ async function daftarKodeKel() {
   return geojson.features.map((f) => f.properties.kode_kel)
 }
 
-// Risiko semua kelurahan: { "<kode_kel>": { nilai, kategori, jam_mulai, jam_selesai } }
-export async function getRisiko(parameter, tgl) {
-  if (!PAKAI_MOCK) return request(`/risiko/${parameter}?tgl=${tgl}`)
-  return tundaMock(buatRisiko(await daftarKodeKel(), parameter, tgl))
+// Risiko semua kelurahan dan parameter: { "<kode_kel>": { rain: { nilai, kategori, jam_mulai, jam_selesai }, wind: {...}, ... } }
+export async function getRisiko(tgl) {
+  if (!PAKAI_MOCK) return request(`/risiko?tgl=${tgl}`)
+  return tundaMock(buatRisikoGabungan(await daftarKodeKel(), tgl))
 }
 
 // Prakiraan 24 jam observasi + 24 jam prediksi untuk satu kelurahan
 export async function getPrakiraan(kodeKel, parameter, tgl) {
   if (!PAKAI_MOCK) return request(`/prakiraan/${kodeKel}/${parameter}?tgl=${tgl}`)
   return tundaMock(buatPrakiraan(kodeKel, parameter, tgl))
-}
-
-// Jumlah kelurahan per jenis kejadian untuk satu tanggal
-export async function getRingkasan(tgl) {
-  if (!PAKAI_MOCK) return request(`/ringkasan?tgl=${tgl}`)
-  return tundaMock(buatRingkasan(await daftarKodeKel(), tgl))
 }

@@ -23,15 +23,18 @@ Berhasil berarti warga bisa menemukan kelurahannya dan memahami kategori risikon
 Resolusi per kelurahan dan per parameter dengan kategori ambang Tabel 2.1 (mengacu peraturan BMKG), ditambah peringatan WA H-1 untuk kelurahan pilihan pengguna. Bukan peringatan resmi BMKG.
 
 ## Operating Context
-- Tautan dari pesan WA membuka peta pada parameter, kelurahan, dan tanggal tertentu (`/peta-risiko/:parameter?kel=&tgl=`).
+- Tautan dari pesan WA membuka peta pada parameter, kelurahan, dan tanggal tertentu (`/risk-map?params=&color=&kel=&date=`).
 - Prediksi dibuat harian pukul 12.00 WIB; semua waktu ditampilkan dalam WIB.
 - Area publik tanpa login: Landing dan Peta Risiko. Akun hanya untuk peringatan WA. Admin punya panel terpisah.
 
 ## Capabilities and Constraints
-- **Status (16 Nov 2026):** prototipe UI/UX. Belum terintegrasi dengan backend maupun model; integrasi direncanakan sekitar dua minggu lagi. Semua data saat ini berasal dari mock (`VITE_USE_MOCK`), dan bentuk respons mock harus tetap sesuai kontrak API dan skema ETL.
+- **Status (18 Nov 2026):** prototipe UI/UX. Belum terintegrasi dengan backend maupun model; integrasi direncanakan sekitar dua minggu lagi. Semua data saat ini berasal dari mock (`VITE_USE_MOCK`), dan bentuk respons mock harus tetap sesuai kontrak API dan skema ETL.
 - **Kategori data:** satu sumber kebenaran di `src/lib/kategori.js` (objek `AMBANG`). Nilai ambang dan label kategori tidak boleh diubah. Warna kategori data terpisah dari warna brand, dan peta tetap datar.
 - **Teknologi:** React 19, Vite, JavaScript (tanpa TypeScript), CSS biasa dengan token di `src/styles/`, react-router, TanStack Query, Leaflet, Recharts, motion, Radix UI, lucide-react.
 - **Hanya mode terang.**
+- **Gaya visual (revisi 18 Nov 2026):** bento + soft elevation. Warna brand solid tanpa gradasi di mana pun; variasi lewat color blocking antar-section (putih / tint biru muda solid / navy). Elevasi hanya bayangan gelap lembut bernuansa navy (tiga tingkat), tanpa bayangan putih; tidak ada kartu bershadow di dalam kartu bershadow. Neumorphism tidak dipakai lagi.
+- **Peta Risiko:** peta selalu diwarnai satu parameter (`color`); parameter lain hanya ditampilkan sebagai nilai. Skor gabungan atau pewarnaan berdasarkan jumlah kejadian dilarang.
+- **Bahasa:** Indonesia (default) dan Inggris untuk area publik, autentikasi, dan Settings; panel admin hanya Indonesia. Pesan WhatsApp tetap berbahasa Indonesia.
 - Route, kontrak API/mock, alur autentikasi, dan perilaku mode mock tidak diubah oleh pekerjaan desain.
 
 ## Brand Commitments
@@ -39,6 +42,7 @@ Resolusi per kelurahan dan per parameter dengan kategori ambang Tabel 2.1 (menga
 - **Bahasa:** Bahasa Indonesia baku dengan sapaan "Anda".
 - **Logo:** belum ada. Logo final akan disediakan nanti; sementara memakai ikon dari lucide.
 - **Disclaimer wajib di area publik:** "Hasil prediksi model, bukan peringatan resmi BMKG."
+- Judul penelitian, skripsi, atau proyek akhir tidak disebut di mana pun di UI.
 
 ## Evidence on Hand
 - Batas wilayah 153 kelurahan: `public/kelurahan.geojson`.

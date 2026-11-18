@@ -4,7 +4,7 @@ import { motion } from 'motion/react'
 import { useMemo } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router'
-import { getKelurahanGeojson, getRingkasan, getRisiko } from '../api/publik'
+import { getKelurahanGeojson, getRisiko } from '../api/publik'
 import BantuanMock from '../components/BantuanMock'
 import JudulHalaman from '../components/JudulHalaman'
 import { IKON_PARAMETER } from '../components/peta/ikonCuaca'
@@ -16,7 +16,7 @@ import Skeleton from '../components/ui/Skeleton'
 import { VARIAN_GRID, VARIAN_KARTU } from '../lib/animasi'
 import { useAuth } from '../lib/auth'
 import { buatFormat, useFormat } from '../lib/format'
-import { DAFTAR_PARAMETER, JENIS_KEJADIAN, masukPeringatan, PARAMETER, urlPeta } from '../lib/kategori'
+import { JENIS_KEJADIAN, masukPeringatan, PARAMETER, PARAMETER_PETA, ringkasanDari, risikoParameter, urlPeta } from '../lib/kategori'
 import { hariIniWib, tambahHari } from '../lib/tanggal'
 import '../styles/components/pengaturan.css'
 import '../styles/pages/Landing.css'
@@ -65,7 +65,7 @@ function KartuPetaHero({ besok, geojson, risiko }) {
         <h2 className="hero-peta-judul">{t('landing.peta.judul')}</h2>
         <p className="teks-sekunder">{f.tanggalPanjang(besok)}</p>
       </div>
-      <Link to={urlPeta('hujan', { date: besok })} className="hero-peta-gambar" aria-label={t('landing.peta.buka')}>
+      <Link to={urlPeta({ date: besok })} className="hero-peta-gambar" aria-label={t('landing.peta.buka')}>
         {siap ? (
           <PetaMini geojson={geojson} risiko={risiko} parameter="hujan" label={t('landing.peta.alt', { tanggal: f.tanggalPanjang(besok) })} />
         ) : (
@@ -133,8 +133,9 @@ export default function Landing() {
   const navigate = useNavigate()
   const besok = tambahHari(hariIniWib(), 1)
   const geojsonQuery = useQuery({ queryKey: ['geojson'], queryFn: getKelurahanGeojson, staleTime: Infinity, gcTime: Infinity })
-  const risikoQuery = useQuery({ queryKey: ['risiko', 'hujan', besok], queryFn: () => getRisiko('hujan', besok) })
-  const ringkasanQuery = useQuery({ queryKey: ['ringkasan', besok], queryFn: () => getRingkasan(besok) })
+  const risikoQuery = useQuery({ queryKey: ['risiko', besok], queryFn: () => getRisiko(besok) })
+  const risikoHujan = risikoParameter(risikoQuery.data, 'hujan')
+  const ringkasanQuery = { data: ringkasanDari(risikoQuery.data), isPending: risikoQuery.isPending }
 
   const indeks = useMemo(
     () => Object.fromEntries((geojsonQuery.data?.features ?? []).map((f) => [f.properties.kode_kel, f.properties])),
@@ -167,11 +168,11 @@ export default function Landing() {
           <motion.div variants={VARIAN_KARTU} className="hero-cari">
             <SearchInput
               items={itemCari}
-              onSelect={(item) => navigate(urlPeta('hujan', { kel: item.value, date: besok }))}
+              onSelect={(item) => navigate(urlPeta({ kel: item.value, date: besok }))}
               placeholder={t('landing.hero.cariPlaceholder')}
               label={t('landing.hero.cariLabel')}
             />
-            <Button as={Link} to={urlPeta('hujan')} ukuran="besar" ikonKanan={ArrowRight}>
+            <Button as={Link} to={urlPeta()} ukuran="besar" ikonKanan={ArrowRight}>
               {t('landing.hero.bukaPeta')}
             </Button>
           </motion.div>
@@ -183,7 +184,7 @@ export default function Landing() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
         >
-          <KartuPetaHero besok={besok} geojson={geojsonQuery.data} risiko={risikoQuery.data} />
+          <KartuPetaHero besok={besok} geojson={geojsonQuery.data} risiko={risikoHujan} />
         </motion.div>
       </section>
 
@@ -193,12 +194,12 @@ export default function Landing() {
             <h2>{t('landing.parameter.judul')}</h2>
             <p className="teks-sekunder">{t('landing.parameter.teks')}</p>
             <ul className="daftar-parameter">
-              {DAFTAR_PARAMETER.map((p) => {
+              {PARAMETER_PETA.map((slug) => PARAMETER[slug]).map((p) => {
                 const Ikon = IKON_PARAMETER[p.slug]
                 const jenis = jumlahPerParameter[p.slug]
                 return (
                   <li key={p.slug}>
-                    <Link to={urlPeta(p.slug, { date: besok })} className="baris-parameter">
+                    <Link to={urlPeta({ color: p.slug, date: besok })} className="baris-parameter">
                       <Ikon size={20} aria-hidden="true" />
                       <span className="baris-parameter-nama">{t(`parameter.${p.slug}.judul`)}</span>
                       <span className="baris-parameter-nilai">
@@ -234,7 +235,7 @@ export default function Landing() {
             <p className="teks-sekunder">{t('landing.wa.teks')}</p>
             {i18n.language !== 'id' && <p className="teks-sekunder catatan-bahasa-wa">{t('landing.wa.catatanBahasa')}</p>}
             <div className="landing-pesan">
-              <PratinjauPesan besok={besok} risiko={risikoQuery.data} indeks={indeks} />
+              <PratinjauPesan besok={besok} risiko={risikoHujan} indeks={indeks} />
             </div>
             {ajakanWa && (
               <Button as={Link} to={ajakanWa.to} className="landing-wa-tombol">

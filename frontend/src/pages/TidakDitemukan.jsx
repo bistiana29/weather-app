@@ -12,7 +12,7 @@ export default function TidakDitemukan() {
       <JudulHalaman judul={t('umum.tidakDitemukan.judul')} />
       <h1>{t('umum.tidakDitemukan.judul')}</h1>
       <p className="teks-sekunder">{t('umum.tidakDitemukan.teks')}</p>
-      <Button as={Link} to="/risk-map/rain">{t('umum.tidakDitemukan.tombol')}</Button>
+      <Button as={Link} to="/risk-map">{t('umum.tidakDitemukan.tombol')}</Button>
     </Card>
   )
 }

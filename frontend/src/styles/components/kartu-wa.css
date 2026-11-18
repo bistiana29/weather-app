@@ -1,0 +1,90 @@
+/* Kartu peringatan WA mengambang di pojok kanan bawah */
+.kartu-wa {
+  position: fixed;
+  z-index: 950;
+  right: 20px;
+  bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  width: min(320px, calc(100vw - 32px));
+  padding: 16px 16px 18px;
+  border: 1px solid var(--garis);
+  border-radius: var(--radius-sedang);
+  background: var(--permukaan);
+  box-shadow: var(--shadow-3);
+}
+
+.kartu-wa-kepala {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.kartu-wa-ikon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--sorot-muda);
+  color: var(--biru);
+}
+
+.kartu-wa-judul {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: var(--fs-teks);
+  color: var(--navy);
+}
+
+/* Tombol tutup kecil secara visual, area sentuh tetap 44 px */
+.kartu-wa-tutup {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  margin: -4px -4px 0 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--teks-sekunder);
+}
+
+.kartu-wa-tutup::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
+}
+
+.kartu-wa-tutup:hover {
+  background: var(--tint);
+  color: var(--navy);
+}
+
+.kartu-wa-teks {
+  font-size: var(--fs-kecil);
+  line-height: 1.5;
+  color: var(--teks-sekunder);
+}
+
+/* Mobile: di atas navigasi bawah, dan disembunyikan saat bottom sheet terbuka */
+@media (max-width: 767px) {
+  .kartu-wa {
+    right: 16px;
+    bottom: calc(var(--tinggi-nav-bawah) + 12px);
+  }
+}
+
+body:has(.bottom-sheet) .kartu-wa {
+  display: none;
+}

@@ -246,13 +246,10 @@
   },
   "peta": {
     "judul": "Risk Map",
-    "judulTab": "{{parameter}} Risk Map",
     "prediksiTanggal": "Forecast for {{tanggal}} · 00:00–23:59 WIB",
     "tanggalPrediksi": "Forecast date",
-    "tabLabel": "Weather parameter",
     "cariLabel": "Search kelurahan",
     "cariPlaceholder": "Search kelurahan…",
-    "tutupCari": "Close search",
     "gagalBatas": "Kelurahan boundaries could not be loaded.",
     "esokHari": "tomorrow",
     "hariIni": "today",
@@ -260,8 +257,6 @@
     "kec": "{{nama}} District",
     "kelSingkat": "kel.",
     "informasiNilai": "Value only",
-    "minimum": "Minimum",
-    "puncak": "Peak",
     "tanpaPeriode": "No event period",
     "memuatRisiko": "Loading risk data",
     "petunjukDuaJari": "Use two fingers to move the map",
@@ -272,11 +267,12 @@
       "perkecilPeta": "Zoom out of the map"
     },
     "legend": {
-      "tanpaAmbang": "Value information only, no hazard threshold"
+      "warnai": "Color map by"
     },
     "info": {
       "tutup": "Close kelurahan info",
-      "lihat": "View 24-hour forecast"
+      "lihat": "View 24-hour forecast",
+      "waktu": "Time"
     },
     "sheet": {
       "label": "Kelurahan forecast panel",
@@ -306,25 +302,33 @@
         "suhu": "Extreme Temperature threshold",
         "angin": "Strong Wind threshold",
         "jarak-pandang": "Extremely Low Visibility threshold"
-      }
+      },
+      "judulDialog": "48-hour chart · {{kelurahan}} · {{parameter}}"
     },
     "panel": {
       "perJam": "Hourly forecast",
-      "tutup": "Close forecast panel",
-      "gagal": "The forecast could not be loaded.",
       "puncakDari": "Peak {{parameter}}",
       "minimumDari": "Minimum {{parameter}}",
-      "normal": "Local normal {{nilai}}",
       "model": "Active model <tebal>{{nama}}</tebal> · version <tebal>{{versi}}</tebal> · issued {{tanggal}} {{jam}} WIB"
     },
-    "peringatan": {
-      "judulTamu": "Want alerts on WhatsApp?",
-      "teksTamu": "Create an account, verify your number, then choose up to 3 kelurahan. Alerts are sent at 12:00 WIB the day before.",
-      "tombolTamu": "Turn On Alerts",
-      "judulJadwal": "Update schedule",
-      "teksJadwal": "Forecasts are updated daily at 12:00 WIB for the next day, 00:00–23:59 WIB.",
-      "bukaAdmin": "Open Admin Panel",
-      "aturPantauan": "Manage watched kelurahan"
+    "parameter": {
+      "label": "Parameters",
+      "semua": "All",
+      "jumlah": "{{n}} parameters",
+      "aria": "Choose parameters, currently {{label}}"
+    },
+    "fokus": {
+      "tertinggi": "Highest value tomorrow",
+      "pantauan": "Your watched kelurahan",
+      "tutup": "Clear selected kelurahan",
+      "lainnya": "Other parameters",
+      "grafik": "View 48-hour chart"
+    },
+    "jam": {
+      "judul": "Hourly forecast",
+      "sebelumnya": "Earlier hours",
+      "berikutnya": "Later hours",
+      "ekstrem": "Extreme event"
     }
   },
   "landing": {
@@ -417,5 +421,12 @@
       "nonaktif": "WhatsApp alerts are off. No message will be sent.",
       "kosong": "Choose a kelurahan to watch to see a sample message."
     }
+  },
+  "kartuWa": {
+    "judul": "Want alerts on WhatsApp?",
+    "teks": "Day-ahead alerts at 12:00 WIB for 3 kelurahan of your choice.",
+    "tombol": "Turn on alerts",
+    "tombolPengguna": "Turn on in Settings",
+    "tutup": "Dismiss WhatsApp alert prompt"
   }
 }
