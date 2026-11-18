@@ -59,6 +59,9 @@
       "judul": "Halaman tidak ditemukan",
       "teks": "Alamat yang Anda buka tidak tersedia.",
       "tombol": "Buka Peta Risiko"
+    },
+    "footer": {
+      "sumber": "Sumber data: NASA POWER dan Open-Meteo, divalidasi dengan data stasiun BMKG."
     }
   },
   "auth": {
@@ -207,10 +210,6 @@
     "jarak-pandang": {
       "label": "Jarak Pandang",
       "judul": "Jarak Pandang Mendatar"
-    },
-    "kelembapan": {
-      "label": "Kelembapan",
-      "judul": "Kelembapan Udara"
     }
   },
   "satuan": {
@@ -218,7 +217,6 @@
     "suhu": "°C",
     "angin": "km/jam",
     "jarak-pandang": "m",
-    "kelembapan": "%",
     "km": "km",
     "m": "m"
   },
@@ -256,7 +254,6 @@
     "kel": "Kel. {{nama}}",
     "kec": "Kec. {{nama}}",
     "kelSingkat": "kel.",
-    "informasiNilai": "Informasi nilai",
     "tanpaPeriode": "Tidak ada periode kejadian",
     "memuatRisiko": "Memuat data risiko",
     "petunjukDuaJari": "Gunakan dua jari untuk menggeser peta",
@@ -331,39 +328,6 @@
       "ekstrem": "Kejadian ekstrem"
     }
   },
-  "landing": {
-    "bentoLabel": "Parameter dan peringatan",
-    "hero": {
-      "judul": "Cek risiko cuaca ekstrem di kelurahan Anda, sehari sebelumnya.",
-      "deskripsi": "Peta risiko hujan lebat, suhu ekstrem, angin kencang, dan jarak pandang rendah untuk {{jumlah}} kelurahan di Surabaya, dari prediksi model yang diperbarui setiap hari pukul 12.00 WIB.",
-      "cariLabel": "Cari kelurahan Anda",
-      "cariPlaceholder": "Cari kelurahan Anda, mis. Ketintang",
-      "bukaPeta": "Buka peta risiko"
-    },
-    "status": {
-      "tanggal": "Prakiraan {{tanggal}}:",
-      "tidakAda": "tidak ada kelurahan dengan kejadian ekstrem.",
-      "item": "<tebal>{{jumlah}}</tebal> kelurahan {{kejadian}}"
-    },
-    "peta": {
-      "judul": "Curah hujan esok hari",
-      "buka": "Buka peta risiko curah hujan",
-      "alt": "Peta kategori curah hujan per kelurahan untuk {{tanggal}}",
-      "legenda": "Legenda curah hujan ({{satuan}})"
-    },
-    "parameter": {
-      "judul": "Lima parameter, dipetakan terpisah",
-      "teks": "Setiap kelurahan dinilai dengan ambang kategori BMKG (Tabel 2.1). Angka menunjukkan jumlah kelurahan berisiko esok hari."
-    },
-    "wa": {
-      "judul": "Peringatan H-1 lewat WhatsApp",
-      "teks": "Pilih hingga 3 kelurahan. Pesan dikirim pukul 12.00 WIB untuk periode esok hari 00.00–23.59 WIB.",
-      "catatanBahasa": "Peringatan WhatsApp saat ini dikirim dalam bahasa Indonesia.",
-      "contohAria": "Contoh pesan peringatan WhatsApp",
-      "aktifkan": "Aktifkan peringatan",
-      "atur": "Atur peringatan"
-    }
-  },
   "pesanWa": {
     "judul": "Info Cuaca SBY",
     "sub": "Peringatan dini untuk {{tanggal}}, 00.00–23.59 WIB",
@@ -428,5 +392,102 @@
     "tombol": "Aktifkan peringatan",
     "tombolPengguna": "Nyalakan di Pengaturan",
     "tutup": "Tutup ajakan peringatan WhatsApp"
+  },
+  "landing": {
+    "hero": {
+      "lencana": "Sistem Peringatan Dini Cuaca",
+      "judul": "Sistem Pemetaan Cuaca Ekstrem <aksen>Kota Surabaya</aksen>",
+      "deskripsi": "Pantau potensi cuaca ekstrem sebelum terjadi. Dapatkan peringatan langsung melalui WhatsApp untuk pengambilan keputusan yang cepat dan tepat sebelum cuaca ekstrem terjadi.",
+      "cariLabel": "Cari kelurahan Anda",
+      "cariPlaceholder": "Cari kelurahan Anda, mis. Ketintang",
+      "bukaPeta": "Buka peta risiko",
+      "lihatDetail": "Lihat detail prakiraan",
+      "tutupPopup": "Tutup contoh pop-up"
+    },
+    "peta": {
+      "judul": "Curah hujan esok hari · {{tanggal}}",
+      "alt": "Peta kategori curah hujan per kelurahan untuk {{tanggal}}",
+      "legenda": "Legenda curah hujan ({{satuan}})"
+    },
+    "ringkasan": {
+      "label": "Ringkasan esok hari",
+      "tanggal": "Esok hari, {{tanggal}} · jumlah kelurahan:"
+    },
+    "tentang": {
+      "judul": "Tentang sistem ini",
+      "teks": "Peta risiko cuaca ekstrem untuk setiap kelurahan di Surabaya, dibuat dari prediksi model dan dikelompokkan sesuai kategori BMKG.",
+      "cakupanJudul": "Cakupan wilayah",
+      "kelurahan": "kelurahan",
+      "kecamatan": "kecamatan",
+      "cakupanTeks": "Setiap kelurahan punya kategori risikonya sendiri untuk curah hujan, suhu, kecepatan angin, dan jarak pandang.",
+      "sumberJudul": "Sumber data",
+      "sumberTeks": "Data cuaca per jam diambil dari NASA POWER dan Open-Meteo untuk titik setiap kelurahan, lalu divalidasi dengan data observasi stasiun BMKG di Surabaya.",
+      "stasiunBmkg": "Stasiun BMKG (validasi)",
+      "batasJudul": "Pembaruan dan keterbatasan",
+      "batasTeks": "Prediksi diperbarui setiap hari pukul 12.00 WIB untuk esok hari 00.00–23.59 WIB. Hasilnya adalah prediksi model, bukan peringatan resmi BMKG; untuk keputusan keselamatan, ikuti informasi resmi BMKG."
+    },
+    "cara": {
+      "judul": "Cara kerja",
+      "kumpul": {
+        "judul": "Data dikumpulkan",
+        "teks": "Data cuaca per jam dikumpulkan dari beberapa sumber untuk setiap kelurahan."
+      },
+      "prediksi": {
+        "judul": "Model memprediksi",
+        "teks": "Model memprediksi kondisi 24 jam esok hari."
+      },
+      "petakan": {
+        "judul": "Risiko dipetakan",
+        "teks": "Hasil dipetakan per kelurahan sesuai kategori BMKG."
+      },
+      "kirim": {
+        "judul": "Peringatan dikirim",
+        "teks": "Pukul 12.00 WIB, peringatan dikirim ke WhatsApp pengguna terdaftar."
+      }
+    },
+    "parameter": {
+      "judul": "Empat parameter, dipetakan terpisah",
+      "teks": "Setiap parameter dinilai dengan ambang kategori BMKG dan bisa dipilih sebagai pewarna peta.",
+      "satuan": "Satuan: {{satuan}}",
+      "kategori": "Kategori dan ambang",
+      "lihatPeta": "Lihat di peta",
+      "catatanHujan": "Untuk ringkasan dan peringatan WhatsApp, kejadian ekstrem curah hujan dihitung mulai kategori Hujan Lebat. Parameter lain dihitung saat kategori ekstremnya terpenuhi."
+    },
+    "wa": {
+      "judul": "Peringatan H-1 lewat WhatsApp",
+      "teks": "Pilih hingga 3 kelurahan. Ringkasan risiko dikirim pukul 12.00 WIB untuk periode esok hari 00.00–23.59 WIB.",
+      "langkah": {
+        "pilih": "Daftar dan pilih hingga 3 kelurahan pantauan.",
+        "verifikasi": "Verifikasi nomor WhatsApp dengan kode OTP.",
+        "terima": "Terima ringkasan risiko esok hari setiap pukul 12.00 WIB."
+      },
+      "daftar": "Daftar sekarang",
+      "atur": "Atur peringatan",
+      "catatanBahasa": "Peringatan WhatsApp saat ini dikirim dalam bahasa Indonesia.",
+      "contohAria": "Contoh pesan peringatan WhatsApp"
+    },
+    "faq": {
+      "judul": "Pertanyaan umum",
+      "resmi": {
+        "tanya": "Apakah ini peringatan resmi BMKG?",
+        "jawab": "Bukan. Informasi di sini adalah hasil prediksi model yang memakai kategori ambang BMKG sebagai acuan. Untuk peringatan resmi, ikuti kanal resmi BMKG."
+      },
+      "akurasi": {
+        "tanya": "Seberapa akurat prediksinya?",
+        "jawab": "Model dievaluasi terhadap data observasi stasiun BMKG di Surabaya. Seperti prakiraan cuaca lainnya, hasilnya bisa meleset, terutama untuk hujan lokal yang singkat. Gunakan sebagai bahan pertimbangan, bukan satu-satunya dasar keputusan."
+      },
+      "gratis": {
+        "tanya": "Apakah gratis?",
+        "jawab": "Ya. Peta risiko bisa dibuka tanpa akun, dan peringatan WhatsApp tidak dipungut biaya."
+      },
+      "berhenti": {
+        "tanya": "Bagaimana cara berhenti menerima pesan?",
+        "jawab": "Masuk ke akun Anda, buka Pengaturan, lalu matikan Peringatan Dini WhatsApp. Anda juga bisa menghapus akun kapan saja dari halaman yang sama."
+      },
+      "data": {
+        "tanya": "Data pribadi saya dipakai untuk apa?",
+        "jawab": "Nama, email, dan nomor WhatsApp hanya dipakai untuk akun dan pengiriman peringatan dini. Data akun dihapus permanen jika Anda menghapus akun."
+      }
+    }
   }
 }

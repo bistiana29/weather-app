@@ -975,3 +975,30 @@ button.sorotan-baris:hover {
     display: none;
   }
 }
+
+/* Titik jangkar pop-up di atas peta mini */
+.peta-mini-wadah {
+  position: relative;
+  height: 100%;
+}
+
+.peta-mini-titik {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: 0;
+  height: 0;
+}
+
+.peta-mini-titik::before {
+  content: '';
+  position: absolute;
+  left: -6px;
+  top: -6px;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--putih);
+  border-radius: 50%;
+  background: var(--navy);
+  box-shadow: var(--shadow-1);
+}

@@ -1,8 +1,10 @@
 import { LayoutDashboard, LogIn, LogOut, Map as IkonPeta, Settings, UserPlus } from 'lucide-react'
 import { motion } from 'motion/react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router'
 import { useAuth } from '../../lib/auth'
+import DialogKetentuan from '../DialogKetentuan'
 import KartuPeringatanWA from '../KartuPeringatanWA'
 import Button from '../ui/Button'
 import PemilihBahasa from '../ui/PemilihBahasa'
@@ -31,6 +33,7 @@ export default function PublicLayout() {
   const navigate = useNavigate()
   const tautan = tautanNavigasi(pengguna)
   const segmen = lokasi.pathname.split('/')[1]
+  const [ketentuanTerbuka, setKetentuanTerbuka] = useState(false)
 
   function tanganiKeluar() {
     keluar()
@@ -82,9 +85,19 @@ export default function PublicLayout() {
       </motion.main>
 
       <footer className="footer">
-        <p>{t('umum.hakCipta')}</p>
-        <p>{t('umum.disclaimer')}</p>
+        <div className="footer-utama">
+          <p className="footer-sumber">{t('umum.footer.sumber')}</p>
+          <p>{t('umum.disclaimer')}</p>
+        </div>
+        <div className="footer-aksi">
+          <button type="button" className="tautan-teks" onClick={() => setKetentuanTerbuka(true)}>
+            {t('auth.daftar.ketentuan.judul')}
+          </button>
+          <PemilihBahasa />
+        </div>
+        <p className="footer-hak">{t('umum.hakCipta')}</p>
       </footer>
+      <DialogKetentuan open={ketentuanTerbuka} onOpenChange={setKetentuanTerbuka} />
 
       <KartuPeringatanWA />
 

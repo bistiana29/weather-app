@@ -42,7 +42,7 @@ export default function SorotanKelurahan({ risiko, indeksKelurahan, parameter, m
                   {indeksKelurahan[kode]?.kelurahan ?? kode}
                   <span className="teks-sekunder sorotan-nilai">{f.nilaiLengkap(parameter, data.nilai)}</span>
                 </span>
-                {konfig.skala ? null : <Badge warna={warnaKategori(parameter, data.kategori)}>{f.kategori(parameter, data.kategori)}</Badge>}
+                <Badge warna={warnaKategori(parameter, data.kategori)}>{f.kategori(parameter, data.kategori)}</Badge>
               </button>
             </li>
           ))}

@@ -1,4 +1,4 @@
-import { CloudDrizzle, CloudFog, CloudRain, CloudRainWind, Droplets, Eye, Sun, Moon, Thermometer, ThermometerSun, Wind } from 'lucide-react'
+import { CloudDrizzle, CloudFog, CloudRain, CloudRainWind, Eye, Sun, Moon, Thermometer, ThermometerSun, Wind } from 'lucide-react'
 import { kategoriDari, nilaiEkstrem, PARAMETER } from '../../lib/kategori'
 
 export const IKON_PARAMETER = {
@@ -6,7 +6,6 @@ export const IKON_PARAMETER = {
   suhu: Thermometer,
   angin: Wind,
   'jarak-pandang': Eye,
-  kelembapan: Droplets,
 }
 
 // Ikon hujan per indeks kategori: tidak hujan, ringan, sedang, lebat, sangat lebat, ekstrem
@@ -18,7 +17,6 @@ export function ikonNilai(parameter, nilai, jam, { normal } = {}) {
     const indeks = PARAMETER.hujan.kategori.findIndex((k) => k.label === kategoriDari('hujan', nilai))
     return IKON_HUJAN[indeks] ?? (jam >= 6 && jam < 18 ? Sun : Moon)
   }
-  if (parameter === 'kelembapan') return Droplets
   const ekstrem = nilaiEkstrem(parameter, nilai, { normal })
   if (parameter === 'suhu') return ekstrem ? ThermometerSun : Thermometer
   if (parameter === 'angin') return Wind

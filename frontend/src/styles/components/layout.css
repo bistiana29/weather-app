@@ -109,14 +109,49 @@
 }
 
 .footer {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 8px 24px;
-  padding: 20px 32px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px 32px;
+  padding: 28px 32px;
   border-top: 1px solid var(--garis);
-  font-size: 14px;
+  background: var(--permukaan);
+  font-size: var(--fs-kecil);
   color: var(--teks-sekunder);
+}
+
+.footer-utama {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 70ch;
+}
+
+.footer-sumber {
+  color: var(--navy);
+  font-weight: 600;
+}
+
+.footer-aksi {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.footer-hak {
+  grid-column: 1 / -1;
+  padding-top: 12px;
+  border-top: 1px solid var(--garis);
+}
+
+@media (max-width: 767px) {
+  .footer {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .footer-aksi {
+    flex-wrap: wrap;
+  }
 }
 
 /* Navigasi bawah (mobile) */

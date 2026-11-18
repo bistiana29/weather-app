@@ -59,6 +59,9 @@
       "judul": "Page not found",
       "teks": "The address you opened is not available.",
       "tombol": "Open Risk Map"
+    },
+    "footer": {
+      "sumber": "Data sources: NASA POWER and Open-Meteo, validated against BMKG station data."
     }
   },
   "auth": {
@@ -207,10 +210,6 @@
     "jarak-pandang": {
       "label": "Visibility",
       "judul": "Horizontal Visibility"
-    },
-    "kelembapan": {
-      "label": "Humidity",
-      "judul": "Relative Humidity"
     }
   },
   "satuan": {
@@ -218,7 +217,6 @@
     "suhu": "°C",
     "angin": "km/h",
     "jarak-pandang": "m",
-    "kelembapan": "%",
     "km": "km",
     "m": "m"
   },
@@ -256,7 +254,6 @@
     "kel": "Kel. {{nama}}",
     "kec": "{{nama}} District",
     "kelSingkat": "kel.",
-    "informasiNilai": "Value only",
     "tanpaPeriode": "No event period",
     "memuatRisiko": "Loading risk data",
     "petunjukDuaJari": "Use two fingers to move the map",
@@ -331,39 +328,6 @@
       "ekstrem": "Extreme event"
     }
   },
-  "landing": {
-    "bentoLabel": "Parameters and alerts",
-    "hero": {
-      "judul": "Check extreme weather risk in your kelurahan, a day ahead.",
-      "deskripsi": "Risk maps for heavy rain, extreme temperature, strong wind, and low visibility across {{jumlah}} kelurahan in Surabaya, from model forecasts updated daily at 12:00 WIB.",
-      "cariLabel": "Find your kelurahan",
-      "cariPlaceholder": "Find your kelurahan, e.g. Ketintang",
-      "bukaPeta": "Open risk map"
-    },
-    "status": {
-      "tanggal": "Forecast for {{tanggal}}:",
-      "tidakAda": "no kelurahan with extreme events.",
-      "item": "<tebal>{{jumlah}}</tebal> kelurahan with {{kejadian}}"
-    },
-    "peta": {
-      "judul": "Tomorrow's rainfall",
-      "buka": "Open the rainfall risk map",
-      "alt": "Rainfall category map by kelurahan for {{tanggal}}",
-      "legenda": "Rainfall legend ({{satuan}})"
-    },
-    "parameter": {
-      "judul": "Five parameters, mapped separately",
-      "teks": "Each kelurahan is rated against BMKG category thresholds (Table 2.1). Numbers show how many kelurahan are at risk tomorrow."
-    },
-    "wa": {
-      "judul": "Day-ahead alerts on WhatsApp",
-      "teks": "Choose up to 3 kelurahan. Messages are sent at 12:00 WIB for the next day, 00:00–23:59 WIB.",
-      "catatanBahasa": "WhatsApp alerts are currently sent in Indonesian.",
-      "contohAria": "Sample WhatsApp alert message",
-      "aktifkan": "Turn on alerts",
-      "atur": "Manage alerts"
-    }
-  },
   "pesanWa": {
     "judul": "Surabaya Weather Info",
     "sub": "Early warning for {{tanggal}}, 00:00–23:59 WIB",
@@ -428,5 +392,102 @@
     "tombol": "Turn on alerts",
     "tombolPengguna": "Turn on in Settings",
     "tutup": "Dismiss WhatsApp alert prompt"
+  },
+  "landing": {
+    "hero": {
+      "lencana": "Early Weather Warning System",
+      "judul": "Extreme Weather Mapping System for <aksen>Surabaya City</aksen>",
+      "deskripsi": "Monitor potential extreme weather before it happens. Get alerts directly on WhatsApp so you can decide quickly and confidently before extreme weather strikes.",
+      "cariLabel": "Find your kelurahan",
+      "cariPlaceholder": "Find your kelurahan, e.g. Ketintang",
+      "bukaPeta": "Open risk map",
+      "lihatDetail": "View forecast details",
+      "tutupPopup": "Close sample pop-up"
+    },
+    "peta": {
+      "judul": "Tomorrow's rainfall · {{tanggal}}",
+      "alt": "Rainfall category map by kelurahan for {{tanggal}}",
+      "legenda": "Rainfall legend ({{satuan}})"
+    },
+    "ringkasan": {
+      "label": "Tomorrow's summary",
+      "tanggal": "Tomorrow, {{tanggal}} · number of kelurahan:"
+    },
+    "tentang": {
+      "judul": "About this system",
+      "teks": "An extreme weather risk map for every kelurahan in Surabaya, built from model forecasts and grouped by BMKG categories.",
+      "cakupanJudul": "Coverage",
+      "kelurahan": "kelurahan",
+      "kecamatan": "districts",
+      "cakupanTeks": "Each kelurahan has its own risk category for rainfall, temperature, wind speed, and visibility.",
+      "sumberJudul": "Data sources",
+      "sumberTeks": "Hourly weather data comes from NASA POWER and Open-Meteo at a point for each kelurahan, validated against observations from BMKG stations in Surabaya.",
+      "stasiunBmkg": "BMKG stations (validation)",
+      "batasJudul": "Updates and limitations",
+      "batasTeks": "Forecasts are updated daily at 12:00 WIB for the next day, 00:00–23:59 WIB. They are model predictions, not official BMKG warnings; for safety decisions, follow official BMKG information."
+    },
+    "cara": {
+      "judul": "How it works",
+      "kumpul": {
+        "judul": "Data is collected",
+        "teks": "Hourly weather data is collected from several sources for every kelurahan."
+      },
+      "prediksi": {
+        "judul": "The model forecasts",
+        "teks": "A model forecasts conditions for the next 24 hours."
+      },
+      "petakan": {
+        "judul": "Risk is mapped",
+        "teks": "Results are mapped per kelurahan using BMKG categories."
+      },
+      "kirim": {
+        "judul": "Alerts are sent",
+        "teks": "At 12:00 WIB, alerts are sent to registered users on WhatsApp."
+      }
+    },
+    "parameter": {
+      "judul": "Four parameters, mapped separately",
+      "teks": "Each parameter is rated against BMKG category thresholds and can be chosen to color the map.",
+      "satuan": "Unit: {{satuan}}",
+      "kategori": "Categories and thresholds",
+      "lihatPeta": "View on map",
+      "catatanHujan": "For summaries and WhatsApp alerts, a rainfall extreme event starts at the Heavy Rain category. Other parameters count when their extreme category is met."
+    },
+    "wa": {
+      "judul": "Day-ahead alerts on WhatsApp",
+      "teks": "Choose up to 3 kelurahan. A risk summary is sent at 12:00 WIB for the next day, 00:00–23:59 WIB.",
+      "langkah": {
+        "pilih": "Sign up and choose up to 3 kelurahan to watch.",
+        "verifikasi": "Verify your WhatsApp number with an OTP code.",
+        "terima": "Receive tomorrow's risk summary every day at 12:00 WIB."
+      },
+      "daftar": "Sign up now",
+      "atur": "Manage alerts",
+      "catatanBahasa": "WhatsApp alerts are currently sent in Indonesian.",
+      "contohAria": "Sample WhatsApp alert message"
+    },
+    "faq": {
+      "judul": "Frequently asked questions",
+      "resmi": {
+        "tanya": "Is this an official BMKG warning?",
+        "jawab": "No. The information here comes from model predictions that use BMKG category thresholds as a reference. For official warnings, follow BMKG's official channels."
+      },
+      "akurasi": {
+        "tanya": "How accurate are the forecasts?",
+        "jawab": "The model is evaluated against observations from BMKG stations in Surabaya. Like any weather forecast, it can be wrong, especially for short, local rain. Use it as one input, not the only basis for decisions."
+      },
+      "gratis": {
+        "tanya": "Is it free?",
+        "jawab": "Yes. The risk map can be opened without an account, and WhatsApp alerts are free of charge."
+      },
+      "berhenti": {
+        "tanya": "How do I stop receiving messages?",
+        "jawab": "Log in, open Settings, and turn off WhatsApp Early Warnings. You can also delete your account at any time from the same page."
+      },
+      "data": {
+        "tanya": "What is my personal data used for?",
+        "jawab": "Your name, email, and WhatsApp number are used only for your account and for sending early warnings. Account data is permanently deleted when you delete your account."
+      }
+    }
   }
 }

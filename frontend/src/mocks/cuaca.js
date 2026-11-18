@@ -66,12 +66,8 @@ function buatSeri(kodeKel, parameter, tgl) {
     const pusat = 14 + Math.floor(rKel * 3)
     return jam.map((j) => bulat(dasar + (maks - dasar) * gauss(j, pusat, 3), 0))
   }
-  if (parameter === 'jarak-pandang') {
-    const min = 400 + (1 - rWilayah) ** 1.3 * 9000 * (0.6 + rHari * 0.6)
-    return jam.map((j) => Math.round((10000 - (10000 - min) * gauss(j, 6, 2.2)) / 10) * 10)
-  }
-  const maks = 72 + rWilayah * 26
-  return jam.map((j) => bulat(maks - 24 * polaSuhu(j), 0))
+  const min = 400 + (1 - rWilayah) ** 1.3 * 9000 * (0.6 + rHari * 0.6)
+  return jam.map((j) => Math.round((10000 - (10000 - min) * gauss(j, 6, 2.2)) / 10) * 10)
 }
 
 const formatJam = (j) => (j >= 24 ? '23:59' : `${String(j).padStart(2, '0')}:00`)

@@ -2,19 +2,17 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, Navigate, useNavigate } from 'react-router'
 import { daftar } from '../api/auth'
+import DialogKetentuan from '../components/DialogKetentuan'
 import JudulHalaman from '../components/JudulHalaman'
 import KartuAuth from '../components/layout/KartuAuth'
 import Button from '../components/ui/Button'
 import Checkbox from '../components/ui/Checkbox'
-import Dialog from '../components/ui/Dialog'
 import Pesan from '../components/ui/Pesan'
 import TextField from '../components/ui/TextField'
 import { berandaRole, useAuth } from '../lib/auth'
 import { teksGalat } from '../lib/galat'
 import { bacaPendaftaran, simpanPendaftaran } from '../lib/pendaftaran'
 import { cekPassword, emailValid, normalisasiNoWa, noWaValid, PANJANG_PASSWORD_MIN } from '../lib/validasi'
-
-const POIN_KETENTUAN = ['prediksi', 'data', 'jadwal', 'kendali']
 
 function isianAwal() {
   const tersimpan = bacaPendaftaran()
@@ -41,20 +39,6 @@ function validasi(isian) {
   if (!isian.setujuSk) galat.setujuSk = 'validasi.setujuSk'
   if (!isian.setujuWa) galat.setujuWa = 'validasi.setujuWa'
   return galat
-}
-
-// Ringkasan syarat & kebijakan privasi dalam dialog
-function DialogKetentuan({ open, onOpenChange }) {
-  const { t } = useTranslation()
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange} judul={t('auth.daftar.ketentuan.judul')}>
-      <ul className="daftar-ketentuan">
-        {POIN_KETENTUAN.map((kunci) => (
-          <li key={kunci}>{t(`auth.daftar.ketentuan.${kunci}`)}</li>
-        ))}
-      </ul>
-    </Dialog>
-  )
 }
 
 // Halaman pendaftaran akun peringatan dini WhatsApp

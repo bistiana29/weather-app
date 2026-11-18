@@ -195,7 +195,6 @@ export const MODEL_REGISTRY = [
   model(14, 'angin', 'LSTM', 'v2', 'production', 'openmeteo', '2026-10-30T22:00:00+07:00'),
   model(10, 'angin', 'ARIMAX', 'v1', 'archived', 'openmeteo', '2026-10-04T17:45:00+07:00'),
   model(11, 'jarak-pandang', 'ARIMAX', 'v2', 'production', 'openmeteo', '2026-10-30T23:10:00+07:00'),
-  model(7, 'kelembapan', 'ARIMAX', 'v2', 'production', 'nasa', '2026-10-27T17:20:00+07:00'),
 ]
 
 // Usulan tabel evaluasi_model: 30 hari terakhir, nilai metrik belum ada
@@ -215,7 +214,6 @@ export const SUMBER_PRIORITAS = [
   { parameter: 'suhu', sumber: 'nasa', kolom_sumber: 'T2M (°C)', metrik: 'RMSE vs BMKG', nilai_metrik: null, divalidasi_pada: null },
   { parameter: 'angin', sumber: 'openmeteo', kolom_sumber: 'wind_speed_10m (kn)', metrik: 'RMSE vs BMKG', nilai_metrik: null, divalidasi_pada: null },
   { parameter: 'jarak-pandang', sumber: 'openmeteo', kolom_sumber: 'visibility (m)', metrik: 'satu-satunya sumber', nilai_metrik: null, divalidasi_pada: null },
-  { parameter: 'kelembapan', sumber: 'nasa', kolom_sumber: 'RH2M (%)', metrik: 'RMSE vs BMKG', nilai_metrik: null, divalidasi_pada: null },
 ]
 
 // Usulan tabel riwayat_model: catatan promosi dan rollback

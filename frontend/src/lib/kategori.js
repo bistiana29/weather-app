@@ -6,10 +6,6 @@ export const WARNA_DATA = {
   ekstrem: '#C21F3A',
 }
 
-const KELEMBAPAN_MIN = 60
-const KELEMBAPAN_MAX = 100
-const KELEMBAPAN_WARNA = ['#F3F4F1', '#5B6875']
-
 export const TIDAK_EKSTREM = 'Tidak Ekstrem'
 
 // Semua angka ambang Tabel 2.1 (BMKG) hanya ditulis di sini
@@ -74,14 +70,6 @@ export const PARAMETER = {
       { label: TIDAK_EKSTREM, kunci: 'tidakEkstrem', rentang: { kunci: 'jarakNormal', nilai: { a: A.jarakPandangM } }, warna: WARNA_DATA.netral },
       { label: 'Jarak Pandang Mendatar Ekstrem', kunci: 'jarakPandangEkstrem', rentang: { kunci: 'jarakEkstrem', nilai: { a: A.jarakPandangM } }, warna: WARNA_DATA.ekstrem },
     ],
-  },
-  kelembapan: {
-    slug: 'kelembapan',
-    slugUrl: 'humidity',
-    satuan: '%',
-    jenisNilai: 'maks',
-    kategori: [],
-    skala: { min: KELEMBAPAN_MIN, max: KELEMBAPAN_MAX, warna: KELEMBAPAN_WARNA },
   },
 }
 
@@ -156,22 +144,10 @@ export function nilaiEkstrem(parameter, nilai, { normal } = {}) {
   return apakahEkstrem(parameter, kategoriDari(parameter, nilai, { normal }))
 }
 
-function campurWarna(a, b, t) {
-  const ke = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16))
-  const [x, y] = [ke(a), ke(b)]
-  const hasil = x.map((v, i) => Math.round(v + (y[i] - v) * t))
-  return `#${hasil.map((v) => v.toString(16).padStart(2, '0')).join('')}`
-}
-
 // Warna isian peta untuk satu kelurahan
 export function warnaRisiko(parameter, data) {
   if (!data) return WARNA_DATA.netral
   const konfig = PARAMETER[parameter]
-  if (konfig.skala) {
-    const { min, max, warna } = konfig.skala
-    const t = Math.min(1, Math.max(0, (data.nilai - min) / (max - min)))
-    return campurWarna(warna[0], warna[1], t)
-  }
   return konfig.kategori.find((k) => k.label === data.kategori)?.warna ?? WARNA_DATA.netral
 }
 

@@ -43,6 +43,7 @@ export function buatFormat(t, bahasa) {
     periode: (mulai, selesai) => t('umum.periodeWib', { mulai: jam(mulai), selesai: jam(selesai) }),
     tanggalPanjang: tanggal({ weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' }),
     tanggalRingkas: tanggal({ day: 'numeric', month: 'short' }),
+    tanggalHari: tanggal({ weekday: 'long', day: 'numeric', month: 'short' }),
     // Tanggal di tombol kalender: "17 November 2026", atau "17 Nov 2026" jika pendek (EN memakai urutan hari-bulan)
     tanggalTombol: (iso, pendek = false) =>
       new Intl.DateTimeFormat(bahasa === 'en' ? 'en-GB' : kode, { day: 'numeric', month: pendek ? 'short' : 'long', year: 'numeric' }).format(keDate(iso)),
