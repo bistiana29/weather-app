@@ -395,7 +395,6 @@
   },
   "landing": {
     "hero": {
-      "lencana": "Early Weather Warning System",
       "judul": "Extreme Weather Mapping System for <aksen>Surabaya City</aksen>",
       "deskripsi": "Monitor potential extreme weather before it happens. Get alerts directly on WhatsApp so you can decide quickly and confidently before extreme weather strikes.",
       "cariLabel": "Find your kelurahan",

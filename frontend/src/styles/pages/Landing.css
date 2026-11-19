@@ -35,19 +35,6 @@
   gap: 20px;
 }
 
-.hero-lencana {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 14px;
-  border: 1px solid var(--sorot-garis);
-  border-radius: var(--radius-pill);
-  background: var(--permukaan);
-  color: var(--biru);
-  font-size: var(--fs-kecil);
-  font-weight: 600;
-}
-
 .hero h1 {
   font-size: var(--fs-display);
   line-height: 1.12;

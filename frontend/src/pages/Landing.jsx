@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { Accordion } from 'radix-ui'
-import { ArrowRight, BrainCircuit, ChevronDown, CircleAlert, CloudDownload, MapPinned, Send, X } from 'lucide-react'
+import { ArrowRight, BrainCircuit, ChevronDown, CloudDownload, MapPinned, Send, X } from 'lucide-react'
 import { motion } from 'motion/react'
 import { useMemo, useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
@@ -178,10 +178,6 @@ export default function Landing() {
 
       <section className="hero" aria-labelledby="hero-judul">
         <motion.div className="hero-teks" variants={VARIAN_GRID} initial="awal" animate="tampil">
-          <motion.p variants={VARIAN_KARTU} className="hero-lencana">
-            <CircleAlert size={16} aria-hidden="true" />
-            {t('landing.hero.lencana')}
-          </motion.p>
           <motion.h1 id="hero-judul" variants={VARIAN_KARTU}>
             <Trans i18nKey="landing.hero.judul" components={{ aksen: <span className="hero-aksen" /> }} />
           </motion.h1>
