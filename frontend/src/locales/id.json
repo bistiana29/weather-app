@@ -105,7 +105,7 @@
     },
     "otp": {
       "judul": "Verifikasi Nomor WA",
-      "subjudul": "Kode 6 digit dikirim lewat WhatsApp ke {{nomor}}",
+      "subjudul": "Kode 6 digit dikirim lewat WhatsApp ke <utuh>{{nomor}}</utuh>",
       "kode": "Kode OTP",
       "digit": "Digit {{n}}",
       "hitungMundur": "Kirim ulang dalam <tebal>{{waktu}}</tebal>",

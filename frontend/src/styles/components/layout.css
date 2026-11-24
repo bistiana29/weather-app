@@ -572,6 +572,11 @@
   align-items: center;
 }
 
+/* Nomor WA tidak terpotong di tengah baris */
+.auth-nomor {
+  white-space: nowrap;
+}
+
 .auth-hitung {
   display: flex;
   align-items: center;

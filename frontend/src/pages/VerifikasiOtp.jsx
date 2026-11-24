@@ -66,7 +66,16 @@ export default function VerifikasiOtp() {
   }
 
   return (
-    <KartuAuth judul={t('auth.otp.judul')} subjudul={t('auth.otp.subjudul', { nomor: samarkanNoWa(pendaftaran.no_wa) })}>
+    <KartuAuth
+      judul={t('auth.otp.judul')}
+      subjudul={
+        <Trans
+          i18nKey="auth.otp.subjudul"
+          values={{ nomor: samarkanNoWa(pendaftaran.no_wa) }}
+          components={{ utuh: <span className="auth-nomor" /> }}
+        />
+      }
+    >
       <JudulHalaman judul={t('auth.otp.judul')} />
       {galat && <Pesan nada="galat">{teksGalat(t, galat)}</Pesan>}
       {info && <Pesan>{t('auth.otp.terkirimUlang')}</Pesan>}
