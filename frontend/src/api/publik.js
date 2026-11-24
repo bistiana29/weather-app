@@ -26,7 +26,7 @@ export async function getRisiko(tgl) {
   return tundaMock(buatRisikoGabungan(await daftarKodeKel(), tgl))
 }
 
-// Prakiraan 24 jam observasi + 24 jam prediksi untuk satu kelurahan
+// Prakiraan 24 jam observasi + 24 jam prediksi untuk satu kelurahan; observasi kosong untuk tanggal lebih dari H+1
 export async function getPrakiraan(kodeKel, parameter, tgl) {
   if (!PAKAI_MOCK) return request(`/prakiraan/${kodeKel}/${parameter}?tgl=${tgl}`)
   return tundaMock(buatPrakiraan(kodeKel, parameter, tgl))

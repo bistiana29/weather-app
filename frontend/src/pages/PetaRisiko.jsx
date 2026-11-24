@@ -30,6 +30,7 @@ import { MEDIA, MEDIA_SENTUH, useMediaQuery } from '../lib/useMediaQuery'
 import '../styles/pages/PetaRisiko.css'
 
 const RENTANG_HARI_LALU = 30
+const RENTANG_HARI_DEPAN = 5
 
 // Label tanggal relatif ("esok hari", "hari ini") atau tanggal ringkas
 function labelTanggal(tgl, hariIni, t, f) {
@@ -66,8 +67,9 @@ export default function PetaRisiko() {
   const hariIni = hariIniWib()
   const besok = tambahHari(hariIni, 1)
   const tglMin = tambahHari(hariIni, -RENTANG_HARI_LALU)
+  const tglMaks = tambahHari(hariIni, RENTANG_HARI_DEPAN)
   const tglUrl = searchParams.get('date')
-  const tgl = isoValid(tglUrl) && tglUrl >= tglMin && tglUrl <= besok ? tglUrl : besok
+  const tgl = isoValid(tglUrl) && tglUrl >= tglMin && tglUrl <= tglMaks ? tglUrl : besok
   const params = bacaParams(searchParams.get('params'))
   const colorUrl = parameterDariUrl(searchParams.get('color'))
   const color = params.includes(colorUrl) ? colorUrl : params.includes('hujan') ? 'hujan' : params[0]
@@ -151,6 +153,8 @@ export default function PetaRisiko() {
   }
 
   const label = labelTanggal(tgl, hariIni, t, f)
+  // Lebih dari H+1 belum ada observasi sehari sebelumnya, grafik hanya berisi 24 jam prediksi
+  const jamGrafik = tgl > besok ? 24 : 48
   const memuatData = risikoQuery.isPending || geojsonQuery.isPending
   const deret = <DeretPerJam namaKelurahan={namaFokus} parameter={color} prakiraan={prakiraanQuery.data} memuat={prakiraanQuery.isPending} />
 
@@ -174,7 +178,7 @@ export default function PetaRisiko() {
           className="peta-cari"
         />
         <PilihParameter dipilih={params} onUbah={gantiParams} />
-        <DatePicker value={tgl} onChange={gantiTanggal} min={tglMin} max={besok} label={t('peta.tanggalPrediksi')} />
+        <DatePicker value={tgl} onChange={gantiTanggal} min={tglMin} max={tglMaks} label={t('peta.tanggalPrediksi')} />
       </PageHeader>
 
       <motion.div className="bento" variants={VARIAN_GRID} initial="awal" animate="tampil">
@@ -221,6 +225,8 @@ export default function PetaRisiko() {
                   color={color}
                   params={params}
                   alasan={alasanFokus}
+                  labelTanggal={label}
+                  jamGrafik={jamGrafik}
                   dipilih={Boolean(kelDipilih)}
                   memuat={memuatData}
                   onTutup={tutupFokus}
@@ -268,6 +274,7 @@ export default function PetaRisiko() {
         onOpenChange={setGrafikTerbuka}
         namaKelurahan={namaFokus}
         parameter={color}
+        jamGrafik={jamGrafik}
         prakiraan={prakiraanQuery.data}
         memuat={prakiraanQuery.isPending}
       />

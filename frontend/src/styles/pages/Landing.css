@@ -706,6 +706,15 @@
     padding: 18px;
   }
 
+  /* Pop-up hero jadi panel datar di bawah peta agar tidak menutupi peta dan legenda */
+  .hero-popup {
+    position: static;
+    width: 100%;
+    background: var(--tint);
+    box-shadow: none;
+    transform: none;
+  }
+
   .strip-ringkasan {
     margin-top: -24px;
     padding: 12px 14px;

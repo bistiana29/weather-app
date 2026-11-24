@@ -27,7 +27,7 @@ function FokusSkeleton() {
 }
 
 // Kartu kelurahan terpilih: nilai besar parameter pewarna, kategori, periode, chip parameter lain, tombol grafik
-export default function KartuFokus({ properti, data, color, params, alasan, dipilih, memuat, onTutup, onGrafik }) {
+export default function KartuFokus({ properti, data, color, params, alasan, labelTanggal, jamGrafik, dipilih, memuat, onTutup, onGrafik }) {
   const { t } = useTranslation()
   const f = useFormat()
   if (memuat || !properti || !data) return <FokusSkeleton />
@@ -39,7 +39,7 @@ export default function KartuFokus({ properti, data, color, params, alasan, dipi
     <article className="fokus" aria-labelledby="fokus-nama">
       <div className="fokus-kepala">
         <div className="fokus-nama-blok">
-          <p className="fokus-alasan">{dipilih ? t('peta.kec', { nama: properti.kecamatan }) : t(`peta.fokus.${alasan}`)}</p>
+          <p className="fokus-alasan">{dipilih ? t('peta.kec', { nama: properti.kecamatan }) : t(`peta.fokus.${alasan}`, { tanggal: labelTanggal })}</p>
           <h2 id="fokus-nama" className="fokus-nama">{t('peta.kel', { nama: properti.kelurahan })}</h2>
           {!dipilih && <p className="teks-sekunder fokus-kec">{t('peta.kec', { nama: properti.kecamatan })}</p>}
         </div>
@@ -85,7 +85,7 @@ export default function KartuFokus({ properti, data, color, params, alasan, dipi
       )}
 
       <Button variant="sekunder" ikon={ChartLine} onClick={onGrafik} className="fokus-tombol">
-        {t('peta.fokus.grafik')}
+        {t('peta.fokus.grafik', { jam: jamGrafik })}
       </Button>
     </article>
   )

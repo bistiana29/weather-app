@@ -33,7 +33,7 @@ function proyeksikan(geojson) {
   return { tinggi, jalur }
 }
 
-// Ilustrasi peta kelurahan berwarna (SVG statis, tanpa basemap); children ditempelkan pada titik tengah kelurahan sorotan
+// Ilustrasi peta kelurahan berwarna (SVG statis, tanpa basemap); titik dan children opsional ditempelkan pada tengah kelurahan sorotan
 export default function PetaMini({ geojson, risiko, parameter, label, sorot, children }) {
   const { tinggi, jalur } = useMemo(() => proyeksikan(geojson), [geojson])
   const terpilih = jalur.find((j) => j.kode === sorot)
@@ -52,7 +52,7 @@ export default function PetaMini({ geojson, risiko, parameter, label, sorot, chi
         ))}
         {terpilih && <path d={terpilih.d} fill="none" stroke={WARNA.navy} strokeWidth="2.5" strokeLinejoin="round" />}
       </svg>
-      {posisi && children && (
+      {posisi && (
         <div className={`peta-mini-titik ${y < 45 ? 'di-bawah' : ''}`} style={posisi}>
           {children}
         </div>

@@ -28,11 +28,12 @@ function IsiTooltip({ active, payload, parameter, f, t }) {
   )
 }
 
-// Grafik 24 jam observasi (garis solid) + 24 jam prediksi (garis putus-putus) + garis ambang
+// Grafik 24 jam observasi (garis solid, jika ada) + 24 jam prediksi (garis putus-putus) + garis ambang
 export default function GrafikPrakiraan({ parameter, observasi, prediksi, ambang }) {
   const { t } = useTranslation()
   const f = useFormat()
   const labelWaktu = buatLabelWaktu(f)
+  const adaObservasi = observasi.length > 0
   const kurangiGerak = useReducedMotion()
   const data = [
     ...observasi.map((titik, i) => ({
@@ -54,7 +55,7 @@ export default function GrafikPrakiraan({ parameter, observasi, prediksi, ambang
   return (
     <figure className="grafik">
       <figcaption className="grafik-legenda">
-        <span><i className="garis-observasi" aria-hidden="true" />{t('peta.grafik.observasi')}</span>
+        {adaObservasi && <span><i className="garis-observasi" aria-hidden="true" />{t('peta.grafik.observasi')}</span>}
         <span><i className="garis-prediksi" aria-hidden="true" />{t('peta.grafik.prediksi')}</span>
         {ambang != null && <span><i className="garis-ambang" aria-hidden="true" />{t(`peta.grafik.ambang.${parameter}`)}</span>}
         {satuanSumbu && <span className="teks-sekunder">{t('peta.grafik.sumbuY', { satuan: satuanSumbu })}</span>}
@@ -64,6 +65,7 @@ export default function GrafikPrakiraan({ parameter, observasi, prediksi, ambang
         role="img"
         aria-label={t(ambang != null ? 'peta.grafik.ariaAmbang' : 'peta.grafik.aria', {
           parameter: f.parameterJudul(parameter),
+          cakupan: t(adaObservasi ? 'peta.grafik.cakupanLengkap' : 'peta.grafik.cakupanPrediksi'),
           puncak: f.nilaiLengkap(parameter, puncak),
           ambang: f.nilaiLengkap(parameter, ambang),
         })}

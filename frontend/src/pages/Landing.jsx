@@ -22,6 +22,7 @@ import { useFormat } from '../lib/format'
 import { JENIS_KEJADIAN, PARAMETER, PARAMETER_PETA, ringkasanDari, risikoParameter, urlPeta, warnaKategori } from '../lib/kategori'
 import { susunPesan } from '../lib/pesanWa'
 import { hariIniWib, tambahHari } from '../lib/tanggal'
+import { MEDIA, useMediaQuery } from '../lib/useMediaQuery'
 import '../styles/pages/Landing.css'
 
 const LANGKAH = [
@@ -63,13 +64,18 @@ function PopupHero({ properti, data, besok, onTutup }) {
   )
 }
 
-// Kartu peta hero: kategori hujan esok hari, pop-up otomatis, dan legenda ringkas
+// Kartu peta hero: kategori hujan esok hari, pop-up otomatis (di bawah peta pada mobile), dan legenda ringkas
 function KartuPetaHero({ geojson, risikoHujan, indeks, besok }) {
   const { t } = useTranslation()
   const f = useFormat()
+  const mobile = useMediaQuery(MEDIA.mobile)
   const [popupTerbuka, setPopupTerbuka] = useState(true)
   const teratas = Object.entries(risikoHujan ?? {}).sort(([, a], [, b]) => b.nilai - a.nilai)[0]
   const siap = geojson && risikoHujan
+  const properti = indeks[teratas?.[0]]
+  const popup = siap && popupTerbuka && properti && (
+    <PopupHero properti={properti} data={teratas[1]} besok={besok} onTutup={() => setPopupTerbuka(false)} />
+  )
 
   return (
     <Card className="hero-peta" aria-busy={!siap}>
@@ -86,14 +92,13 @@ function KartuPetaHero({ geojson, risikoHujan, indeks, besok }) {
             label={t('landing.peta.alt', { tanggal: f.tanggalPanjang(besok) })}
             sorot={popupTerbuka ? teratas?.[0] : null}
           >
-            {teratas && indeks[teratas[0]] && (
-              <PopupHero properti={indeks[teratas[0]]} data={teratas[1]} besok={besok} onTutup={() => setPopupTerbuka(false)} />
-            )}
+            {!mobile && popup}
           </PetaMini>
         ) : (
           <Skeleton height="100%" radius={16} />
         )}
       </div>
+      {mobile && popup}
       <ul className="hero-legend" aria-label={t('landing.peta.legenda', { satuan: t('satuan.hujan') })}>
         {PARAMETER.hujan.kategori.map((k) => (
           <li key={k.label}>

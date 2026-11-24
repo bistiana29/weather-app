@@ -292,15 +292,17 @@
       "observasi": "Observed",
       "prediksi": "Forecast",
       "sumbuY": "Y axis in {{satuan}}",
-      "aria": "{{parameter}} chart: 24 hours observed and 24 hours forecast, forecast peak {{puncak}}.",
-      "ariaAmbang": "{{parameter}} chart: 24 hours observed and 24 hours forecast, forecast peak {{puncak}}, threshold {{ambang}}.",
+      "cakupanLengkap": "24 hours observed and 24 hours forecast",
+      "cakupanPrediksi": "24 hours forecast",
+      "aria": "{{parameter}} chart: {{cakupan}}, forecast peak {{puncak}}.",
+      "ariaAmbang": "{{parameter}} chart: {{cakupan}}, forecast peak {{puncak}}, threshold {{ambang}}.",
       "ambang": {
         "hujan": "Very Heavy Rain threshold",
         "suhu": "Extreme Temperature threshold",
         "angin": "Strong Wind threshold",
         "jarak-pandang": "Extremely Low Visibility threshold"
       },
-      "judulDialog": "48-hour chart · {{kelurahan}} · {{parameter}}"
+      "judulDialog": "{{jam}}-hour chart · {{kelurahan}} · {{parameter}}"
     },
     "panel": {
       "perJam": "Hourly forecast",
@@ -315,11 +317,11 @@
       "aria": "Choose parameters, currently {{label}}"
     },
     "fokus": {
-      "tertinggi": "Highest value tomorrow",
+      "tertinggi": "Highest value {{tanggal}}",
       "pantauan": "Your watched kelurahan",
       "tutup": "Clear selected kelurahan",
       "lainnya": "Other parameters",
-      "grafik": "View 48-hour chart"
+      "grafik": "View {{jam}}-hour chart"
     },
     "jam": {
       "judul": "Hourly forecast",

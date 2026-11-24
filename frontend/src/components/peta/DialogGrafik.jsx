@@ -6,8 +6,8 @@ import Skeleton from '../ui/Skeleton'
 import GrafikPrakiraan from './GrafikPrakiraan'
 import '../../styles/components/peta.css'
 
-// Dialog grafik 48 jam (24 jam observasi + 24 jam prediksi + garis ambang) dan info model aktif
-export default function DialogGrafik({ open, onOpenChange, namaKelurahan, parameter, prakiraan, memuat }) {
+// Dialog grafik 48 jam (24 jam observasi + 24 jam prediksi) atau 24 jam prediksi saja, garis ambang, dan info model aktif
+export default function DialogGrafik({ open, onOpenChange, namaKelurahan, parameter, jamGrafik, prakiraan, memuat }) {
   const { t } = useTranslation()
   const f = useFormat()
   return (
@@ -15,7 +15,7 @@ export default function DialogGrafik({ open, onOpenChange, namaKelurahan, parame
       open={open}
       onOpenChange={onOpenChange}
       lebar
-      judul={t('peta.grafik.judulDialog', { kelurahan: namaKelurahan ?? '', parameter: f.parameterJudul(parameter) })}
+      judul={t('peta.grafik.judulDialog', { jam: jamGrafik, kelurahan: namaKelurahan ?? '', parameter: f.parameterJudul(parameter) })}
     >
       {memuat || !prakiraan ? (
         <Skeleton height={260} radius={16} />

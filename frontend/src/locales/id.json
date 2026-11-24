@@ -292,15 +292,17 @@
       "observasi": "Observasi",
       "prediksi": "Prediksi",
       "sumbuY": "Sumbu Y dalam {{satuan}}",
-      "aria": "Grafik {{parameter}}: 24 jam observasi dan 24 jam prediksi, puncak prediksi {{puncak}}.",
-      "ariaAmbang": "Grafik {{parameter}}: 24 jam observasi dan 24 jam prediksi, puncak prediksi {{puncak}}, ambang {{ambang}}.",
+      "cakupanLengkap": "24 jam observasi dan 24 jam prediksi",
+      "cakupanPrediksi": "24 jam prediksi",
+      "aria": "Grafik {{parameter}}: {{cakupan}}, puncak prediksi {{puncak}}.",
+      "ariaAmbang": "Grafik {{parameter}}: {{cakupan}}, puncak prediksi {{puncak}}, ambang {{ambang}}.",
       "ambang": {
         "hujan": "Batas Hujan Sangat Lebat",
         "suhu": "Batas Suhu Ekstrem",
         "angin": "Batas Angin Kencang",
         "jarak-pandang": "Batas Jarak Pandang Ekstrem"
       },
-      "judulDialog": "Grafik 48 jam · {{kelurahan}} · {{parameter}}"
+      "judulDialog": "Grafik {{jam}} jam · {{kelurahan}} · {{parameter}}"
     },
     "panel": {
       "perJam": "Prediksi per jam",
@@ -315,11 +317,11 @@
       "aria": "Pilih parameter, saat ini {{label}}"
     },
     "fokus": {
-      "tertinggi": "Nilai tertinggi esok hari",
+      "tertinggi": "Nilai tertinggi {{tanggal}}",
       "pantauan": "Kelurahan pantauan Anda",
       "tutup": "Tutup pilihan kelurahan",
       "lainnya": "Parameter lain",
-      "grafik": "Lihat grafik 48 jam"
+      "grafik": "Lihat grafik {{jam}} jam"
     },
     "jam": {
       "judul": "Prakiraan per jam",

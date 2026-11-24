@@ -1,5 +1,5 @@
 import { ambangParameter, batasKejadian, kategoriDari, PARAMETER, PARAMETER_PETA } from '../lib/kategori'
-import { tambahHari } from '../lib/tanggal'
+import { hariIniWib, tambahHari } from '../lib/tanggal'
 
 // Data cuaca contoh (fiktif) yang dibangkitkan deterministik dari kode kelurahan + tanggal
 
@@ -96,9 +96,10 @@ export function buatRisikoGabungan(daftarKode, tgl) {
 
 export function buatPrakiraan(kodeKel, parameter, tgl) {
   const kemarin = tambahHari(tgl, -1)
+  const hariIni = hariIniWib()
   const normal = parameter === 'suhu' ? SUHU_NORMAL_CONTOH : null
   const prediksi = buatSeri(kodeKel, parameter, tgl)
-  const observasi = buatSeri(kodeKel, parameter, kemarin)
+  const observasi = kemarin > hariIni ? [] : buatSeri(kodeKel, parameter, kemarin)
   const keTitik = (tanggal) => (nilai, j) => ({ waktu: `${tanggal}T${String(j).padStart(2, '0')}:00`, nilai })
   return {
     kode_kel: kodeKel,
@@ -111,6 +112,6 @@ export function buatPrakiraan(kodeKel, parameter, tgl) {
     observasi: observasi.map(keTitik(kemarin)),
     prediksi: prediksi.map(keTitik(tgl)),
     model: MODEL_CONTOH,
-    dibuat: `${kemarin}T12:00`,
+    dibuat: `${kemarin > hariIni ? hariIni : kemarin}T12:00`,
   }
 }
