@@ -15,9 +15,6 @@ from . import config, extract, load, params
 
 logger = logging.getLogger(__name__)
 
-ELEVATION_COL = {"nasa": "elevasi_nasa_m", "openmeteo": "elevasi_openmeteo_m"}
-
-
 # Membaca dan memvalidasi CSV stasiun BMKG, lalu mengganti nama kolomnya
 def load_stasiun_csv() -> pd.DataFrame:
     raw = pd.read_csv(config.STASIUN_CSV)
@@ -43,26 +40,19 @@ ON CONFLICT (id_wmo) DO UPDATE SET nama = EXCLUDED.nama, latitude = EXCLUDED.lat
     conn.commit()
 
 
-# Mengambil semua stasiun satu sumber, menulis sekali lewat load.upsert(), lalu menyimpan elevasi grid API
+# Mengambil semua stasiun satu sumber lalu menulis sekali lewat load.upsert()
 def run(conn, spec: params.TableSpec, stasiun: pd.DataFrame, start: date, end: date) -> None:
     t_start, t_end = load.day_bounds(start, end)
     log_id = load.log_start(conn, "stasiun", spec.source, spec.granularity, None, t_start, t_end, spec.name)
     try:
-        frames, elevations = [], {}
-        for r in stasiun.itertuples(index=False):
-            df, elevation = extract.fetch_daily_stasiun(spec, int(r.id_wmo), float(r.latitude), float(r.longitude), start, end)
-            frames.append(df)
-            elevations[int(r.id_wmo)] = elevation
+        frames = [extract.fetch_daily_stasiun(spec, int(r.id_wmo), float(r.latitude), float(r.longitude), start, end)
+                  for r in stasiun.itertuples(index=False)]
         combined = pd.concat([f for f in frames if not f.empty], ignore_index=True)
         stats = load.upsert(conn, spec, combined)
-        with conn.cursor() as cur:
-            cur.executemany(f"UPDATE stasiun_bmkg SET {ELEVATION_COL[spec.source]} = %s WHERE id_wmo = %s",
-                            [(v, k) for k, v in elevations.items()])
-        conn.commit()
         load.log_finish(conn, log_id, "success", jumlah_baris=len(combined))
-        logger.info("[stasiun] %s (%d stasiun, %s..%s): rows=%d, inserted=%d, updated=%d, unchanged=%d, elevasi=%s",
+        logger.info("[stasiun] %s (%d stasiun, %s..%s): rows=%d, inserted=%d, updated=%d, unchanged=%d",
                     spec.name, len(stasiun), start, end, len(combined), stats["inserted"], stats["updated"],
-                    stats["unchanged"], elevations)
+                    stats["unchanged"])
     except Exception as exc:
         load.log_finish(conn, log_id, "failed", pesan_error=str(exc))
         logger.exception("[stasiun] Gagal pada %s: %s", spec.name, exc)

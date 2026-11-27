@@ -32,6 +32,8 @@ WIB = ZoneInfo(LOCAL_TZ)
 
 START_DATE = date(2022, 1, 1)
 BACKFILL_END = datetime(2026, 11, 11, 23, 0, tzinfo=WIB)
+# Batas akhir tetap backfill parameter baru (--extra), agar potongan tahun terakhir bisa dicatat selesai; sesudahnya diisi jadwal.
+EXTRA_BACKFILL_END = datetime(2026, 11, 27, 23, 0, tzinfo=WIB)
 STASIUN_START = date(2024, 6, 14)
 STASIUN_END = date(2026, 6, 15)
 HOT_DAYS = 130

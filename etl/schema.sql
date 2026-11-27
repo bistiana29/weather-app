@@ -27,9 +27,14 @@ CREATE TABLE IF NOT EXISTS "nasa_hourly" (
     "PRECTOTCORR (mm/jam)" real,
     "RH2M (%)" real,
     "PS (kPa)" real,
+    "CLOUD_AMT (%)" real,
+    "DPD (°C)" real,
     fetched_at timestamptz NOT NULL DEFAULT now(),
     PRIMARY KEY (kelurahan_id, "waktu")
 );
+-- Parameter yang ditambahkan setelah tabel dibuat.
+ALTER TABLE "nasa_hourly" ADD COLUMN IF NOT EXISTS "CLOUD_AMT (%)" real;
+ALTER TABLE "nasa_hourly" ADD COLUMN IF NOT EXISTS "DPD (°C)" real;
 
 CREATE INDEX IF NOT EXISTS "nasa_hourly_waktu_idx" ON "nasa_hourly" ("waktu");
 
@@ -44,6 +49,10 @@ COMMENT ON COLUMN "nasa_hourly"."PRECTOTCORR (mm/jam)" IS 'Precipitation Correct
 COMMENT ON COLUMN "nasa_hourly"."RH2M (%)" IS 'Relative Humidity at 2 Meters';
 
 COMMENT ON COLUMN "nasa_hourly"."PS (kPa)" IS 'Surface Pressure';
+
+COMMENT ON COLUMN "nasa_hourly"."CLOUD_AMT (%)" IS 'Cloud Amount';
+
+COMMENT ON COLUMN "nasa_hourly"."DPD (°C)" IS 'Dew point depression: T2M - T2MDEW (Dew/Frost Point at 2 Meters), tanpa clip';
 
 COMMENT ON COLUMN "nasa_hourly"."waktu" IS 'Jam awal periode (timestamptz, ditampilkan dalam WIB)';
 
@@ -60,9 +69,16 @@ CREATE TABLE IF NOT EXISTS "openmeteo_hourly" (
     "sunshine_duration (s)" real,
     "surface_pressure (hPa)" real,
     "visibility (m)" real,
+    "cloud_cover (%)" real,
+    "DPD (°C)" real,
+    "pm2_5 (µg/m³)" real,
     fetched_at timestamptz NOT NULL DEFAULT now(),
     PRIMARY KEY (kelurahan_id, "waktu")
 );
+-- Parameter yang ditambahkan setelah tabel dibuat.
+ALTER TABLE "openmeteo_hourly" ADD COLUMN IF NOT EXISTS "cloud_cover (%)" real;
+ALTER TABLE "openmeteo_hourly" ADD COLUMN IF NOT EXISTS "DPD (°C)" real;
+ALTER TABLE "openmeteo_hourly" ADD COLUMN IF NOT EXISTS "pm2_5 (µg/m³)" real;
 
 CREATE INDEX IF NOT EXISTS "openmeteo_hourly_waktu_idx" ON "openmeteo_hourly" ("waktu");
 
@@ -81,6 +97,12 @@ COMMENT ON COLUMN "openmeteo_hourly"."sunshine_duration (s)" IS 'Number of secon
 COMMENT ON COLUMN "openmeteo_hourly"."surface_pressure (hPa)" IS 'Atmospheric air pressure at surface';
 
 COMMENT ON COLUMN "openmeteo_hourly"."visibility (m)" IS 'Viewing distance (Historical Forecast API)';
+
+COMMENT ON COLUMN "openmeteo_hourly"."cloud_cover (%)" IS 'Total cloud cover as an area fraction';
+
+COMMENT ON COLUMN "openmeteo_hourly"."DPD (°C)" IS 'Dew point depression: temperature_2m - dew_point_2m, tanpa clip';
+
+COMMENT ON COLUMN "openmeteo_hourly"."pm2_5 (µg/m³)" IS 'Particulate matter PM2.5 (Air Quality API)';
 
 COMMENT ON COLUMN "openmeteo_hourly"."waktu" IS 'Jam awal periode (timestamptz, ditampilkan dalam WIB)';
 
@@ -117,17 +139,17 @@ ALTER TABLE "openmeteo_hourly" ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE "ingestion_log" ENABLE ROW LEVEL SECURITY;
 
--- Titik stasiun BMKG untuk validasi daily. Elevasi API diisi oleh pipeline/stasiun.py dari respons API
--- (elevasi titik grid yang dipakai sumber), karena bisa berbeda jauh dari elevasi stasiun.
+-- Titik stasiun BMKG untuk validasi daily. elevasi_m adalah elevasi stasiun dari CSV; elevasi titik grid API ada di elevasi_titik.
 CREATE TABLE IF NOT EXISTS stasiun_bmkg (
     id_wmo integer PRIMARY KEY,
     nama text NOT NULL,
     latitude double precision NOT NULL,
     longitude double precision NOT NULL,
-    elevasi_m real,
-    elevasi_openmeteo_m real,
-    elevasi_nasa_m real
+    elevasi_m real
 );
+-- Kolom elevasi API lama dipindah ke elevasi_titik (cadangan nilai lama: _work/elevasi_stasiun_lama.csv).
+ALTER TABLE "stasiun_bmkg" DROP COLUMN IF EXISTS elevasi_openmeteo_m;
+ALTER TABLE "stasiun_bmkg" DROP COLUMN IF EXISTS elevasi_nasa_m;
 
 CREATE TABLE IF NOT EXISTS "nasa_daily_stasiun" (
     id_wmo integer NOT NULL REFERENCES stasiun_bmkg (id_wmo),
@@ -208,6 +230,21 @@ ALTER TABLE "nasa_daily_stasiun" ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE "openmeteo_daily_stasiun" ENABLE ROW LEVEL SECURITY;
 
+-- Elevasi titik grid yang dipakai sumber, dari metadata respons API, per titik/sumber/endpoint/parameter.
+-- Informasi statis, diisi sekali oleh pipeline/elevasi.py (INSERT ... ON CONFLICT DO NOTHING).
+CREATE TABLE IF NOT EXISTS elevasi_titik (
+    jenis_titik text NOT NULL CHECK (jenis_titik IN ('kelurahan', 'stasiun')),
+    kode_titik text NOT NULL,
+    sumber text NOT NULL CHECK (sumber IN ('nasa', 'openmeteo')),
+    endpoint text NOT NULL,
+    parameter text NOT NULL,
+    elevasi_m real,
+    diambil_pada timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (jenis_titik, kode_titik, sumber, endpoint, parameter)
+);
+
+ALTER TABLE "elevasi_titik" ENABLE ROW LEVEL SECURITY;
+
 -- Ringkasan kesehatan job terjadwal (hourly 153 kelurahan) untuk dibuka di Supabase Table Editor, satu baris per sumber.
 -- Hanya job yang mengambil dari API yang dihitung; compact dan backfill_flush tidak mengambil data baru.
 -- security_invoker = true agar RLS tabel asal tetap berlaku, sehingga view ini tidak membuka data lewat API publik.
@@ -216,13 +253,15 @@ WITH kombinasi (sumber, granularitas) AS (
     VALUES ('nasa', 'hourly'), ('openmeteo', 'hourly')
 ),
 sel AS (
-    SELECT 'nasa' AS sumber, 'hourly' AS granularitas, waktu, 6 AS kolom,
-           num_nulls("T2M (°C)", "WS2M (m/s)", "WD2M (°)", "PRECTOTCORR (mm/jam)", "RH2M (%)", "PS (kPa)") AS kosong
+    SELECT 'nasa' AS sumber, 'hourly' AS granularitas, waktu, 8 AS kolom,
+           num_nulls("T2M (°C)", "WS2M (m/s)", "WD2M (°)", "PRECTOTCORR (mm/jam)", "RH2M (%)", "PS (kPa)",
+                     "CLOUD_AMT (%)", "DPD (°C)") AS kosong
     FROM nasa_hourly
     UNION ALL
-    SELECT 'openmeteo', 'hourly', waktu, 8,
+    SELECT 'openmeteo', 'hourly', waktu, 11,
            num_nulls("temperature_2m (°C)", "wind_speed_10m (kn)", "wind_direction_10m (°)", "relative_humidity_2m (%)",
-                     "precipitation (mm)", "sunshine_duration (s)", "surface_pressure (hPa)", "visibility (m)")
+                     "precipitation (mm)", "sunshine_duration (s)", "surface_pressure (hPa)", "visibility (m)",
+                     "cloud_cover (%)", "DPD (°C)", "pm2_5 (µg/m³)")
     FROM openmeteo_hourly
 ),
 data AS (
@@ -284,7 +323,8 @@ panas AS (
     FROM nasa_hourly t
     CROSS JOIN LATERAL (VALUES
         ('T2M (°C)', t."T2M (°C)"), ('WS2M (m/s)', t."WS2M (m/s)"), ('WD2M (°)', t."WD2M (°)"),
-        ('PRECTOTCORR (mm/jam)', t."PRECTOTCORR (mm/jam)"), ('RH2M (%)', t."RH2M (%)"), ('PS (kPa)', t."PS (kPa)")
+        ('PRECTOTCORR (mm/jam)', t."PRECTOTCORR (mm/jam)"), ('RH2M (%)', t."RH2M (%)"), ('PS (kPa)', t."PS (kPa)"),
+        ('CLOUD_AMT (%)', t."CLOUD_AMT (%)"), ('DPD (°C)', t."DPD (°C)")
     ) AS p (parameter, nilai)
     UNION ALL
     SELECT 'nasa', 'daily_stasiun', p.parameter, t.tanggal::timestamp AT TIME ZONE 'Asia/Jakarta', p.nilai
@@ -301,7 +341,8 @@ panas AS (
         ('temperature_2m (°C)', t."temperature_2m (°C)"), ('wind_speed_10m (kn)', t."wind_speed_10m (kn)"),
         ('wind_direction_10m (°)', t."wind_direction_10m (°)"), ('relative_humidity_2m (%)', t."relative_humidity_2m (%)"),
         ('precipitation (mm)', t."precipitation (mm)"), ('sunshine_duration (s)', t."sunshine_duration (s)"),
-        ('surface_pressure (hPa)', t."surface_pressure (hPa)"), ('visibility (m)', t."visibility (m)")
+        ('surface_pressure (hPa)', t."surface_pressure (hPa)"), ('visibility (m)', t."visibility (m)"),
+        ('cloud_cover (%)', t."cloud_cover (%)"), ('DPD (°C)', t."DPD (°C)"), ('pm2_5 (µg/m³)', t."pm2_5 (µg/m³)")
     ) AS p (parameter, nilai)
     UNION ALL
     SELECT 'openmeteo', 'daily_stasiun', p.parameter, t.tanggal::timestamp AT TIME ZONE 'Asia/Jakarta', p.nilai

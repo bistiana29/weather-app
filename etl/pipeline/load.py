@@ -1,7 +1,7 @@
 """
 Load: menyimpan data ke Postgres (lapis panas dan ingestion_log), ke Parquet bulanan di Supabase Storage (lapis dingin), dan ke ringkasan_arsip.
 
-Alur file: ingest.py / backfill.py / stasiun.py / compact.py / read.py → load.py → transform.py
+Alur file: ingest.py / backfill.py / stasiun.py / compact.py / elevasi.py / read.py → load.py → transform.py
 Alur fungsi: connect() → prepare() → log_start() → upsert() / stage_monthly_frame() → SupabaseStorageClient.upsert_monthly_parquet() → simpan_ringkasan() → log_finish()
 """
 import hashlib
@@ -235,13 +235,14 @@ def month_key(df: pd.DataFrame, spec: TableSpec) -> pd.Series:
     return pd.to_datetime(df["waktu"], utc=True).dt.tz_convert(config.LOCAL_TZ).dt.strftime("%Y-%m")
 
 
-# Merapikan frame untuk Parquet: buang baris NULL semua, gabung duplikat, tipe int32/float32, urutkan
+# Merapikan frame untuk Parquet: kolom yang belum ada diisi NULL, buang baris NULL semua, gabung duplikat, int32/float32, urutkan
 def normalize_for_parquet(df: pd.DataFrame, spec: TableSpec) -> pd.DataFrame:
     cols = [*spec.key_cols, *spec.value_cols]
     if df.empty:
         out = pd.DataFrame(columns=cols)
     else:
-        out = transform.coalesce_dupes(transform.drop_all_null(df[cols].copy(), spec), spec)
+        # reindex: file Parquet lama atau data backfill parameter baru tidak memuat semua kolom.
+        out = transform.coalesce_dupes(transform.drop_all_null(df.reindex(columns=cols), spec), spec)
     out["kelurahan_id"] = out["kelurahan_id"].astype("int32")
     out["waktu"] = pd.to_datetime(out["waktu"], utc=True).dt.tz_convert(config.LOCAL_TZ).dt.floor("us")
     for c in spec.value_cols:

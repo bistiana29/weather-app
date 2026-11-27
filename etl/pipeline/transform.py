@@ -2,7 +2,7 @@
 Transform: mengubah respons JSON API menjadi DataFrame berkolom bersatuan (-999/NaN menjadi NULL, waktu WIB), tanpa akses jaringan.
 
 Alur file: extract.py / load.py → transform.py
-Alur fungsi: nasa_to_frame() / openmeteo_to_frame() → merge_openmeteo_hourly() → drop_future() → drop_all_null() → coalesce_dupes() (dipakai load.py)
+Alur fungsi: nasa_to_frame() / openmeteo_to_frame() → merge_openmeteo_hourly() → finalize_frame() (DPD) → drop_future() → drop_all_null() → coalesce_dupes() (dipakai load.py)
 """
 from datetime import datetime, timezone
 
@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 
 from . import config
-from .params import OPENMETEO_HOURLY, TableSpec
+from .params import TableSpec
 
 NASA_FILL = -999.0
 
@@ -33,7 +33,7 @@ def nasa_to_frame(payload: dict, spec: TableSpec, location_id: int) -> pd.DataFr
     fill = float(header.get("fill_value", NASA_FILL))
     raw = payload["properties"]["parameter"]
     data = {}
-    for p in spec.params:
+    for p in spec.params_for("default"):
         if p.api_code not in raw:
             raise SourceFormatError(f"Parameter NASA hilang di respons: {p.api_code}")
         data[p.column] = pd.Series(raw[p.api_code], dtype="float64")
@@ -59,8 +59,9 @@ def openmeteo_to_frame(payload: dict, spec: TableSpec, location_id: int, endpoin
         raise SourceFormatError(f"Blok {block!r} tidak ada di respons Open-Meteo")
     units = payload.get(f"{block}_units", {})
     for p in params:
-        if units.get(p.api_code) not in (None, p.unit):
-            raise SourceFormatError(f"Satuan {p.api_code} berubah: {units.get(p.api_code)!r} != {p.unit!r}")
+        expected_unit = p.api_unit or p.unit
+        if units.get(p.api_code) not in (None, expected_unit):
+            raise SourceFormatError(f"Satuan {p.api_code} berubah: {units.get(p.api_code)!r} != {expected_unit!r}")
     times = payload[block]["time"]
     if spec.granularity == "hourly":
         if "utc_offset_seconds" not in payload:
@@ -81,15 +82,30 @@ def openmeteo_to_frame(payload: dict, spec: TableSpec, location_id: int, endpoin
     return pd.DataFrame(data)
 
 
-# Menempelkan kolom visibility ke data archive Open-Meteo; NULL bila visibility tidak tersedia
-def merge_openmeteo_hourly(archive_df: pd.DataFrame, visibility_df: pd.DataFrame | None) -> pd.DataFrame:
-    vis_col = "visibility (m)"
-    df = archive_df.copy()
-    if visibility_df is None or visibility_df.empty:
-        df[vis_col] = np.nan
-    else:
-        df = df.merge(visibility_df[["kelurahan_id", "waktu", vis_col]], on=["kelurahan_id", "waktu"], how="left")
-    return df[[*OPENMETEO_HOURLY.key_cols, *OPENMETEO_HOURLY.value_cols]]
+# Menempelkan kolom endpoint lain (visibility, pm2_5) ke frame endpoint pertama; NULL bila endpoint itu gagal
+def merge_openmeteo_hourly(frames: dict[str, pd.DataFrame | None], spec: TableSpec) -> pd.DataFrame:
+    keys = list(spec.key_cols)
+    df = frames[spec.endpoints[0]].copy()
+    for endpoint in spec.endpoints[1:]:
+        cols = [p.column for p in spec.params_for(endpoint)]
+        other = frames.get(endpoint)
+        if other is None or other.empty:
+            for c in cols:
+                df[c] = np.nan
+        else:
+            df = df.merge(other[[*keys, *cols]], on=keys, how="left")
+    return finalize_frame(df, spec)
+
+
+# Menghitung parameter turunan (DPD = suhu - titik embun, tanpa clip) lalu membuang kolom bahan hitung
+def finalize_frame(df: pd.DataFrame, spec: TableSpec) -> pd.DataFrame:
+    if df.empty:
+        return empty_frame(spec)
+    df = df.copy()
+    for p in spec.params_for("turunan"):
+        a, b = p.selisih
+        df[p.column] = df[a] - df[b]
+    return df[[*spec.key_cols, *spec.value_cols]]
 
 
 # Membuang jam setelah jam WIB yang sedang berjalan (hourly), atau hari ini dan sesudahnya (daily)
