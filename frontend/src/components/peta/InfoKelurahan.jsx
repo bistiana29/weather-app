@@ -1,4 +1,4 @@
-import { ArrowRight, X } from 'lucide-react'
+import { ArrowRight, Clock, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useFormat } from '../../lib/format'
 import { PARAMETER, warnaKategori } from '../../lib/kategori'
@@ -6,12 +6,12 @@ import Badge from '../ui/Badge'
 import Button from '../ui/Button'
 import '../../styles/components/peta.css'
 
-// Isi pop-up kelurahan: satu baris per parameter tercentang (pewarna di urutan pertama) dan periode jam pewarna
+// Isi pop-up kelurahan: satu baris per parameter tercentang (pewarna di urutan pertama), masing-masing dengan periode jam kejadiannya sendiri
 export default function InfoKelurahan({ properti, data, urutan, memuat, modeTap, onTutup, onLihat }) {
   const { t } = useTranslation()
   const f = useFormat()
   const judulId = `info-${properti.kode_kel}`
-  const pewarna = data?.[PARAMETER[urutan[0]].slugUrl]
+  const adaPeriode = urutan.some((slug) => data?.[PARAMETER[slug].slugUrl]?.jam_mulai)
 
   return (
     <section className="info-kelurahan" role={modeTap ? 'dialog' : 'tooltip'} aria-labelledby={judulId}>
@@ -30,24 +30,30 @@ export default function InfoKelurahan({ properti, data, urutan, memuat, modeTap,
       {memuat || !data ? (
         <p className="teks-sekunder info-memuat">{t('umum.memuat')}</p>
       ) : (
-        <dl className="info-baris">
-          {urutan.map((slug) => {
-            const isi = data[PARAMETER[slug].slugUrl]
-            return (
-              <div key={slug} className="info-param">
-                <dt>{f.parameterLabel(slug)}</dt>
-                <dd className="info-param-isi">
-                  <span className="info-param-nilai">{f.nilaiLengkap(slug, isi?.nilai)}</span>
-                  <Badge warna={warnaKategori(slug, isi?.kategori)}>{f.kategori(slug, isi?.kategori)}</Badge>
-                </dd>
-              </div>
-            )
-          })}
-          <div className="info-param info-waktu">
-            <dt>{t('peta.info.waktu')}</dt>
-            <dd>{pewarna?.jam_mulai ? f.periode(pewarna.jam_mulai, pewarna.jam_selesai) : t('peta.tanpaPeriode')}</dd>
-          </div>
-        </dl>
+        <>
+          <dl className="info-baris">
+            {urutan.map((slug) => {
+              const isi = data[PARAMETER[slug].slugUrl]
+              return (
+                <div key={slug} className="info-param">
+                  <dt>{f.parameterLabel(slug)}</dt>
+                  <dd className="info-param-isi">
+                    <span className="info-param-nilai">{f.nilaiLengkap(slug, isi?.nilai)}</span>
+                    <Badge warna={warnaKategori(slug, isi?.kategori)}>{f.kategori(slug, isi?.kategori)}</Badge>
+                    {isi?.jam_mulai && (
+                      <span className="info-param-periode">
+                        <Clock size={13} aria-hidden="true" />
+                        <span className="sr-only">{t('peta.info.waktu')}:</span>
+                        {f.periode(isi.jam_mulai, isi.jam_selesai)}
+                      </span>
+                    )}
+                  </dd>
+                </div>
+              )
+            })}
+          </dl>
+          {!adaPeriode && <p className="info-tanpa-periode">{t('peta.tanpaPeriode')}</p>}
+        </>
       )}
 
       {modeTap && (

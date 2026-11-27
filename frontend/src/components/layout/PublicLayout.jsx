@@ -93,7 +93,6 @@ export default function PublicLayout() {
           <button type="button" className="tautan-teks" onClick={() => setKetentuanTerbuka(true)}>
             {t('auth.daftar.ketentuan.judul')}
           </button>
-          <PemilihBahasa />
         </div>
         <p className="footer-hak">{t('umum.hakCipta')}</p>
       </footer>

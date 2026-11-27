@@ -156,7 +156,7 @@ export default function PetaRisiko() {
   // Lebih dari H+1 belum ada observasi sehari sebelumnya, grafik hanya berisi 24 jam prediksi
   const jamGrafik = tgl > besok ? 24 : 48
   const memuatData = risikoQuery.isPending || geojsonQuery.isPending
-  const deret = <DeretPerJam namaKelurahan={namaFokus} parameter={color} prakiraan={prakiraanQuery.data} memuat={prakiraanQuery.isPending} />
+  const deret = <DeretPerJam kodeKel={kelFokus} namaKelurahan={namaFokus} color={color} params={params} tgl={tgl} />
 
   return (
     <div className="peta-halaman">
